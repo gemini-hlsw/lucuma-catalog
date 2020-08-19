@@ -9,11 +9,9 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Set up JDK 1.8
-        uses: olafurpg/setup-scala@v6
+        uses: olafurpg/setup-scala@v7
         with:
-          java-version: 1.8
-      - name: Build the docker-compose stack
-        run: docker-compose up -d
+          java-version: adoptjdk@14
       - name: Cache dependencies
         uses: actions/cache@v2
         with:
