@@ -9,18 +9,19 @@ import cats.implicits._
 // import gpp.catalog.api.CatalogName
 
 // import scala.io.Source
-// import scala.xml.XML
-// import scala.xml.Node
+import scala.xml._
 // import gsp.math.MagnitudeValue
 import gem.Magnitude
-import gpp.catalog.CatalogName
+import gpp.catalog._
 import cats.data._
 import cats.data.Validated._
 import gem.enum.MagnitudeBand
 import gem.enum.MagnitudeSystem
 import gsp.math.RadialVelocity
+import gsp.math.units._
 import monocle.state.all._
 import gsp.math.MagnitudeValue
+import coulomb._
 // import gem.enum.MagnitudeBand
 
 object VoTableParser        { //extends VoTableParser {
@@ -137,7 +138,7 @@ sealed trait CatalogAdapter {
   def parseAngularVelocity(ucd: Ucd, v: String): ValidatedNel[CatalogProblem, RadialVelocity] =
     CatalogAdapter
       .parseDoubleValue(ucd, v)
-      .map(v => RadialVelocity.fromKilometersPerSecond.getOption(v))
+      .map(v => RadialVelocity(v.withUnit[MetersPerSecond]))
       .andThen(Validated.fromOption(_, FieldValueProblem(ucd, v)))
       .toValidatedNel
 
@@ -445,77 +446,82 @@ object CatalogAdapter {
   //   }
   // }
 
-  // case object Simbad extends CatalogAdapter {
-  //
-  //   val catalog: CatalogName =
-  //     CatalogName.SIMBAD
-  //
-  //   private val errorFluxIDExtra = "FLUX_ERROR_(.)_.+"
-  //   private val fluxIDExtra      = "FLUX_(.)_.+"
-  //   private val errorFluxID      = "FLUX_ERROR_(.)".r
-  //   private val fluxID           = "FLUX_(.)".r
-  //   private val magSystemID      = "FLUX_SYSTEM_(.)".r
-  //   val idField                  = FieldId("MAIN_ID", VoTableParser.UCD_OBJID)
-  //   val raField                  = FieldId("RA_d", VoTableParser.UCD_RA)
-  //   val decField                 = FieldId("DEC_d", VoTableParser.UCD_DEC)
-  //   override val pmRaField       = FieldId("PMRA", VoTableParser.UCD_PMRA)
-  //   override val pmDecField      = FieldId("PMDEC", VoTableParser.UCD_PMDEC)
-  //
-  //   override def ignoreMagnitudeField(v: FieldId): Boolean =
-  //     !v.id.toLowerCase.startsWith("flux") ||
-  //       v.id.matches(errorFluxIDExtra) ||
-  //       v.id.matches(fluxIDExtra)
-  //
-  //   override def isMagnitudeSystemField(v: (FieldId, String)): Boolean =
-  //     v._1.id.toLowerCase.startsWith("flux_system")
-  //
-  //   // Simbad has a few special cases to map sloan magnitudes
-  //   def findBand(id:                      FieldId): Option[MagnitudeBand] =
-  //     (id.id, id.ucd) match {
-  //       case ("FLUX_z" | "e_gmag", ucd) if ucd.includes(UcdWord("em.opt.i")) =>
-  //         Some(MagnitudeBand._z) // Special case
-  //       case ("FLUX_g" | "e_rmag", ucd) if ucd.includes(UcdWord("em.opt.b")) =>
-  //         Some(MagnitudeBand._g) // Special case
-  //       case (magSystemID(b), _) => findBand(b)
-  //       case (errorFluxID(b), _) => findBand(b)
-  //       case (fluxID(b), _)      => findBand(b)
-  //       case _                   => None
-  //     }
-  //
-  //   // Simbad doesn't put the band in the ucd for magnitude errors
-  //   override def isMagnitudeErrorField(v: (FieldId, String)): Boolean     =
-  //     v._1.ucd.includes(VoTableParser.UCD_MAG) &&
-  //       v._1.ucd.includes(VoTableParser.STAT_ERR) &&
-  //       errorFluxID.findFirstIn(v._1.id).isDefined &&
-  //       !ignoreMagnitudeField(v._1) &&
-  //       v._2.nonEmpty
-  //
-  //   protected def findBand(band: String): Option[MagnitudeBand] =
-  //     MagnitudeBand.all.find(_.name == band)
-  //
-  //   override def fieldToBand(field: FieldId): Option[MagnitudeBand] =
-  //     (field.ucd.includes(VoTableParser.UCD_MAG) && !ignoreMagnitudeField(field)).option {
-  //       findBand(field)
-  //     }.flatten
-  //
-  //   // Attempts to find the magnitude system for a band
-  //   override def parseMagnitudeSys(
-  //     p: (FieldId, String)
-  //   ): CatalogProblem \/ Option[(MagnitudeBand, MagnitudeSystem)] = {
-  //     val band = p._2.nonEmpty.option {
-  //       p._1.id match {
-  //         case magSystemID(x) => findBand(x)
-  //         case _              => None
-  //       }
-  //     }
-  //     \/-((band.flatten |@| MagnitudeSystem.fromString(p._2))((b, s) => (b, s)))
-  //   }
-  //
-  //   def containsExceptions(xml: Node): Boolean =
-  //     // The only case known is with java.lang.NullPointerException but let's make the check
-  //     // more general.
-  //     (xml \\ "INFO" \ "@value").text.matches("java\\..*Exception")
-  // }
+  case object Simbad extends CatalogAdapter {
+
+    val catalog: CatalogName =
+      CatalogName.SIMBAD
+
+    private val errorFluxIDExtra = "FLUX_ERROR_(.)_.+"
+    private val fluxIDExtra      = "FLUX_(.)_.+"
+    private val errorFluxID      = "FLUX_ERROR_(.)".r
+    private val fluxID           = "FLUX_(.)".r
+    private val magSystemID      = "FLUX_SYSTEM_(.)".r
+    val idField                  = FieldId("MAIN_ID", VoTableParser.UCD_OBJID)
+    val raField                  = FieldId("RA_d", VoTableParser.UCD_RA)
+    val decField                 = FieldId("DEC_d", VoTableParser.UCD_DEC)
+    override val pmRaField       = FieldId("PMRA", VoTableParser.UCD_PMRA)
+    override val pmDecField      = FieldId("PMDEC", VoTableParser.UCD_PMDEC)
+
+    override def ignoreMagnitudeField(v: FieldId): Boolean =
+      !v.id.toLowerCase.startsWith("flux") ||
+        v.id.matches(errorFluxIDExtra) ||
+        v.id.matches(fluxIDExtra)
+
+    override def isMagnitudeSystemField(v: (FieldId, String)): Boolean =
+      v._1.id.toLowerCase.startsWith("flux_system")
+
+    // Simbad has a few special cases to map sloan magnitudes
+    def findBand(id:                      FieldId): Option[MagnitudeBand] =
+      (id.id, id.ucd) match {
+        case ("FLUX_z" | "e_gmag", ucd) if ucd.includes(UcdWord("em.opt.i")) =>
+          Some(MagnitudeBand.SloanZ) // Special case
+        case ("FLUX_g" | "e_rmag", ucd) if ucd.includes(UcdWord("em.opt.b")) =>
+          Some(MagnitudeBand.SloanG) // Special case
+        case (magSystemID(b), _) => findBand(b)
+        case (errorFluxID(b), _) => findBand(b)
+        case (fluxID(b), _)      => findBand(b)
+        case _                   => None
+      }
+
+    // Simbad doesn't put the band in the ucd for magnitude errors
+    override def isMagnitudeErrorField(v: (FieldId, String)): Boolean     =
+      v._1.ucd.includes(VoTableParser.UCD_MAG) &&
+        v._1.ucd.includes(VoTableParser.STAT_ERR) &&
+        errorFluxID.findFirstIn(v._1.id).isDefined &&
+        !ignoreMagnitudeField(v._1) &&
+        v._2.nonEmpty
+
+    protected def findBand(band: String): Option[MagnitudeBand] =
+      MagnitudeBand.all.find(_.tag === band)
+
+    override def fieldToBand(field: FieldId): Option[MagnitudeBand] =
+      if ((field.ucd.includes(VoTableParser.UCD_MAG) && !ignoreMagnitudeField(field)))
+        findBand(field)
+      else
+        none
+
+    // Attempts to find the magnitude system for a band
+    override def parseMagnitudeSys(
+      p: (FieldId, String)
+    ): ValidatedNel[CatalogProblem, (MagnitudeBand, MagnitudeSystem)] = {
+      val band: Option[MagnitudeBand] =
+        if (p._2.nonEmpty)
+          p._1.id match {
+            case magSystemID(x) => findBand(x)
+            case _              => None
+          }
+        else
+          None
+      (Validated.fromOption(band, UnmatchedField(p._1.ucd)).toValidatedNel,
+       Validated.fromOption(MagnitudeSystem.fromTag(p._2), UnmatchedField(p._1.ucd)).toValidatedNel
+      ).mapN((_, _))
+    }
+
+    def containsExceptions(xml: Node): Boolean =
+      // The only case known is with java.lang.NullPointerException but let's make the check
+      // more general.
+      (xml \\ "INFO" \ "@value").text.matches("java\\..*Exception")
+  }
 
   // val All: List[CatalogAdapter] =
   //   List(UCAC4, PPMXL, Gaia, Simbad)
@@ -524,22 +530,22 @@ object CatalogAdapter {
   //   All.find(_.catalog === c)
 }
 
-// trait VoTableParser {
-//
-//   import scala.xml.Node
-//
-//   protected def parseFieldDescriptor(xml: Node): Option[FieldDescriptor] =
-//     xml match {
-//       case f @ <FIELD>{_*}</FIELD> =>
-//         def attr(n: String) = (f \ s"@$n").headOption.map(_.text)
-//
-//         val name = attr("name")
-//         ^^(attr("ID").orElse(name), attr("ucd"), name) { (i, u, n) =>
-//           FieldDescriptor(FieldId(i, Ucd(u)), n)
-//         }
-//
-//       case _                       => None
-//     }
+trait VoTableParser {
+
+  import scala.xml.Node
+
+  protected def parseFieldDescriptor(xml: Node): Option[FieldDescriptor] =
+    xml match {
+      case f @ <FIELD>{_*}</FIELD> =>
+        def attr(n: String) = (f \ s"@$n").headOption.map(_.text)
+
+        val name = attr("name")
+        (attr("ID").orElse(name), attr("ucd"), name).mapN { (i, u, n) =>
+          FieldDescriptor(FieldId(i, Ucd(u)), n)
+        }
+
+      case _                       => None
+    }
 //
 //   protected def parseFields(xml:          Node): List[FieldDescriptor] =
 //     (for {
@@ -675,4 +681,4 @@ object CatalogAdapter {
 //     } yield t
 //
 //   }
-// }
+}

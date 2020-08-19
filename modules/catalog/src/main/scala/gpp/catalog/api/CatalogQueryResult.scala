@@ -5,8 +5,6 @@ package gpp.catalog
 
 // import cats._
 // import cats.implicits._
-import gem.Target
-import gpp.catalog.votable.CatalogProblem
 
 /** ParsedTable and ParsedResources contains a list of problems */
 // case class ParsedTable(rows: List[Either[CatalogProblem, Target]]) {
@@ -25,19 +23,19 @@ import gpp.catalog.votable.CatalogProblem
 // }
 //
 // /** The result of parsing a Catalog Query is a list of targets */
-case class TargetsTable[G[_]](rows: G[Target])
+// case class TargetsTable[G[_]](rows: G[Target])
 
-object TargetsTable {
-  // // def apply[G[_]: Foldable](t: ParsedTable): TargetsTable[G] =
-  //   new TargetsTable[G](Foldable[F]. t.rows.collect { case Right(r) => r })
-  //
-  // def Zero[G[_]: Alternative] = new TargetsTable[G](Alternative[G].empty)
-  //
-  // implicit val monoid =
-  //   Monoid.instance[TargetsTable](Zero, (a, b) => TargetsTable(a.rows |+| b.rows))
-}
+// object TargetsTable {
+// // def apply[G[_]: Foldable](t: ParsedTable): TargetsTable[G] =
+//   new TargetsTable[G](Foldable[F]. t.rows.collect { case Right(r) => r })
+//
+// def Zero[G[_]: Alternative] = new TargetsTable[G](Alternative[G].empty)
+//
+// implicit val monoid =
+//   Monoid.instance[TargetsTable](Zero, (a, b) => TargetsTable(a.rows |+| b.rows))
+// }
 
-case class CatalogQueryResult[G[_]](targets: TargetsTable[G], problems: G[CatalogProblem]) {
+case class CatalogQueryResult[G[_]](targets: TargetsTable, problems: G[CatalogProblem]) {
   // def containsError: Boolean = problems.nonEmpty
 
   // def filter(query: CatalogQuery): CatalogQueryResult = {
@@ -61,4 +59,3 @@ object CatalogQueryResult {
 }
 
 case class QueryResult[G[_]](query: CatalogQuery, result: CatalogQueryResult[G])
-
