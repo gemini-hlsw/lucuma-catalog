@@ -26,5 +26,7 @@ jobs:
           path: ~/.sbt
           key: ${{ runner.os }}-sbt-${{ hashFiles('build.sbt') }}-${{ hashFiles('project/*.scala') }}
           restore-keys: ${{ runner.os }}-sbt-
+      - name: Checking your code format
+        run: csbt scalafmtCheckAll headerCheck test:headerCheck
       - name: Run compile
-        run: csbt headerCheck +compile +test rebuildEnums
+        run: csbt +compile +test

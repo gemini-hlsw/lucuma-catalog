@@ -3,17 +3,20 @@ import sbtcrossproject.CrossType
 
 lazy val attoVersion                 = "0.7.2"
 lazy val catsVersion                 = "2.1.1"
-lazy val kindProjectorVersion        = "0.10.3"
-lazy val gspMathVersion              = "0.1.17"
-lazy val gspCoreVersion              = "0.1.8"
-lazy val catsTestkitScalaTestVersion = "1.0.1"
+lazy val kindProjectorVersion        = "0.11.0"
+lazy val gspMathVersion              = "0.2.8+16-60a789eb-SNAPSHOT"
+lazy val gspCoreVersion              = "0.2.8+20-965c3dc2+20200819-0044-SNAPSHOT"
+lazy val catsTestkitScalaTestVersion = "2.0.0"
+lazy val monocleVersion              = "2.0.5"
 
 Global / onChangedBuildSource := ReloadOnSourceChanges
 
 inThisBuild(
   Seq(
-    homepage := Some(url("https://github.com/gemini-hlsw/gpp-catalog"))
-    // addCompilerPlugin("org.typelevel" %% "kind-projector" % kindProjectorVersion),
+    homepage := Some(url("https://github.com/gemini-hlsw/gpp-catalog")),
+    addCompilerPlugin(
+      ("org.typelevel" %% "kind-projector" % kindProjectorVersion).cross(CrossVersion.full)
+    )
   ) ++ gspPublishSettings
 )
 
@@ -26,11 +29,11 @@ lazy val catalog = crossProject(JVMPlatform, JSPlatform)
     name := "gpp-catalog",
     libraryDependencies ++= Seq(
       // "org.tpolecat"               %%% "atto-core"               % attoVersion,
-      "edu.gemini"             %%% "gsp-core-model" % gspCoreVersion,
-      "edu.gemini"             %%% "gsp-math"       % gspMathVersion,
-      "org.typelevel"          %%% "cats-core"      % catsVersion,
-      "org.scala-lang.modules" %%% "scala-xml"      % "2.0.0-M1"
-      //   "com.github.julien-truffaut" %%% "monocle-core"            % monocleVersion,
+      "edu.gemini"                 %%% "gsp-core-model" % gspCoreVersion,
+      "edu.gemini"                 %%% "gsp-math"       % gspMathVersion,
+      "org.typelevel"              %%% "cats-core"      % catsVersion,
+      "org.scala-lang.modules"     %%% "scala-xml"      % "2.0.0-M1",
+      "com.github.julien-truffaut" %%% "monocle-state"  % monocleVersion
       //   "com.github.julien-truffaut" %%% "monocle-macro"           % monocleVersion,
       //   "org.scala-lang.modules"     %%% "scala-collection-compat" % collCompatVersion
     )
@@ -42,7 +45,7 @@ lazy val catalog = crossProject(JVMPlatform, JSPlatform)
   )
 
 lazy val testkit = crossProject(JVMPlatform, JSPlatform)
-  .crossType(CrossType.Full)
+  .crossType(CrossType.Pure)
   .in(file("modules/testkit"))
   .dependsOn(catalog)
   .settings(
@@ -57,12 +60,18 @@ lazy val testkit = crossProject(JVMPlatform, JSPlatform)
   .jsSettings(gspScalaJsSettings: _*)
 
 lazy val tests   = crossProject(JVMPlatform, JSPlatform)
-  .crossType(CrossType.Full)
+  .crossType(CrossType.Pure)
   .in(file("modules/tests"))
   .dependsOn(catalog, testkit)
   .settings(
     name := "gpp-catalog-tests",
+    libraryDependencies ++= Seq(
+      "org.scalameta" %%% "munit"            % "0.7.11" % Test,
+      "org.typelevel" %%% "discipline-munit" % "0.2.3"  % Test
+    ),
+    testFrameworks += new TestFramework("munit.Framework"),
     skip in publish := true
   )
   .jvmConfigure(_.enablePlugins(AutomateHeaderPlugin))
   .jsSettings(gspScalaJsSettings: _*)
+  .jsSettings(scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule)))
