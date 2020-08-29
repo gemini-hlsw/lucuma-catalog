@@ -4,8 +4,7 @@ import sbtcrossproject.CrossType
 lazy val attoVersion                 = "0.7.2"
 lazy val catsVersion                 = "2.1.1"
 lazy val kindProjectorVersion        = "0.11.0"
-lazy val gspMathVersion              = "0.2.8+16-60a789eb-SNAPSHOT"
-lazy val gspCoreVersion              = "0.2.8+20-965c3dc2+20200819-0044-SNAPSHOT"
+lazy val lucumaCoreVersion           = "0.3.0+34-ac3c2179-SNAPSHOT"//0.3.0+29-7dcb8b9c-SNAPSHOT"
 lazy val catsTestkitScalaTestVersion = "2.0.0"
 lazy val monocleVersion              = "2.0.5"
 
@@ -26,14 +25,13 @@ lazy val catalog = crossProject(JVMPlatform, JSPlatform)
   .crossType(CrossType.Pure)
   .in(file("modules/catalog"))
   .settings(
-    name := "gpp-catalog",
+    name := "lucuma-catalog",
     libraryDependencies ++= Seq(
       // "org.tpolecat"               %%% "atto-core"               % attoVersion,
-      "edu.gemini"                 %%% "gsp-core-model" % gspCoreVersion,
-      "edu.gemini"                 %%% "gsp-math"       % gspMathVersion,
-      "org.typelevel"              %%% "cats-core"      % catsVersion,
-      "org.scala-lang.modules"     %%% "scala-xml"      % "2.0.0-M1",
-      "com.github.julien-truffaut" %%% "monocle-state"  % monocleVersion
+      "edu.gemini"                 %%% "lucuma-core"   % lucumaCoreVersion,
+      "org.typelevel"              %%% "cats-core"     % catsVersion,
+      "org.scala-lang.modules"     %%% "scala-xml"     % "2.0.0-M1",
+      "com.github.julien-truffaut" %%% "monocle-state" % monocleVersion
       //   "com.github.julien-truffaut" %%% "monocle-macro"           % monocleVersion,
       //   "org.scala-lang.modules"     %%% "scala-collection-compat" % collCompatVersion
     )
@@ -49,7 +47,7 @@ lazy val testkit = crossProject(JVMPlatform, JSPlatform)
   .in(file("modules/testkit"))
   .dependsOn(catalog)
   .settings(
-    name := "gpp-catalog-testkit",
+    name := "lucuma-catalog-testkit",
     libraryDependencies ++= Seq(
       "org.typelevel" %%% "cats-testkit"           % catsVersion,
       "org.typelevel" %%% "cats-testkit-scalatest" % catsTestkitScalaTestVersion
@@ -64,7 +62,7 @@ lazy val tests   = crossProject(JVMPlatform, JSPlatform)
   .in(file("modules/tests"))
   .dependsOn(catalog, testkit)
   .settings(
-    name := "gpp-catalog-tests",
+    name := "lucuma-catalog-tests",
     libraryDependencies ++= Seq(
       "org.scalameta" %%% "munit"            % "0.7.11" % Test,
       "org.typelevel" %%% "discipline-munit" % "0.2.3"  % Test

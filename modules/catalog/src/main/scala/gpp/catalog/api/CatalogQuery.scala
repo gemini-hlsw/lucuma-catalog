@@ -5,8 +5,8 @@ package gpp.catalog
 
 import cats._
 import cats.implicits._
-import gem.enum.MagnitudeBand
-import gem.Target
+import lucuma.core.enum.MagnitudeBand
+import lucuma.core.model.Target
 
 trait QueryResultsFilter {
   def filter(t: Target): Boolean

@@ -3,11 +3,16 @@
 
 package gpp.catalog
 
+import gpp.catalog.votable.VoTableSamples
+import lucuma.core.enum.MagnitudeBand
+import gpp.catalog.votable.CatalogAdapter
+import cats.data.Validated
+
 // import edu.gemini.catalog.api.CatalogName
 // import edu.gemini.spModel.core._
 // import gsp.catalog.api._
 
-class FieldsSuite extends munit.FunSuite with votable.VoTableParser {
+class FieldsSuite extends munit.FunSuite with votable.VoTableParser with VoTableSamples {
 
   test("be able to parse a field definition") {
     val fieldXml =
@@ -25,71 +30,140 @@ class FieldsSuite extends munit.FunSuite with votable.VoTableParser {
     // missing attributes
     assert(parseFieldDescriptor(<FIELD ID="abc"/>).isEmpty)
   }
-//     "swap in name for ID if missing in a field definition" in {
-//       val fieldXml = <FIELD datatype="double" name="ref_epoch" ucd="meta.ref;time.epoch" unit="yr"/>
-//       parseFieldDescriptor(fieldXml) should beSome(FieldDescriptor(FieldId("ref_epoch", Ucd("meta.ref;time.epoch")), "ref_epoch"))
-//     }
-//     "be able to parse a list of fields" in {
-//       val result =
-//         FieldDescriptor(FieldId("gmag_err", Ucd("stat.error;phot.mag;em.opt.g")), "gmag_err") ::
-//         FieldDescriptor(FieldId("rmag_err", Ucd("stat.error;phot.mag;em.opt.r")), "rmag_err") ::
-//         FieldDescriptor(FieldId("flags1", Ucd("meta.code")), "flags1") ::
-//         FieldDescriptor(FieldId("ppmxl", Ucd("meta.id;meta.main")), "ppmxl") :: Nil
-//
-//       parseFields(fieldsNode) should beEqualTo(result)
-//     }
-//     "be able to parse a data  row with a list of fields" in {
-//       val fields = parseFields(fieldsNode)
-//
-//       val result = TableRow(
-//         TableRowItem(FieldDescriptor(FieldId("gmag_err", Ucd("stat.error;phot.mag;em.opt.g")), "gmag_err"), "0.0960165") ::
-//         TableRowItem(FieldDescriptor(FieldId("rmag_err", Ucd("stat.error;phot.mag;em.opt.r")), "rmag_err"), "0.0503736") ::
-//         TableRowItem(FieldDescriptor(FieldId("flags1", Ucd("meta.code")), "flags1"), "268435728") ::
-//         TableRowItem(FieldDescriptor(FieldId("ppmxl", Ucd("meta.id;meta.main")), "ppmxl"), "-2140405448") :: Nil
-//       )
-//       parseTableRow(fields, tableRow) should beEqualTo(result)
-//     }
-//     "be able to parse a list of rows with a list of fields" in {
-//       val fields = parseFields(fieldsNode)
-//
-//       val result = List(
-//         TableRow(
-//           TableRowItem(FieldDescriptor(FieldId("gmag_err", Ucd("stat.error;phot.mag;em.opt.g")), "gmag_err"), "0.0960165") ::
-//           TableRowItem(FieldDescriptor(FieldId("rmag_err", Ucd("stat.error;phot.mag;em.opt.r")), "rmag_err"), "0.0503736") ::
-//           TableRowItem(FieldDescriptor(FieldId("flags1", Ucd("meta.code")), "flags1"), "268435728") ::
-//           TableRowItem(FieldDescriptor(FieldId("ppmxl", Ucd("meta.id;meta.main")), "ppmxl"), "-2140405448") :: Nil
-//         ),
-//         TableRow(
-//           TableRowItem(FieldDescriptor(FieldId("gmag_err", Ucd("stat.error;phot.mag;em.opt.g")), "gmag_err"), "0.51784") ::
-//           TableRowItem(FieldDescriptor(FieldId("rmag_err", Ucd("stat.error;phot.mag;em.opt.r")), "rmag_err"), "0.252201") ::
-//           TableRowItem(FieldDescriptor(FieldId("flags1", Ucd("meta.code")), "flags1"), "536871168") ::
-//           TableRowItem(FieldDescriptor(FieldId("ppmxl", Ucd("meta.id;meta.main")), "ppmxl"), "-2140404569") :: Nil
-//         ))
-//       parseTableRows(fields, dataNode) should beEqualTo(result)
-//     }
-//     "be able to convert a TableRow into a SiderealTarget" in {
-//       val fields = parseFields(fieldsNode)
-//
-//       val validRow = TableRow(
-//                 TableRowItem(FieldDescriptor(FieldId("ppmxl", Ucd("meta.id;meta.main")), "ppmxl"), "123456") ::
-//                 TableRowItem(FieldDescriptor(FieldId("decj2000", Ucd("pos.eq.dec;meta.main")),"dej2000"), "0.209323681906") ::
-//                 TableRowItem(FieldDescriptor(FieldId("raj2000", Ucd("pos.eq.ra;meta.main")), "raj2000"), "359.745951955") :: Nil
-//               )
-//       tableRow2Target(CatalogAdapter.PPMXL, fields)(validRow) should beEqualTo(\/-(SiderealTarget.empty.copy(name = "123456", coordinates = Coordinates(RightAscension.fromAngle(Angle.parseDegrees("359.745951955").getOrElse(Angle.zero)), Declination.fromAngle(Angle.parseDegrees("0.209323681906").getOrElse(Angle.zero)).getOrElse(Declination.zero)))))
-//
-//       val rowWithMissingId = TableRow(
-//                 TableRowItem(FieldDescriptor(FieldId("decj2000", Ucd("pos.eq.dec;meta.main")), "dej2000"), "0.209323681906") ::
-//                 TableRowItem(FieldDescriptor(FieldId("raj2000", Ucd("pos.eq.ra;meta.main")), "raj2000"), "359.745951955") :: Nil
-//               )
-//       tableRow2Target(CatalogAdapter.PPMXL, fields)(rowWithMissingId) should beEqualTo(-\/(MissingValue(FieldId("ppmxl", VoTableParser.UCD_OBJID))))
-//
-//       val rowWithBadRa = TableRow(
-//                 TableRowItem(FieldDescriptor(FieldId("ppmxl", Ucd("meta.id;meta.main")), "ppmxl"), "123456") ::
-//                 TableRowItem(FieldDescriptor(FieldId("decj2000", Ucd("pos.eq.dec;meta.main")), "dej2000"), "0.209323681906") ::
-//                 TableRowItem(FieldDescriptor(FieldId("raj2000", Ucd("pos.eq.ra;meta.main")), "raj2000"), "ABC") :: Nil
-//             )
-//       tableRow2Target(CatalogAdapter.PPMXL, fields)(rowWithBadRa) should beEqualTo(-\/(FieldValueProblem(VoTableParser.UCD_RA, "ABC")))
-//     }
+  test("swap in name for ID if missing in a field definition") {
+    val fieldXml = <FIELD datatype="double" name="ref_epoch" ucd="meta.ref;time.epoch" unit="yr"/>
+    assertEquals(
+      parseFieldDescriptor(fieldXml),
+      Some(FieldDescriptor(FieldId("ref_epoch", Ucd("meta.ref;time.epoch")), "ref_epoch"))
+    )
+  }
+  test("be able to parse a list of fields") {
+    val result =
+      FieldDescriptor(FieldId("gmag_err", Ucd("stat.error;phot.mag;em.opt.g")), "gmag_err") ::
+        FieldDescriptor(FieldId("rmag_err", Ucd("stat.error;phot.mag;em.opt.r")), "rmag_err") ::
+        FieldDescriptor(FieldId("flags1", Ucd("meta.code")), "flags1") ::
+        FieldDescriptor(FieldId("ppmxl", Ucd("meta.id;meta.main")), "ppmxl") :: Nil
+
+    assertEquals(parseFields(fieldsNode), result)
+  }
+  test("be able to parse a data  row with a list of fields") {
+    val fields = parseFields(fieldsNode)
+
+    val result = TableRow(
+      TableRowItem(
+        FieldDescriptor(FieldId("gmag_err", Ucd("stat.error;phot.mag;em.opt.g")), "gmag_err"),
+        "0.0960165"
+      ) ::
+        TableRowItem(
+          FieldDescriptor(FieldId("rmag_err", Ucd("stat.error;phot.mag;em.opt.r")), "rmag_err"),
+          "0.0503736"
+        ) ::
+        TableRowItem(FieldDescriptor(FieldId("flags1", Ucd("meta.code")), "flags1"), "268435728") ::
+        TableRowItem(FieldDescriptor(FieldId("ppmxl", Ucd("meta.id;meta.main")), "ppmxl"),
+                     "-2140405448"
+        ) :: Nil
+    )
+    assertEquals(parseTableRow(fields, tableRow), result)
+  }
+  test("be able to parse a list of rows with a list of fields") {
+    val fields = parseFields(fieldsNode)
+
+    val result = List(
+      TableRow(
+        TableRowItem(FieldDescriptor(FieldId("gmag_err", Ucd("stat.error;phot.mag;em.opt.g")),
+                                     "gmag_err"
+                     ),
+                     "0.0960165"
+        ) ::
+          TableRowItem(FieldDescriptor(FieldId("rmag_err", Ucd("stat.error;phot.mag;em.opt.r")),
+                                       "rmag_err"
+                       ),
+                       "0.0503736"
+          ) ::
+          TableRowItem(FieldDescriptor(FieldId("flags1", Ucd("meta.code")), "flags1"),
+                       "268435728"
+          ) ::
+          TableRowItem(FieldDescriptor(FieldId("ppmxl", Ucd("meta.id;meta.main")), "ppmxl"),
+                       "-2140405448"
+          ) :: Nil
+      ),
+      TableRow(
+        TableRowItem(FieldDescriptor(FieldId("gmag_err", Ucd("stat.error;phot.mag;em.opt.g")),
+                                     "gmag_err"
+                     ),
+                     "0.51784"
+        ) ::
+          TableRowItem(FieldDescriptor(FieldId("rmag_err", Ucd("stat.error;phot.mag;em.opt.r")),
+                                       "rmag_err"
+                       ),
+                       "0.252201"
+          ) ::
+          TableRowItem(FieldDescriptor(FieldId("flags1", Ucd("meta.code")), "flags1"),
+                       "536871168"
+          ) ::
+          TableRowItem(FieldDescriptor(FieldId("ppmxl", Ucd("meta.id;meta.main")), "ppmxl"),
+                       "-2140404569"
+          ) :: Nil
+      )
+    )
+    assertEquals(parseTableRows(fields, dataNode), result)
+  }
+  // test("be able to convert a TableRow into a SiderealTarget") {
+  // val fields = parseFields(fieldsNode)
+  //
+  // val validRow = TableRow(
+  //   TableRowItem(FieldDescriptor(FieldId("ppmxl", Ucd("meta.id;meta.main")), "ppmxl"),
+  //                "123456"
+  //   ) ::
+  //     TableRowItem(FieldDescriptor(FieldId("decj2000", Ucd("pos.eq.dec;meta.main")), "dej2000"),
+  //                  "0.209323681906"
+  //     ) ::
+  //     TableRowItem(FieldDescriptor(FieldId("raj2000", Ucd("pos.eq.ra;meta.main")), "raj2000"),
+  //                  "359.745951955"
+  //     ) :: Nil
+  // )
+  // assertEquals(
+  //   tableRow2Target(CatalogAdapter.PPMXL, fields)(validRow),
+  //   Right(
+  //     SiderealTarget.empty.copy(
+  //       name = "123456",
+  //       coordinates = Coordinates(
+  //         RightAscension.fromAngle(Angle.parseDegrees("359.745951955").getOrElse(Angle.zero)),
+  //         Declination
+  //           .fromAngle(Angle.parseDegrees("0.209323681906").getOrElse(Angle.zero))
+  //           .getOrElse(Declination.zero)
+  //       )
+  //     )
+  //   )
+  // )
+  //
+  // val rowWithMissingId = TableRow(
+  //   TableRowItem(FieldDescriptor(FieldId("decj2000", Ucd("pos.eq.dec;meta.main")), "dej2000"),
+  //                "0.209323681906"
+  //   ) ::
+  //     TableRowItem(FieldDescriptor(FieldId("raj2000", Ucd("pos.eq.ra;meta.main")), "raj2000"),
+  //                  "359.745951955"
+  //     ) :: Nil
+  // )
+  // // assertEquals(tableRow2Target(CatalogAdapter.PPMXL, fields)(rowWithMissingId),
+  // //              Left(MissingValue(FieldId("ppmxl", VoTableParser.UCD_OBJID)))
+  // )
+  //
+  // val rowWithBadRa = TableRow(
+  //   TableRowItem(FieldDescriptor(FieldId("ppmxl", Ucd("meta.id;meta.main")), "ppmxl"),
+  //                "123456"
+  //   ) ::
+  //     TableRowItem(FieldDescriptor(FieldId("decj2000", Ucd("pos.eq.dec;meta.main")), "dej2000"),
+  //                  "0.209323681906"
+  //     ) ::
+  //     TableRowItem(FieldDescriptor(FieldId("raj2000", Ucd("pos.eq.ra;meta.main")), "raj2000"),
+  //                  "ABC"
+  //     ) :: Nil
+  // )
+  // // assertEquals(tableRow2Target(CatalogAdapter.PPMXL, fields)(rowWithBadRa),
+  // //              Left(FieldValueProblem(VoTableParser.UCD_RA, "ABC"))
+  // // )
+  // }
 //     "be able to parse magnitude bands in PPMXL" in {
 //       val iMagField = Ucd("phot.mag;em.opt.i")
 //       // Optical band
@@ -127,49 +201,79 @@ class FieldsSuite extends munit.FunSuite with votable.VoTableParser {
 //       // imag maps to r'
 //       CatalogAdapter.UCAC4.parseMagnitude((FieldId("imag", iMagField), "20.3051")) should beEqualTo(\/-((FieldId("imag", iMagField), MagnitudeBand._i, 20.3051)))
 //     }
-//     "be able to map sloan magnitudes in Simbad" in {
-//       val zMagField = Ucd("phot.mag;em.opt.I")
-//       // FLUX_z maps to z'
-//       CatalogAdapter.Simbad.parseMagnitude((FieldId("FLUX_z", zMagField), "20.3051")) should beEqualTo(\/-((FieldId("FLUX_z", zMagField), MagnitudeBand._z, 20.3051)))
-//
-//       val rMagField = Ucd("phot.mag;em.opt.R")
-//       // FLUX_r maps to r'
-//       CatalogAdapter.Simbad.parseMagnitude((FieldId("FLUX_r", rMagField), "20.3051")) should beEqualTo(\/-((FieldId("FLUX_r", rMagField), MagnitudeBand._r, 20.3051)))
-//
-//       val uMagField = Ucd("phot.mag;em.opt.u")
-//       // FLUX_u maps to u'
-//       CatalogAdapter.Simbad.parseMagnitude((FieldId("FLUX_u", uMagField), "20.3051")) should beEqualTo(\/-((FieldId("FLUX_u", uMagField), MagnitudeBand._u, 20.3051)))
-//
-//       val gMagField = Ucd("phot.mag;em.opt.b")
-//       // FLUX_g maps to g'
-//       CatalogAdapter.Simbad.parseMagnitude((FieldId("FLUX_g", gMagField), "20.3051")) should beEqualTo(\/-((FieldId("FLUX_g", gMagField), MagnitudeBand._g, 20.3051)))
-//
-//       val iMagField = Ucd("phot.mag;em.opt.i")
-//       // FLUX_u maps to u'
-//       CatalogAdapter.Simbad.parseMagnitude((FieldId("FLUX_i", iMagField), "20.3051")) should beEqualTo(\/-((FieldId("FLUX_i", iMagField), MagnitudeBand._i, 20.3051)))
-//     }
-//     "be able to map non-sloan magnitudes in Simbad" in {
-//       val rMagField = Ucd("phot.mag;em.opt.R")
-//       // FLUX_R maps to R
-//       CatalogAdapter.Simbad.parseMagnitude((FieldId("FLUX_R", rMagField), "20.3051")) should beEqualTo(\/-((FieldId("FLUX_R", rMagField), MagnitudeBand.R, 20.3051)))
-//
-//       val uMagField = Ucd("phot.mag;em.opt.U")
-//       // FLUX_U maps to U
-//       CatalogAdapter.Simbad.parseMagnitude((FieldId("FLUX_U", uMagField), "20.3051")) should beEqualTo(\/-((FieldId("FLUX_U", uMagField), MagnitudeBand.U, 20.3051)))
-//
-//       val iMagField = Ucd("phot.mag;em.opt.I")
-//       // FLUX_I maps to I
-//       CatalogAdapter.Simbad.parseMagnitude((FieldId("FLUX_I", iMagField), "20.3051")) should beEqualTo(\/-((FieldId("FLUX_I", iMagField), MagnitudeBand.I, 20.3051)))
-//     }
-//     "be able to map magnitude errors in Simbad" in {
-//       // Magnitude errors in simbad don't include the band in the UCD, we must get it from the ID :(
-//       val magErrorUcd = Ucd("stat.error;phot.mag")
-//       // FLUX_r maps to r'
-//       CatalogAdapter.Simbad.parseMagnitude((FieldId("FLUX_ERROR_r", magErrorUcd), "20.3051")) should beEqualTo(\/-((FieldId("FLUX_ERROR_r", magErrorUcd), MagnitudeBand._r, 20.3051)))
-//
-//       // FLUX_R maps to R
-//       CatalogAdapter.Simbad.parseMagnitude((FieldId("FLUX_ERROR_R", magErrorUcd), "20.3051")) should beEqualTo(\/-((FieldId("FLUX_ERROR_R", magErrorUcd), MagnitudeBand.R, 20.3051)))
-//     }
+  test("be able to map sloan magnitudes in Simbad") {
+    val zMagField = Ucd("phot.mag;em.opt.I")
+    // FLUX_z maps to z'
+    assertEquals(
+      CatalogAdapter.Simbad.parseMagnitude(FieldId("FLUX_z", zMagField), "20.3051"),
+      Validated.validNel((FieldId("FLUX_z", zMagField), MagnitudeBand.SloanZ, 20.3051))
+    )
+
+    val rMagField = Ucd("phot.mag;em.opt.R")
+    // FLUX_r maps to r'
+    assertEquals(
+      CatalogAdapter.Simbad.parseMagnitude(FieldId("FLUX_r", rMagField), "20.3051"),
+      Validated.validNel((FieldId("FLUX_r", rMagField), MagnitudeBand.SloanR, 20.3051))
+    )
+
+    val uMagField = Ucd("phot.mag;em.opt.u")
+    // FLUX_u maps to u'
+    assertEquals(
+      CatalogAdapter.Simbad.parseMagnitude(FieldId("FLUX_u", uMagField), "20.3051"),
+      Validated.validNel((FieldId("FLUX_u", uMagField), MagnitudeBand.SloanU, 20.3051))
+    )
+
+    val gMagField = Ucd("phot.mag;em.opt.b")
+    // FLUX_g maps to g'
+    assertEquals(
+      CatalogAdapter.Simbad.parseMagnitude(FieldId("FLUX_g", gMagField), "20.3051"),
+      Validated.validNel(((FieldId("FLUX_g", gMagField), MagnitudeBand.SloanG, 20.3051)))
+    )
+
+    val iMagField = Ucd("phot.mag;em.opt.i")
+    // FLUX_u maps to u'
+    assertEquals(
+      CatalogAdapter.Simbad.parseMagnitude(FieldId("FLUX_i", iMagField), "20.3051"),
+      Validated.validNel(((FieldId("FLUX_i", iMagField), MagnitudeBand.SloanI, 20.3051)))
+    )
+  }
+  test("be able to map non-sloan magnitudes in Simbad") {
+    val rMagField = Ucd("phot.mag;em.opt.R")
+    // FLUX_R maps to R
+    assertEquals(
+      CatalogAdapter.Simbad.parseMagnitude(FieldId("FLUX_R", rMagField), "20.3051"),
+      Validated.validNel(((FieldId("FLUX_R", rMagField), MagnitudeBand.R, 20.3051)))
+    )
+
+    val uMagField = Ucd("phot.mag;em.opt.U")
+    // FLUX_U maps to U
+    assertEquals(
+      CatalogAdapter.Simbad.parseMagnitude(FieldId("FLUX_U", uMagField), "20.3051"),
+      Validated.validNel((FieldId("FLUX_U", uMagField), MagnitudeBand.U, 20.3051))
+    )
+
+    val iMagField = Ucd("phot.mag;em.opt.I")
+    // FLUX_I maps to I
+    assertEquals(
+      CatalogAdapter.Simbad.parseMagnitude(FieldId("FLUX_I", iMagField), "20.3051"),
+      Validated.validNel((FieldId("FLUX_I", iMagField), MagnitudeBand.I, 20.3051))
+    )
+  }
+  test("be able to map magnitude errors in Simbad") {
+    // Magnitude errors in simbad don't include the band in the UCD, we must get it from the ID :(
+    val magErrorUcd = Ucd("stat.error;phot.mag")
+    // FLUX_r maps to r'
+    assertEquals(
+      CatalogAdapter.Simbad.parseMagnitude(FieldId("FLUX_ERROR_r", magErrorUcd), "20.3051"),
+      Validated.validNel((FieldId("FLUX_ERROR_r", magErrorUcd), MagnitudeBand.SloanR, 20.3051))
+    )
+
+    // FLUX_R maps to R
+    assertEquals(
+      CatalogAdapter.Simbad.parseMagnitude(FieldId("FLUX_ERROR_R", magErrorUcd), "20.3051"),
+      Validated.validNel(((FieldId("FLUX_ERROR_R", magErrorUcd), MagnitudeBand.R, 20.3051)))
+    )
+  }
 //     "be able to parse an xml into a list of SiderealTargets list of rows with a list of fields" in {
 //       val magsTarget1 = List(new Magnitude(23.0888, MagnitudeBand.U), new Magnitude(22.082, MagnitudeBand._g), new Magnitude(20.88, MagnitudeBand.R), new Magnitude(20.3051, MagnitudeBand.I), new Magnitude(19.8812, MagnitudeBand._z))
 //       val magsTarget2 = List(new Magnitude(23.0853, MagnitudeBand.U), new Magnitude(23.0889, MagnitudeBand._g), new Magnitude(21.7686, MagnitudeBand.R), new Magnitude(20.7891, MagnitudeBand.I), new Magnitude(20.0088, MagnitudeBand._z))

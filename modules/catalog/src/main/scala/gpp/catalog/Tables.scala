@@ -5,7 +5,7 @@ package gpp.catalog
 
 import cats._
 import cats.implicits._
-import gem.Target
+import lucuma.core.model.Target
 
 /** ParsedTable and ParsedResources contains a list of problems */
 case class ParsedTable(rows: List[Either[CatalogProblem, Target]]) {

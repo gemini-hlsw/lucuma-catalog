@@ -3,7 +3,7 @@
 
 package gpp.catalog.api
 
-import gem.util.Enumerated
+import lucuma.core.util.Enumerated
 
 // UI model
 sealed trait CatalogName extends Product with Serializable
