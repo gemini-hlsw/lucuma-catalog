@@ -1,12 +1,12 @@
 // Copyright (c) 2016-2020 Association of Universities for Research in Astronomy, Inc. (AURA)
 // For license information see LICENSE or https://opensource.org/licenses/BSD-3-Clause
 
-package gpp.catalog.votable
+package lucuma.catalog.votable
 
 import munit.DisciplineSuite
 import cats.kernel.laws.discipline.EqTests
-import gpp.catalog._
-import gpp.catalog.arb.ArbUcd._
+import lucuma.catalog._
+import lucuma.catalog.arb.ArbUcd._
 
 class UcdSuite extends munit.FunSuite with DisciplineSuite {
   checkAll("Ucd", EqTests[Ucd].eqv)

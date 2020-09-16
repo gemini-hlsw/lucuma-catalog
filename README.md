@@ -1,2 +1,2 @@
 # lucuma-catalog
-scala jvm/js library to read catalog informatioin
+scala jvm/js library to read catalog information

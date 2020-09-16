@@ -1,18 +1,25 @@
 // Copyright (c) 2016-2020 Association of Universities for Research in Astronomy, Inc. (AURA)
 // For license information see LICENSE or https://opensource.org/licenses/BSD-3-Clause
 
-package gpp.catalog
+package lucuma.catalog
 
-import gpp.catalog.votable.VoTableSamples
+// import cats.implicits._
+// import lucuma.catalog.votable.VoTableSamples
 import lucuma.core.enum.MagnitudeBand
-import gpp.catalog.votable.CatalogAdapter
+import lucuma.catalog.votable.CatalogAdapter
 import cats.data.Validated
+import lucuma.catalog.votable.VoTableParser
+// import lucuma.core.math.Parallax
+// import lucuma.core.model.Target
+// import scala.xml.Node
+// import scala.xml.XML
+// import lucuma.catalog._
 
 // import edu.gemini.catalog.api.CatalogName
 // import edu.gemini.spModel.core._
 // import gsp.catalog.api._
 
-class FieldsSuite extends munit.FunSuite with votable.VoTableParser with VoTableSamples {
+class FieldsSuite extends munit.FunSuite with VoTableParser {
 
   test("be able to parse a field definition") {
     val fieldXml =
@@ -37,77 +44,77 @@ class FieldsSuite extends munit.FunSuite with votable.VoTableParser with VoTable
       Some(FieldDescriptor(FieldId("ref_epoch", Ucd("meta.ref;time.epoch")), "ref_epoch"))
     )
   }
-  test("be able to parse a list of fields") {
-    val result =
-      FieldDescriptor(FieldId("gmag_err", Ucd("stat.error;phot.mag;em.opt.g")), "gmag_err") ::
-        FieldDescriptor(FieldId("rmag_err", Ucd("stat.error;phot.mag;em.opt.r")), "rmag_err") ::
-        FieldDescriptor(FieldId("flags1", Ucd("meta.code")), "flags1") ::
-        FieldDescriptor(FieldId("ppmxl", Ucd("meta.id;meta.main")), "ppmxl") :: Nil
-
-    assertEquals(parseFields(fieldsNode), result)
-  }
-  test("be able to parse a data  row with a list of fields") {
-    val fields = parseFields(fieldsNode)
-
-    val result = TableRow(
-      TableRowItem(
-        FieldDescriptor(FieldId("gmag_err", Ucd("stat.error;phot.mag;em.opt.g")), "gmag_err"),
-        "0.0960165"
-      ) ::
-        TableRowItem(
-          FieldDescriptor(FieldId("rmag_err", Ucd("stat.error;phot.mag;em.opt.r")), "rmag_err"),
-          "0.0503736"
-        ) ::
-        TableRowItem(FieldDescriptor(FieldId("flags1", Ucd("meta.code")), "flags1"), "268435728") ::
-        TableRowItem(FieldDescriptor(FieldId("ppmxl", Ucd("meta.id;meta.main")), "ppmxl"),
-                     "-2140405448"
-        ) :: Nil
-    )
-    assertEquals(parseTableRow(fields, tableRow), result)
-  }
-  test("be able to parse a list of rows with a list of fields") {
-    val fields = parseFields(fieldsNode)
-
-    val result = List(
-      TableRow(
-        TableRowItem(FieldDescriptor(FieldId("gmag_err", Ucd("stat.error;phot.mag;em.opt.g")),
-                                     "gmag_err"
-                     ),
-                     "0.0960165"
-        ) ::
-          TableRowItem(FieldDescriptor(FieldId("rmag_err", Ucd("stat.error;phot.mag;em.opt.r")),
-                                       "rmag_err"
-                       ),
-                       "0.0503736"
-          ) ::
-          TableRowItem(FieldDescriptor(FieldId("flags1", Ucd("meta.code")), "flags1"),
-                       "268435728"
-          ) ::
-          TableRowItem(FieldDescriptor(FieldId("ppmxl", Ucd("meta.id;meta.main")), "ppmxl"),
-                       "-2140405448"
-          ) :: Nil
-      ),
-      TableRow(
-        TableRowItem(FieldDescriptor(FieldId("gmag_err", Ucd("stat.error;phot.mag;em.opt.g")),
-                                     "gmag_err"
-                     ),
-                     "0.51784"
-        ) ::
-          TableRowItem(FieldDescriptor(FieldId("rmag_err", Ucd("stat.error;phot.mag;em.opt.r")),
-                                       "rmag_err"
-                       ),
-                       "0.252201"
-          ) ::
-          TableRowItem(FieldDescriptor(FieldId("flags1", Ucd("meta.code")), "flags1"),
-                       "536871168"
-          ) ::
-          TableRowItem(FieldDescriptor(FieldId("ppmxl", Ucd("meta.id;meta.main")), "ppmxl"),
-                       "-2140404569"
-          ) :: Nil
-      )
-    )
-    assertEquals(parseTableRows(fields, dataNode), result)
-  }
+  // test("be able to parse a list of fields") {
+  //   val result =
+  //     FieldDescriptor(FieldId("gmag_err", Ucd("stat.error;phot.mag;em.opt.g")), "gmag_err") ::
+  //       FieldDescriptor(FieldId("rmag_err", Ucd("stat.error;phot.mag;em.opt.r")), "rmag_err") ::
+  //       FieldDescriptor(FieldId("flags1", Ucd("meta.code")), "flags1") ::
+  //       FieldDescriptor(FieldId("ppmxl", Ucd("meta.id;meta.main")), "ppmxl") :: Nil
+  //
+  //   assertEquals(parseFields(fieldsNode), result)
+  // }
+  // test("be able to parse a data  row with a list of fields") {
+  //   val fields = parseFields(fieldsNode)
+  //
+  //   val result = TableRow(
+  //     TableRowItem(
+  //       FieldDescriptor(FieldId("gmag_err", Ucd("stat.error;phot.mag;em.opt.g")), "gmag_err"),
+  //       "0.0960165"
+  //     ) ::
+  //       TableRowItem(
+  //         FieldDescriptor(FieldId("rmag_err", Ucd("stat.error;phot.mag;em.opt.r")), "rmag_err"),
+  //         "0.0503736"
+  //       ) ::
+  //       TableRowItem(FieldDescriptor(FieldId("flags1", Ucd("meta.code")), "flags1"), "268435728") ::
+  //       TableRowItem(FieldDescriptor(FieldId("ppmxl", Ucd("meta.id;meta.main")), "ppmxl"),
+  //                    "-2140405448"
+  //       ) :: Nil
+  //   )
+  //   assertEquals(parseTableRow(fields, tableRow), result)
+  // }
+  // test("be able to parse a list of rows with a list of fields") {
+  //   val fields = parseFields(fieldsNode)
+  //
+  //   val result = List(
+  //     TableRow(
+  //       TableRowItem(FieldDescriptor(FieldId("gmag_err", Ucd("stat.error;phot.mag;em.opt.g")),
+  //                                    "gmag_err"
+  //                    ),
+  //                    "0.0960165"
+  //       ) ::
+  //         TableRowItem(FieldDescriptor(FieldId("rmag_err", Ucd("stat.error;phot.mag;em.opt.r")),
+  //                                      "rmag_err"
+  //                      ),
+  //                      "0.0503736"
+  //         ) ::
+  //         TableRowItem(FieldDescriptor(FieldId("flags1", Ucd("meta.code")), "flags1"),
+  //                      "268435728"
+  //         ) ::
+  //         TableRowItem(FieldDescriptor(FieldId("ppmxl", Ucd("meta.id;meta.main")), "ppmxl"),
+  //                      "-2140405448"
+  //         ) :: Nil
+  //     ),
+  //     TableRow(
+  //       TableRowItem(FieldDescriptor(FieldId("gmag_err", Ucd("stat.error;phot.mag;em.opt.g")),
+  //                                    "gmag_err"
+  //                    ),
+  //                    "0.51784"
+  //       ) ::
+  //         TableRowItem(FieldDescriptor(FieldId("rmag_err", Ucd("stat.error;phot.mag;em.opt.r")),
+  //                                      "rmag_err"
+  //                      ),
+  //                      "0.252201"
+  //         ) ::
+  //         TableRowItem(FieldDescriptor(FieldId("flags1", Ucd("meta.code")), "flags1"),
+  //                      "536871168"
+  //         ) ::
+  //         TableRowItem(FieldDescriptor(FieldId("ppmxl", Ucd("meta.id;meta.main")), "ppmxl"),
+  //                      "-2140404569"
+  //         ) :: Nil
+  //     )
+  //   )
+  //   assertEquals(parseTableRows(fields, dataNode), result)
+  // }
   // test("be able to convert a TableRow into a SiderealTarget") {
   // val fields = parseFields(fieldsNode)
   //
@@ -518,15 +525,41 @@ class FieldsSuite extends munit.FunSuite with votable.VoTableParser with VoTable
 //       result.map(_.magnitudeIn(MagnitudeBand._i)) should beEqualTo(\/.right(Some(new Magnitude(19.472, MagnitudeBand._i, 0.023))))
 //       result.map(_.magnitudeIn(MagnitudeBand._z)) should beEqualTo(\/.right(Some(new Magnitude(19.191, MagnitudeBand._z, 0.068))))
 //     }
-//     "don't allow negative parallax values" in {
-//       // From http://simbad.u-strasbg.fr/simbad/sim-id?output.format=VOTable&Ident=HIP43018
-//       val xmlFile = "simbad_hip43018.xml"
-//       // We are interested only on the first row
-//       val result = VoTableParser.parse(CatalogName.SIMBAD, getClass.getResourceAsStream(s"/$xmlFile")).getOrElse(ParsedVoResource(Nil)).tables.headOption.flatMap(_.rows.headOption).get
-//
-//       // parallax is reported as -0.57 by Simbad, the parser makes it a 0
-//       result.map(_.parallax) should beEqualTo(\/.right(Parallax(0).some))
-//     }
+  // test("don't allow negative parallax values") {
+  // From http://simbad.u-strasbg.fr/simbad/sim-id?output.format=VOTable&Ident=HIP43018
+  //   import sttp.client._
+  //   import sttp.client.testing._
+  //   import java.io.File
+  //
+  //   val destination    = new File("simbad_hip43018.xml")
+  //   val testingBackend = SttpBackendStub.synchronous
+  //     .whenRequestMatches(_ => true)
+  //     // .thenRespondNotFound()
+  //     .thenRespond(destination)
+  //   // We are interested only on the first row
+  //
+  //   println("nthanh")
+  //   // println(getClass.getResourceAsStream(s"./$xmlFile"))
+  //   val asXml: Either[String, String] => Either[String, Node] =
+  //     x => x.bimap(x => { println(x); x; }, XML.load)
+  //   val request                                               = basicRequest.get(uri"http://archive").response(asFile(destination)) //.map(asXml))
+  //   val response                                              = request.send(testingBackend)
+  //   val result: Option[Target]                                = VoTableParser
+  //     .parse(CatalogName.SIMBAD, response.body.getOrElse(???))
+  //     .getOrElse(ParsedVoResource(List.empty[ParsedTable[List]]))
+  //     .tables
+  //     .flatMap(_.rows.getOrElse(Nil))
+  //     .headOption
+  //   // .tables
+  //   // .headOption
+  //   // .flatMap(_.rows.headOption)
+  //   // .get
+  //
+  //   // parallax is reported as -0.57 by Simbad, the parser makes it a 0
+  //   assertEquals(result.flatMap(Target.parallax.getOption).flatten,
+  //                Parallax.fromMicroarcseconds(0).some
+  //   )
+  // }
 //     "parse simbad with a not-found name" in {
 //       val xmlFile = "simbad-not-found.xml"
 //       // Simbad returns non-valid xml when an element is not found, we need to skip validation :S
