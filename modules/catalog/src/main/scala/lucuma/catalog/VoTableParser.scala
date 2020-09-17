@@ -40,6 +40,8 @@ import fs2.data.xml.Attr
 import fs2.data.xml.XmlEvent.EndTag
 import eu.timepit.refined._
 import eu.timepit.refined.collection.NonEmpty
+import eu.timepit.refined.types.string.NonEmptyString
+import eu.timepit.refined.cats.syntax._
 // import sttp.client._
 // import lucuma.core.enum.MagnitudeBand
 
@@ -136,7 +138,7 @@ sealed trait CatalogAdapter {
   def idField: FieldId
   def raField: FieldId
   def decField: FieldId
-  def epochField = FieldId("ref_epoch", VoTableParser.UCD_EPOCH)
+  def epochField = FieldId.unsafeFrom("ref_epoch", VoTableParser.UCD_EPOCH)
   def pmRaField  = FieldId("pmra", VoTableParser.UCD_PMRA)
   def pmDecField = FieldId("pmde", VoTableParser.UCD_PMDEC)
   def zField     = FieldId("Z_VALUE", VoTableParser.UCD_Z)
@@ -515,23 +517,23 @@ object CatalogAdapter {
     private val errorFluxID      = "FLUX_ERROR_(.)".r
     private val fluxID           = "FLUX_(.)".r
     private val magSystemID      = "FLUX_SYSTEM_(.)".r
-    val idField                  = FieldId("MAIN_ID", VoTableParser.UCD_OBJID)
-    val raField                  = FieldId("RA_d", VoTableParser.UCD_RA)
-    val decField                 = FieldId("DEC_d", VoTableParser.UCD_DEC)
+    val idField                  = FieldId.unsafeFrom("MAIN_ID", VoTableParser.UCD_OBJID)
+    val raField                  = FieldId.unsafeFrom("RA_d", VoTableParser.UCD_RA)
+    val decField                 = FieldId.unsafeFrom("DEC_d", VoTableParser.UCD_DEC)
     override val pmRaField       = FieldId("PMRA", VoTableParser.UCD_PMRA)
     override val pmDecField      = FieldId("PMDEC", VoTableParser.UCD_PMDEC)
 
     override def ignoreMagnitudeField(v: FieldId): Boolean =
-      !v.id.toLowerCase.startsWith("flux") ||
-        v.id.matches(errorFluxIDExtra) ||
-        v.id.matches(fluxIDExtra)
+      !v.id.value.toLowerCase.startsWith("flux") ||
+        v.id.value.matches(errorFluxIDExtra) ||
+        v.id.value.matches(fluxIDExtra)
 
     override def isMagnitudeSystemField(v: (FieldId, String)): Boolean =
-      v._1.id.toLowerCase.startsWith("flux_system")
+      v._1.id.value.toLowerCase.startsWith("flux_system")
 
     // Simbad has a few special cases to map sloan magnitudes
     def findBand(id: FieldId): Option[MagnitudeBand] =
-      (id.id, id.ucd) match {
+      (id.id.value, id.ucd) match {
         // case ("FLUX_z" | "e_gmag", ucd) if ucd.includes(UcdWord("em.opt.i")) =>
         //   Some(MagnitudeBand.SloanZ) // Special case
         // case ("FLUX_g" | "e_rmag", ucd) if ucd.includes(UcdWord("em.opt.b")) =>
@@ -548,7 +550,7 @@ object CatalogAdapter {
     override def isMagnitudeErrorField(v: (FieldId, String)): Boolean =
       v._1.ucd.includes(VoTableParser.UCD_MAG) &&
         v._1.ucd.includes(VoTableParser.STAT_ERR) &&
-        errorFluxID.findFirstIn(v._1.id).isDefined &&
+        errorFluxID.findFirstIn(v._1.id.value).isDefined &&
         !ignoreMagnitudeField(v._1) &&
         v._2.nonEmpty
 
@@ -567,7 +569,7 @@ object CatalogAdapter {
     ): ValidatedNel[CatalogProblem, (MagnitudeBand, MagnitudeSystem)] = {
       val band: Option[MagnitudeBand] =
         if (p._2.nonEmpty)
-          p._1.id match {
+          p._1.id.value match {
             case magSystemID(x) => findBand(x)
             case _              => None
           }
@@ -604,10 +606,10 @@ trait VoTableParser {
         val attr = xmlAttr.map { case Attr(k, v) => (k.local, v.foldMap(_.render)) }.toMap
         val name = attr.get("name")
 
-        val id: ValidatedNec[CatalogProblem, String] =
-          Validated
-            .fromOption(attr.get("ID").orElse(name), MissingXmlAttribute("ID"))
-            .toValidatedNec
+        val id: ValidatedNec[CatalogProblem, NonEmptyString] =
+          NonEmptyString
+            .validateNec(attr.get("ID").orElse(name).orEmpty)
+            .leftMap(_ => NonEmptyChain.one(MissingXmlAttribute("ID")))
 
         val ucd: ValidatedNec[CatalogProblem, Ucd] = Validated
           .fromOption(attr.get("ucd"), MissingXmlAttribute("ucd"))
@@ -615,8 +617,8 @@ trait VoTableParser {
           .andThen(Ucd.apply)
 
         val nameV = Validated.fromOption(name, MissingXmlAttribute("name")).toValidatedNec
-        (id, ucd, nameV).mapN { (i, u, n) =>
-          FieldDescriptor(FieldId(i, u), n)
+        ((id, ucd).mapN(FieldId.apply), nameV).mapN { (f, n) =>
+          FieldDescriptor(f, n)
         }
       case (s, EndTag(QName(_, "FIELD")))               => s
       case (_, StartTag(QName(_, t), _, _))             => Validated.invalidNec(UnknownXmlTag(t))
@@ -634,10 +636,10 @@ trait VoTableParser {
           val attr = xmlAttr.map { case Attr(k, v) => (k.local, v.foldMap(_.render)) }.toMap
           val name = attr.get("name")
 
-          val id: ValidatedNec[CatalogProblem, String] =
-            Validated
-              .fromOption(attr.get("ID").orElse(name), MissingXmlAttribute("ID"))
-              .toValidatedNec
+          val id: ValidatedNec[CatalogProblem, NonEmptyString] =
+            NonEmptyString
+              .validateNec(attr.get("ID").orElse(name).orEmpty)
+              .leftMap(_ => NonEmptyChain.one(MissingXmlAttribute("ID")))
 
           val ucd: ValidatedNec[CatalogProblem, Ucd] = Validated
             .fromOption(attr.get("ucd"), MissingXmlAttribute("ucd"))
@@ -645,16 +647,9 @@ trait VoTableParser {
             .andThen(Ucd.apply)
 
           val nameV = Validated.fromOption(name, MissingXmlAttribute("name")).toValidatedNec
-          (id, ucd, nameV).mapN { (i, u, n) =>
-            FieldDescriptor(FieldId(i, u), n)
+          ((id, ucd).mapN(FieldId.apply), nameV).mapN { (f, n) =>
+            FieldDescriptor(f, n)
           } :: f
-        // val attr = xmlAttr.map { case Attr(k, v) => (k.local, v.foldMap(_.render)) }.toMap
-        // val name = attr.get("name")
-        // (attr.get("ID").orElse(name), attr.get("ucd").flatMap(Ucd.apply), name)
-        //   .mapN { (i, u, n) =>
-        //     FieldDescriptor(FieldId(i, u), n) :: f
-        //   }
-        //   .getOrElse(f)
         case (m, EndTag(QName(_, "TABLE")))               => m.reverse
         case (m, _)                                       => m
       }

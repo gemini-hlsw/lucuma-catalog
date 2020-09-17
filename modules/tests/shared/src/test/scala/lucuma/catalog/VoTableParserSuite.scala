@@ -26,7 +26,9 @@ class VoTableParserSuite extends CatsEffectSuite with VoTableParser with VoTable
       assertEquals(
         r,
         Validated.validNec(
-          FieldDescriptor(FieldId("gmag_err", Ucd.unsafeFromString("stat.error;phot.mag;em.opt.g")),
+          FieldDescriptor(FieldId.unsafeFrom("gmag_err",
+                                             Ucd.unsafeFromString("stat.error;phot.mag;em.opt.g")
+                          ),
                           "gmag_err"
           )
         )
@@ -69,7 +71,9 @@ class VoTableParserSuite extends CatsEffectSuite with VoTableParser with VoTable
       assertEquals(
         _,
         Validated.validNec(
-          FieldDescriptor(FieldId("ref_epoch", Ucd.unsafeFromString("meta.ref;time.epoch")),
+          FieldDescriptor(FieldId.unsafeFrom("ref_epoch",
+                                             Ucd.unsafeFromString("meta.ref;time.epoch")
+                          ),
                           "ref_epoch"
           )
         )
@@ -78,14 +82,20 @@ class VoTableParserSuite extends CatsEffectSuite with VoTableParser with VoTable
   }
   test("be able to parse a list of fields") {
     val result =
-      FieldDescriptor(FieldId("gmag_err", Ucd.unsafeFromString("stat.error;phot.mag;em.opt.g")),
-                      "gmag_err"
+      FieldDescriptor(
+        FieldId.unsafeFrom("gmag_err", Ucd.unsafeFromString("stat.error;phot.mag;em.opt.g")),
+        "gmag_err"
       ) ::
-        FieldDescriptor(FieldId("rmag_err", Ucd.unsafeFromString("stat.error;phot.mag;em.opt.r")),
-                        "rmag_err"
+        FieldDescriptor(
+          FieldId.unsafeFrom("rmag_err", Ucd.unsafeFromString("stat.error;phot.mag;em.opt.r")),
+          "rmag_err"
         ) ::
-        FieldDescriptor(FieldId("flags1", Ucd.unsafeFromString("meta.code")), "flags1") ::
-        FieldDescriptor(FieldId("ppmxl", Ucd.unsafeFromString("meta.id;meta.main")), "ppmxl") :: Nil
+        FieldDescriptor(FieldId.unsafeFrom("flags1", Ucd.unsafeFromString("meta.code")),
+                        "flags1"
+        ) ::
+        FieldDescriptor(FieldId.unsafeFrom("ppmxl", Ucd.unsafeFromString("meta.id;meta.main")),
+                        "ppmxl"
+        ) :: Nil
 
     parseFields(toStream[IO](fieldsNode)).compile.lastOrError
       .map(assertEquals(_, result.map(Validated.validNec)))

@@ -13,6 +13,9 @@ sealed trait CatalogProblem extends Throwable with Product with Serializable {
 case class ValidationError(catalog: CatalogName) extends CatalogProblem {
   val displayValue = s"Invalid response from $catalog"
 }
+case class InvalidFieldId(id: String) extends CatalogProblem {
+  val displayValue = s"Invalid field id: '$id'"
+}
 case class UnknownXmlTag(tag: String) extends CatalogProblem {
   val displayValue = s"Unknown tag: '$tag'"
 }

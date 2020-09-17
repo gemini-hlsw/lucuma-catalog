@@ -3,14 +3,25 @@
 
 package lucuma.catalog
 
-// import eu.timepit.refined.types.string._
+import cats.implicits._
+import cats.data.ValidatedNec
+import cats.data.NonEmptyChain
+import eu.timepit.refined.cats.syntax._
+import eu.timepit.refined.types.string._
 
 /** Describes a field */
-case class FieldId(id: String, ucd: Ucd)
+case class FieldId(id: NonEmptyString, ucd: Ucd)
 
 object FieldId {
-  // def apply()=???
+  def apply(id: String, ucd: Ucd): ValidatedNec[CatalogProblem, FieldId] =
+    NonEmptyString
+      .validateNec(id)
+      .bimap(_ => NonEmptyChain.one(InvalidFieldId(id)).widen[CatalogProblem], FieldId(_, ucd))
+
+  def unsafeFrom(id: String, ucd: Ucd): FieldId =
+    apply(id, ucd).getOrElse(sys.error(s"Invalid field id $id"))
 }
+
 case class FieldDescriptor(id: FieldId, name: String)
 
 case class TableRowItem(field: FieldDescriptor, data: String)
