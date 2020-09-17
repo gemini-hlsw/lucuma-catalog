@@ -46,29 +46,34 @@ private[xml] class NamespaceResolver[F[_]](implicit F: MonadError[F, Throwable])
         for {
           // create a new scoped env with the potentially declared namespaces
           mapping <- attrs.foldM(Map.empty[String, String]) { (env, attr) =>
-            updateNS(env, attr)
-          }
-          env1 = env.push(mapping)
+                       updateNS(env, attr)
+                     }
+          env1     = env.push(mapping)
           // resolve attributes in the new env
-          attrs <- attrs.traverse(attr => resolve(env1, attr.name, false).map(n => attr.copy(name = n)))
+          attrs   <-
+            attrs.traverse(attr => resolve(env1, attr.name, false).map(n => attr.copy(name = n)))
           // check attribute uiqueness
-          _ <- checkDuplicates(attrs)
+          _       <- checkDuplicates(attrs)
           // resolve tag name in the new env
-          name <- resolve(env1, name, true)
+          name    <- resolve(env1, name, true)
         } yield (env1, evt.copy(name = name, attributes = attrs))
-      case (env, evt @ XmlEvent.EndTag(name)) =>
+      case (env, evt @ XmlEvent.EndTag(name))             =>
         for {
           // resolve the tag name in the current env
           name <- resolve(env, name, true)
           // close the current environment scope
-          env <- env.pop match {
-            case Some(env) =>
-              F.pure(env)
-            case None =>
-              F.raiseError(new XmlException(XmlSyntax("GIMatch"), s"unexpected closing tag '</${name.render}>'"))
-          }
+          env  <- env.pop match {
+                    case Some(env) =>
+                      F.pure(env)
+                    case None      =>
+                      F.raiseError(
+                        new XmlException(XmlSyntax("GIMatch"),
+                                         s"unexpected closing tag '</${name.render}>'"
+                        )
+                      )
+                  }
         } yield (env, evt.copy(name = name))
-      case v =>
+      case v                                              =>
         F.pure(v)
     }.map(_._2)
 
@@ -77,42 +82,47 @@ private[xml] class NamespaceResolver[F[_]](implicit F: MonadError[F, Throwable])
       case QName(Some(pfx), _) if pfx.take(3).toLowerCase =!= "xml" =>
         // prefixes starting by `xml` are reserved
         env.resolve(pfx) match {
-          case None => F.raiseError(new XmlException(NSCPrefixDeclared, s"undeclared namespace $pfx"))
+          case None =>
+            F.raiseError(new XmlException(NSCPrefixDeclared, s"undeclared namespace $pfx"))
           case uri  => F.pure(name.copy(prefix = uri))
         }
-      case QName(None, _) if withDefault =>
+      case QName(None, _) if withDefault                            =>
         env.resolve("") match {
           case uri @ Some(_) => F.pure(name.copy(prefix = uri))
           case None          => F.pure(name.copy(prefix = xmlNSURI))
         }
-      case _ =>
+      case _                                                        =>
         F.pure(name)
     }
 
   private def checkDuplicates(attrs: List[Attr]): F[Unit] =
     attrs
-      .foldM(Set.empty[QName]) {
-        case (seen, Attr(name, _)) =>
-          if (seen.contains(name))
-            F.raiseError[Set[QName]](
-              new XmlException(NSCAttributesUnique, s"duplicate attribute with resolved name ${name.render}"))
-          else
-            F.pure(seen + name)
+      .foldM(Set.empty[QName]) { case (seen, Attr(name, _)) =>
+        if (seen.contains(name))
+          F.raiseError[Set[QName]](
+            new XmlException(NSCAttributesUnique,
+                             s"duplicate attribute with resolved name ${name.render}"
+            )
+          )
+        else
+          F.pure(seen + name)
       }
       .void
 
   private def updateNS(env: Map[String, String], attr: Attr): F[Map[String, String]] =
     attr match {
-      case Attr(QName(None, "xmlns"), v) =>
+      case Attr(QName(None, "xmlns"), v)       =>
         val uri = v.map(_.render).mkString
         F.pure(env.updated("", uri))
       case Attr(QName(Some("xmlns"), name), v) =>
         val uri = v.map(_.render).mkString
         if (uri.isEmpty)
-          F.raiseError(new XmlException(NSCNoPrefixUndeclaring, s"undeclaring namespace $name is not allowed"))
+          F.raiseError(
+            new XmlException(NSCNoPrefixUndeclaring, s"undeclaring namespace $name is not allowed")
+          )
         else
           F.pure(env.updated(name, uri))
-      case _ =>
+      case _                                   =>
         F.pure(env)
     }
 

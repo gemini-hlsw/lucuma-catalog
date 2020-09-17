@@ -30,15 +30,17 @@ private[xml] object Normalizer {
       case _                              => false
     }.flatMap {
       case (false, chunk) => Stream.chunk(chunk.map(mergeAttributes))
-      case (true, texts) =>
+      case (true, texts)  =>
         Stream.emit(
           XmlEvent.XmlString(texts
-                               .collect {
-                                 case XmlEvent.XmlString(s, _) => s
+                               .collect { case XmlEvent.XmlString(s, _) =>
+                                 s
                                }
                                .iterator
                                .mkString,
-                             false))
+                             false
+          )
+        )
     }
 
   private def mergeAttributes(evt: XmlEvent): XmlEvent =
@@ -48,11 +50,13 @@ private[xml] object Normalizer {
     }
 
   private def mergeAttribute(a: Attr): Attr = {
-    def loop(values: List[XmlEvent.XmlTexty],
-             acc: List[XmlEvent.XmlTexty],
-             current: Option[StringBuilder]): List[XmlEvent.XmlTexty] =
+    def loop(
+      values:  List[XmlEvent.XmlTexty],
+      acc:     List[XmlEvent.XmlTexty],
+      current: Option[StringBuilder]
+    ): List[XmlEvent.XmlTexty] =
       values match {
-        case Nil =>
+        case Nil                                  =>
           current match {
             case Some(sb) => (XmlEvent.XmlString(sb.result(), false) :: acc).reverse
             case None     => acc.reverse
@@ -60,7 +64,7 @@ private[xml] object Normalizer {
         case XmlEvent.XmlString(s, false) :: tail =>
           val sb = current.getOrElse(new StringBuilder)
           loop(tail, acc, Some(sb.append(s)))
-        case evt :: tail =>
+        case evt :: tail                          =>
           current match {
             case Some(sb) => loop(tail, evt :: XmlEvent.XmlString(sb.result(), false) :: acc, None)
             case None     => loop(tail, evt :: acc, None)

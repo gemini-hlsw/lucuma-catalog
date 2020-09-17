@@ -7,10 +7,13 @@ import cats._
 import cats.implicits._
 import scala.util.matching.Regex
 
-case class UcdWord(token: String)
-case class Ucd(tokens: List[UcdWord]) {
+final case class UcdWord(token: String)
+
+final case class Ucd(tokens: List[UcdWord]) {
   def includes(ucd: UcdWord): Boolean = tokens.contains(ucd)
-  def matches(r:    Regex): Boolean   = tokens.exists(t => r.findFirstIn(t.token).isDefined)
+
+  def matches(r: Regex): Boolean = tokens.exists(t => r.findFirstIn(t.token).isDefined)
+
   override def toString = tokens.map(_.token).mkString(", ")
 }
 
