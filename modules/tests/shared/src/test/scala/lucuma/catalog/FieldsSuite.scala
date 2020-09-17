@@ -8,7 +8,7 @@ package lucuma.catalog
 // import lucuma.core.enum.MagnitudeBand
 // import lucuma.catalog.votable.CatalogAdapter
 // import cats.data.Validated
-import lucuma.catalog.votable.VoTableParser
+import lucuma.catalog.VoTableParser
 // import lucuma.core.math.Parallax
 // import lucuma.core.model.Target
 // import scala.xml.Node

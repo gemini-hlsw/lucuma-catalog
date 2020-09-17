@@ -1,7 +1,7 @@
 // Copyright (c) 2016-2020 Association of Universities for Research in Astronomy, Inc. (AURA)
 // For license information see LICENSE or https://opensource.org/licenses/BSD-3-Clause
 
-package lucuma.catalog.votable
+package lucuma.catalog
 
 // import edu.gemini.catalog.api.CatalogName
 // import edu.gemini.spModel.core._
@@ -12,7 +12,6 @@ import fs2.data.xml._
 import lucuma.catalog._
 import munit.CatsEffectSuite
 import scala.xml.Node
-import gpp.catalog.votable.VoTableSamples
 import cats.data.Validated
 import cats.data.NonEmptyChain
 
