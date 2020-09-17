@@ -5,9 +5,9 @@ package lucuma.catalog
 
 // import cats.implicits._
 // import lucuma.catalog.votable.VoTableSamples
-import lucuma.core.enum.MagnitudeBand
-import lucuma.catalog.votable.CatalogAdapter
-import cats.data.Validated
+// import lucuma.core.enum.MagnitudeBand
+// import lucuma.catalog.votable.CatalogAdapter
+// import cats.data.Validated
 import lucuma.catalog.votable.VoTableParser
 // import lucuma.core.math.Parallax
 // import lucuma.core.model.Target
@@ -21,30 +21,30 @@ import lucuma.catalog.votable.VoTableParser
 
 class FieldsSuite extends munit.FunSuite with VoTableParser {
 
-  test("be able to parse a field definition") {
-    val fieldXml =
-      <FIELD ID="gmag_err" datatype="double" name="gmag_err" ucd="stat.error;phot.mag;em.opt.g"/>
-    assertEquals(
-      parseFieldDescriptor(fieldXml),
-      Some(
-        FieldDescriptor(FieldId("gmag_err", Ucd("stat.error;phot.mag;em.opt.g")), "gmag_err")
-      )
-    )
-    // Empty field
-    assert(parseFieldDescriptor(<FIELD/>).isEmpty)
-    // non field xml
-    assert(parseFieldDescriptor(<TAG/>).isEmpty)
-    // missing attributes
-    assert(parseFieldDescriptor(<FIELD ID="abc"/>).isEmpty)
-  }
-  test("swap in name for ID if missing in a field definition") {
-    val fieldXml = <FIELD datatype="double" name="ref_epoch" ucd="meta.ref;time.epoch" unit="yr"/>
-    assertEquals(
-      parseFieldDescriptor(fieldXml),
-      Some(FieldDescriptor(FieldId("ref_epoch", Ucd("meta.ref;time.epoch")), "ref_epoch"))
-    )
-  }
-  // test("be able to parse a list of fields") {
+  // test("be able to parse a field definition") {
+  //   val fieldXml =
+  //     <FIELD ID="gmag_err" datatype="double" name="gmag_err" ucd="stat.error;phot.mag;em.opt.g"/>
+  //   assertEquals(
+  //     parseFieldDescriptor(fieldXml),
+  //     Some(
+  //       FieldDescriptor(FieldId("gmag_err", Ucd("stat.error;phot.mag;em.opt.g")), "gmag_err")
+  //     )
+  //   )
+  //   // Empty field
+  //   assert(parseFieldDescriptor(<FIELD/>).isEmpty)
+  //   // non field xml
+  //   assert(parseFieldDescriptor(<TAG/>).isEmpty)
+  //   // missing attributes
+  //   assert(parseFieldDescriptor(<FIELD ID="abc"/>).isEmpty)
+  // }
+  // test("swap in name for ID if missing in a field definition") {
+  //   val fieldXml = <FIELD datatype="double" name="ref_epoch" ucd="meta.ref;time.epoch" unit="yr"/>
+  //   assertEquals(
+  //     parseFieldDescriptor(fieldXml),
+  //     Some(FieldDescriptor(FieldId("ref_epoch", Ucd("meta.ref;time.epoch")), "ref_epoch"))
+  //   )
+  // }
+  // // test("be able to parse a list of fields") {
   //   val result =
   //     FieldDescriptor(FieldId("gmag_err", Ucd("stat.error;phot.mag;em.opt.g")), "gmag_err") ::
   //       FieldDescriptor(FieldId("rmag_err", Ucd("stat.error;phot.mag;em.opt.r")), "rmag_err") ::
@@ -208,79 +208,79 @@ class FieldsSuite extends munit.FunSuite with VoTableParser {
 //       // imag maps to r'
 //       CatalogAdapter.UCAC4.parseMagnitude((FieldId("imag", iMagField), "20.3051")) should beEqualTo(\/-((FieldId("imag", iMagField), MagnitudeBand._i, 20.3051)))
 //     }
-  test("be able to map sloan magnitudes in Simbad") {
-    val zMagField = Ucd("phot.mag;em.opt.I")
-    // FLUX_z maps to z'
-    assertEquals(
-      CatalogAdapter.Simbad.parseMagnitude(FieldId("FLUX_z", zMagField), "20.3051"),
-      Validated.validNel((FieldId("FLUX_z", zMagField), MagnitudeBand.SloanZ, 20.3051))
-    )
-
-    val rMagField = Ucd("phot.mag;em.opt.R")
-    // FLUX_r maps to r'
-    assertEquals(
-      CatalogAdapter.Simbad.parseMagnitude(FieldId("FLUX_r", rMagField), "20.3051"),
-      Validated.validNel((FieldId("FLUX_r", rMagField), MagnitudeBand.SloanR, 20.3051))
-    )
-
-    val uMagField = Ucd("phot.mag;em.opt.u")
-    // FLUX_u maps to u'
-    assertEquals(
-      CatalogAdapter.Simbad.parseMagnitude(FieldId("FLUX_u", uMagField), "20.3051"),
-      Validated.validNel((FieldId("FLUX_u", uMagField), MagnitudeBand.SloanU, 20.3051))
-    )
-
-    val gMagField = Ucd("phot.mag;em.opt.b")
-    // FLUX_g maps to g'
-    assertEquals(
-      CatalogAdapter.Simbad.parseMagnitude(FieldId("FLUX_g", gMagField), "20.3051"),
-      Validated.validNel(((FieldId("FLUX_g", gMagField), MagnitudeBand.SloanG, 20.3051)))
-    )
-
-    val iMagField = Ucd("phot.mag;em.opt.i")
-    // FLUX_u maps to u'
-    assertEquals(
-      CatalogAdapter.Simbad.parseMagnitude(FieldId("FLUX_i", iMagField), "20.3051"),
-      Validated.validNel(((FieldId("FLUX_i", iMagField), MagnitudeBand.SloanI, 20.3051)))
-    )
-  }
-  test("be able to map non-sloan magnitudes in Simbad") {
-    val rMagField = Ucd("phot.mag;em.opt.R")
-    // FLUX_R maps to R
-    assertEquals(
-      CatalogAdapter.Simbad.parseMagnitude(FieldId("FLUX_R", rMagField), "20.3051"),
-      Validated.validNel(((FieldId("FLUX_R", rMagField), MagnitudeBand.R, 20.3051)))
-    )
-
-    val uMagField = Ucd("phot.mag;em.opt.U")
-    // FLUX_U maps to U
-    assertEquals(
-      CatalogAdapter.Simbad.parseMagnitude(FieldId("FLUX_U", uMagField), "20.3051"),
-      Validated.validNel((FieldId("FLUX_U", uMagField), MagnitudeBand.U, 20.3051))
-    )
-
-    val iMagField = Ucd("phot.mag;em.opt.I")
-    // FLUX_I maps to I
-    assertEquals(
-      CatalogAdapter.Simbad.parseMagnitude(FieldId("FLUX_I", iMagField), "20.3051"),
-      Validated.validNel((FieldId("FLUX_I", iMagField), MagnitudeBand.I, 20.3051))
-    )
-  }
-  test("be able to map magnitude errors in Simbad") {
-    // Magnitude errors in simbad don't include the band in the UCD, we must get it from the ID :(
-    val magErrorUcd = Ucd("stat.error;phot.mag")
-    // FLUX_r maps to r'
-    assertEquals(
-      CatalogAdapter.Simbad.parseMagnitude(FieldId("FLUX_ERROR_r", magErrorUcd), "20.3051"),
-      Validated.validNel((FieldId("FLUX_ERROR_r", magErrorUcd), MagnitudeBand.SloanR, 20.3051))
-    )
-
-    // FLUX_R maps to R
-    assertEquals(
-      CatalogAdapter.Simbad.parseMagnitude(FieldId("FLUX_ERROR_R", magErrorUcd), "20.3051"),
-      Validated.validNel(((FieldId("FLUX_ERROR_R", magErrorUcd), MagnitudeBand.R, 20.3051)))
-    )
-  }
+  // test("be able to map sloan magnitudes in Simbad") {
+  //   val zMagField = Ucd("phot.mag;em.opt.I")
+  //   // FLUX_z maps to z'
+  //   assertEquals(
+  //     CatalogAdapter.Simbad.parseMagnitude(FieldId("FLUX_z", zMagField), "20.3051"),
+  //     Validated.validNel((FieldId("FLUX_z", zMagField), MagnitudeBand.SloanZ, 20.3051))
+  //   )
+  //
+  //   val rMagField = Ucd("phot.mag;em.opt.R")
+  //   // FLUX_r maps to r'
+  //   assertEquals(
+  //     CatalogAdapter.Simbad.parseMagnitude(FieldId("FLUX_r", rMagField), "20.3051"),
+  //     Validated.validNel((FieldId("FLUX_r", rMagField), MagnitudeBand.SloanR, 20.3051))
+  //   )
+  //
+  //   val uMagField = Ucd("phot.mag;em.opt.u")
+  //   // FLUX_u maps to u'
+  //   assertEquals(
+  //     CatalogAdapter.Simbad.parseMagnitude(FieldId("FLUX_u", uMagField), "20.3051"),
+  //     Validated.validNel((FieldId("FLUX_u", uMagField), MagnitudeBand.SloanU, 20.3051))
+  //   )
+  //
+  //   val gMagField = Ucd("phot.mag;em.opt.b")
+  //   // FLUX_g maps to g'
+  //   assertEquals(
+  //     CatalogAdapter.Simbad.parseMagnitude(FieldId("FLUX_g", gMagField), "20.3051"),
+  //     Validated.validNel(((FieldId("FLUX_g", gMagField), MagnitudeBand.SloanG, 20.3051)))
+  //   )
+  //
+  //   val iMagField = Ucd("phot.mag;em.opt.i")
+  //   // FLUX_u maps to u'
+  //   assertEquals(
+  //     CatalogAdapter.Simbad.parseMagnitude(FieldId("FLUX_i", iMagField), "20.3051"),
+  //     Validated.validNel(((FieldId("FLUX_i", iMagField), MagnitudeBand.SloanI, 20.3051)))
+  //   )
+  // }
+  // test("be able to map non-sloan magnitudes in Simbad") {
+  //   val rMagField = Ucd("phot.mag;em.opt.R")
+  //   // FLUX_R maps to R
+  //   assertEquals(
+  //     CatalogAdapter.Simbad.parseMagnitude(FieldId("FLUX_R", rMagField), "20.3051"),
+  //     Validated.validNel(((FieldId("FLUX_R", rMagField), MagnitudeBand.R, 20.3051)))
+  //   )
+  //
+  //   val uMagField = Ucd("phot.mag;em.opt.U")
+  //   // FLUX_U maps to U
+  //   assertEquals(
+  //     CatalogAdapter.Simbad.parseMagnitude(FieldId("FLUX_U", uMagField), "20.3051"),
+  //     Validated.validNel((FieldId("FLUX_U", uMagField), MagnitudeBand.U, 20.3051))
+  //   )
+  //
+  //   val iMagField = Ucd("phot.mag;em.opt.I")
+  //   // FLUX_I maps to I
+  //   assertEquals(
+  //     CatalogAdapter.Simbad.parseMagnitude(FieldId("FLUX_I", iMagField), "20.3051"),
+  //     Validated.validNel((FieldId("FLUX_I", iMagField), MagnitudeBand.I, 20.3051))
+  //   )
+  // }
+  // test("be able to map magnitude errors in Simbad") {
+  //   // Magnitude errors in simbad don't include the band in the UCD, we must get it from the ID :(
+  //   val magErrorUcd = Ucd("stat.error;phot.mag")
+  //   // FLUX_r maps to r'
+  //   assertEquals(
+  //     CatalogAdapter.Simbad.parseMagnitude(FieldId("FLUX_ERROR_r", magErrorUcd), "20.3051"),
+  //     Validated.validNel((FieldId("FLUX_ERROR_r", magErrorUcd), MagnitudeBand.SloanR, 20.3051))
+  //   )
+  //
+  //   // FLUX_R maps to R
+  //   assertEquals(
+  //     CatalogAdapter.Simbad.parseMagnitude(FieldId("FLUX_ERROR_R", magErrorUcd), "20.3051"),
+  //     Validated.validNel(((FieldId("FLUX_ERROR_R", magErrorUcd), MagnitudeBand.R, 20.3051)))
+  //   )
+  // }
 //     "be able to parse an xml into a list of SiderealTargets list of rows with a list of fields" in {
 //       val magsTarget1 = List(new Magnitude(23.0888, MagnitudeBand.U), new Magnitude(22.082, MagnitudeBand._g), new Magnitude(20.88, MagnitudeBand.R), new Magnitude(20.3051, MagnitudeBand.I), new Magnitude(19.8812, MagnitudeBand._z))
 //       val magsTarget2 = List(new Magnitude(23.0853, MagnitudeBand.U), new Magnitude(23.0889, MagnitudeBand._g), new Magnitude(21.7686, MagnitudeBand.R), new Magnitude(20.7891, MagnitudeBand.I), new Magnitude(20.0088, MagnitudeBand._z))

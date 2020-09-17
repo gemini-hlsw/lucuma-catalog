@@ -3,24 +3,27 @@
 
 package lucuma.catalog.arb
 
+import cats.data.NonEmptyList
 import lucuma.catalog._
 import org.scalacheck._
 import org.scalacheck.Arbitrary._
 import org.scalacheck.Cogen
+import org.scalacheck.Gen
+import eu.timepit.refined.scalacheck.string._
+import eu.timepit.refined.types.string.NonEmptyString
 
 trait ArbUcd {
-
-  implicit val arbUcdWord: Arbitrary[UcdWord] =
-    Arbitrary(arbitrary[String].map(UcdWord(_)))
+  val genNonEmptyString = implicitly[Arbitrary[NonEmptyString]].arbitrary
 
   implicit val arbUcd: Arbitrary[Ucd] =
-    Arbitrary(arbitrary[List[UcdWord]].map(Ucd(_)))
-
-  implicit val cogenUcdWord: Cogen[UcdWord] =
-    Cogen[String].contramap(_.token)
+    Arbitrary {
+      for {
+        a <- Gen.nonEmptyListOf[NonEmptyString](genNonEmptyString)
+      } yield Ucd(NonEmptyList.fromList(a).get)
+    }
 
   implicit val cogenUcd: Cogen[Ucd] =
-    Cogen[List[UcdWord]].contramap(_.tokens)
+    Cogen[List[String]].contramap(_.tokens.map(_.value).toList)
 
 }
 

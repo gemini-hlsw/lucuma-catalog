@@ -13,6 +13,8 @@ lazy val munitVersion            = "0.7.12"
 lazy val munitDisciplineVersion  = "0.3.0"
 lazy val munitCatsEffectVersion  = "0.3.0"
 lazy val betterMonadicForVersion = "0.3.0"
+lazy val refinedVersion          = "0.9.15"
+lazy val catsScalacheckVersion   = "0.3.0"
 
 Global / onChangedBuildSource := ReloadOnSourceChanges
 
@@ -28,7 +30,7 @@ inThisBuild(
 
 skip in publish := true
 
-lazy val catalog      = crossProject(JVMPlatform, JSPlatform)
+lazy val catalog = crossProject(JVMPlatform, JSPlatform)
   .crossType(CrossType.Pure)
   .in(file("modules/catalog"))
   .settings(
@@ -37,10 +39,11 @@ lazy val catalog      = crossProject(JVMPlatform, JSPlatform)
       "co.fs2"                       %%% "fs2-core"      % fs2Version,
       "edu.gemini"                   %%% "lucuma-core"   % lucumaCoreVersion,
       "org.typelevel"                %%% "cats-core"     % catsVersion,
-      "org.typelevel"                %%% "cats-effect"   % catsEffectVersion,
       "org.scala-lang.modules"       %%% "scala-xml"     % "2.0.0-M1",
       "com.github.julien-truffaut"   %%% "monocle-state" % monocleVersion,
-      "com.softwaremill.sttp.client" %%% "core"          % sttpVersion
+      "com.softwaremill.sttp.client" %%% "core"          % sttpVersion,
+      "eu.timepit"                   %%% "refined"       % refinedVersion,
+      "eu.timepit"                   %%% "refined-cats"  % refinedVersion
     )
   )
   .jvmConfigure(_.enablePlugins(AutomateHeaderPlugin))
@@ -59,26 +62,29 @@ lazy val fs2_data_xml = crossProject(JVMPlatform, JSPlatform)
   )
   .jsSettings(gspScalaJsSettings: _*)
 
-lazy val testkit      = crossProject(JVMPlatform, JSPlatform)
+lazy val testkit = crossProject(JVMPlatform, JSPlatform)
   .crossType(CrossType.Pure)
   .in(file("modules/testkit"))
   .dependsOn(catalog)
   .settings(
     name := "lucuma-catalog-testkit",
     libraryDependencies ++= Seq(
-      "org.typelevel" %%% "cats-testkit" % catsVersion
+      "org.typelevel"     %%% "cats-testkit"       % catsVersion,
+      "eu.timepit"        %%% "refined-scalacheck" % refinedVersion,
+      "io.chrisdavenport" %%% "cats-scalacheck"    % catsScalacheckVersion
     )
   )
   .jvmConfigure(_.disablePlugins(AutomateHeaderPlugin))
   .jsSettings(gspScalaJsSettings: _*)
 
-lazy val tests        = crossProject(JVMPlatform, JSPlatform)
+lazy val tests = crossProject(JVMPlatform, JSPlatform)
   .crossType(CrossType.Full)
   .in(file("modules/tests"))
   .dependsOn(catalog, testkit)
   .settings(
     name := "lucuma-catalog-tests",
     libraryDependencies ++= Seq(
+      "org.typelevel" %%% "cats-effect"       % catsEffectVersion      % Test,
       "org.scalameta" %%% "munit"             % munitVersion           % Test,
       "org.typelevel" %%% "discipline-munit"  % munitDisciplineVersion % Test,
       "org.typelevel" %%% "munit-cats-effect" % munitCatsEffectVersion % Test

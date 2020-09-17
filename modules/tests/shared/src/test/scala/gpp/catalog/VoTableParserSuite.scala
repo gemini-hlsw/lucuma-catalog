@@ -23,10 +23,11 @@ class VoTableParserSuite extends CatsEffectSuite with VoTableParser with VoTable
     val fieldXml =
       <FIELD ID="gmag_err" datatype="double" name="gmag_err" ucd="stat.error;phot.mag;em.opt.g"/>
     parseFieldDescriptor(toStream[IO](fieldXml)).compile.lastOrError.map { r =>
-      assertEquals(r,
-                   FieldDescriptor(FieldId("gmag_err", Ucd("stat.error;phot.mag;em.opt.g")),
-                                   "gmag_err"
-                   ).some
+      assertEquals(
+        r,
+        FieldDescriptor(FieldId("gmag_err", Ucd.unsafeFromString("stat.error;phot.mag;em.opt.g")),
+                        "gmag_err"
+        ).some
       )
     }
   }
@@ -46,19 +47,24 @@ class VoTableParserSuite extends CatsEffectSuite with VoTableParser with VoTable
   test("swap in name for ID if missing in a field definition") {
     val fieldXml = <FIELD datatype="double" name="ref_epoch" ucd="meta.ref;time.epoch" unit="yr"/>
     parseFieldDescriptor(toStream[IO](fieldXml)).compile.lastOrError.map(
-      assertEquals(_,
-                   FieldDescriptor(FieldId("ref_epoch", Ucd("meta.ref;time.epoch")),
-                                   "ref_epoch"
-                   ).some
+      assertEquals(
+        _,
+        FieldDescriptor(FieldId("ref_epoch", Ucd.unsafeFromString("meta.ref;time.epoch")),
+                        "ref_epoch"
+        ).some
       )
     )
   }
   test("be able to parse a list of fields") {
     val result =
-      FieldDescriptor(FieldId("gmag_err", Ucd("stat.error;phot.mag;em.opt.g")), "gmag_err") ::
-        FieldDescriptor(FieldId("rmag_err", Ucd("stat.error;phot.mag;em.opt.r")), "rmag_err") ::
-        FieldDescriptor(FieldId("flags1", Ucd("meta.code")), "flags1") ::
-        FieldDescriptor(FieldId("ppmxl", Ucd("meta.id;meta.main")), "ppmxl") :: Nil
+      FieldDescriptor(FieldId("gmag_err", Ucd.unsafeFromString("stat.error;phot.mag;em.opt.g")),
+                      "gmag_err"
+      ) ::
+        FieldDescriptor(FieldId("rmag_err", Ucd.unsafeFromString("stat.error;phot.mag;em.opt.r")),
+                        "rmag_err"
+        ) ::
+        FieldDescriptor(FieldId("flags1", Ucd.unsafeFromString("meta.code")), "flags1") ::
+        FieldDescriptor(FieldId("ppmxl", Ucd.unsafeFromString("meta.id;meta.main")), "ppmxl") :: Nil
 
     parseFields(toStream[IO](fieldsNode)).compile.lastOrError.map(assertEquals(_, result))
   }
