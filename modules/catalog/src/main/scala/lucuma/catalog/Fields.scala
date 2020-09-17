@@ -3,8 +3,14 @@
 
 package lucuma.catalog
 
+// import eu.timepit.refined.types.string._
+
 /** Describes a field */
 case class FieldId(id: String, ucd: Ucd)
+
+object FieldId {
+  // def apply()=???
+}
 case class FieldDescriptor(id: FieldId, name: String)
 
 case class TableRowItem(field: FieldDescriptor, data: String)

@@ -13,6 +13,18 @@ sealed trait CatalogProblem extends Throwable with Product with Serializable {
 case class ValidationError(catalog: CatalogName) extends CatalogProblem {
   val displayValue = s"Invalid response from $catalog"
 }
+case class UnknownXmlTag(tag: String) extends CatalogProblem {
+  val displayValue = s"Unknown tag: '$tag'"
+}
+case class MissingXmlTag(tag: String) extends CatalogProblem {
+  val displayValue = s"Missing tag: '$tag'"
+}
+case class MissingXmlAttribute(attr: String) extends CatalogProblem {
+  val displayValue = s"Missing attr: '$attr'"
+}
+case class InvalidUcd(ucd: String) extends CatalogProblem {
+  val displayValue = s"Invalid ucd: '$ucd'"
+}
 case class GenericError(msg: String) extends CatalogProblem {
   val displayValue = msg
 }

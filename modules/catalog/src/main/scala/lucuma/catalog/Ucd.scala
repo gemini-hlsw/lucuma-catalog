@@ -7,6 +7,8 @@ import cats._
 import cats.implicits._
 import scala.util.matching.Regex
 import cats.data.NonEmptyList
+import cats.data.ValidatedNec
+import cats.data.Validated
 import eu.timepit.refined._
 import eu.timepit.refined.cats._
 import eu.timepit.refined.collection.NonEmpty
@@ -21,18 +23,18 @@ final case class Ucd(tokens: NonEmptyList[NonEmptyString]) {
 }
 
 object Ucd {
-  def parseUcd(v: String): Option[Ucd] =
+  def parseUcd(v: String): ValidatedNec[CatalogProblem, Ucd] =
     v.split(";").filter(_.nonEmpty).map(_.toLowerCase).toList match {
       case h :: tail =>
         (refineV[NonEmpty](h), tail.traverse(refineV[NonEmpty](_))) match {
           case (Right(h), Right(t)) =>
-            Ucd(NonEmptyList.of(h, t: _*)).some
-          case _                    => none
+            Ucd(NonEmptyList.of(h, t: _*)).validNec
+          case _                    => Validated.invalidNec(InvalidUcd(v))
         }
-      case _         => none
+      case _         => Validated.invalidNec(InvalidUcd(v))
     }
 
-  def apply(ucd: String): Option[Ucd] = parseUcd(ucd)
+  def apply(ucd: String): ValidatedNec[CatalogProblem, Ucd] = parseUcd(ucd)
 
   def apply(ucd: NonEmptyString): Ucd = Ucd(NonEmptyList.of(ucd))
 

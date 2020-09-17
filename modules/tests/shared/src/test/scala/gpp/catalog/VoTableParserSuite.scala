@@ -6,7 +6,6 @@ package lucuma.catalog.votable
 // import edu.gemini.catalog.api.CatalogName
 // import edu.gemini.spModel.core._
 // import gsp.catalog.api._
-import cats.implicits._
 import cats.effect._
 import fs2._
 import fs2.data.xml._
@@ -14,6 +13,8 @@ import lucuma.catalog._
 import munit.CatsEffectSuite
 import scala.xml.Node
 import gpp.catalog.votable.VoTableSamples
+import cats.data.Validated
+import cats.data.NonEmptyChain
 
 class VoTableParserSuite extends CatsEffectSuite with VoTableParser with VoTableSamples {
   def toStream[F[_]: RaiseThrowable](xml: Node): Stream[F, XmlEvent] =
@@ -25,33 +26,54 @@ class VoTableParserSuite extends CatsEffectSuite with VoTableParser with VoTable
     parseFieldDescriptor(toStream[IO](fieldXml)).compile.lastOrError.map { r =>
       assertEquals(
         r,
-        FieldDescriptor(FieldId("gmag_err", Ucd.unsafeFromString("stat.error;phot.mag;em.opt.g")),
-                        "gmag_err"
-        ).some
+        Validated.validNec(
+          FieldDescriptor(FieldId("gmag_err", Ucd.unsafeFromString("stat.error;phot.mag;em.opt.g")),
+                          "gmag_err"
+          )
+        )
       )
     }
   }
   test("ignore empty fields") {
     // Empty field
-    parseFieldDescriptor(toStream[IO](<FIELD/>)).compile.lastOrError.map(assertEquals(_, None))
+    parseFieldDescriptor(toStream[IO](<FIELD/>)).compile.lastOrError
+      .map(
+        assertEquals(_,
+                     Validated.invalid(
+                       NonEmptyChain(MissingXmlAttribute("ID"),
+                                     MissingXmlAttribute("ucd"),
+                                     MissingXmlAttribute("name")
+                       )
+                     )
+        )
+      )
   }
   test("non field xml") {
     // non field xml
-    parseFieldDescriptor(toStream[IO](<TAG/>)).compile.lastOrError.map(assertEquals(_, None))
+    parseFieldDescriptor(toStream[IO](<TAG/>)).compile.lastOrError
+      .map(assertEquals(_, Validated.invalidNec(UnknownXmlTag("TAG"))))
   }
   test("missing attributes") {
     // missing attributes
-    parseFieldDescriptor(toStream[IO](<FIELD ID="abc"/>)).compile.last
-      .map(assertEquals(_, Some(None)))
+    parseFieldDescriptor(toStream[IO](<FIELD ID="abc"/>)).compile.lastOrError
+      .map(
+        assertEquals(_,
+                     Validated.invalid(
+                       NonEmptyChain(MissingXmlAttribute("ucd"), MissingXmlAttribute("name"))
+                     )
+        )
+      )
   }
   test("swap in name for ID if missing in a field definition") {
     val fieldXml = <FIELD datatype="double" name="ref_epoch" ucd="meta.ref;time.epoch" unit="yr"/>
     parseFieldDescriptor(toStream[IO](fieldXml)).compile.lastOrError.map(
       assertEquals(
         _,
-        FieldDescriptor(FieldId("ref_epoch", Ucd.unsafeFromString("meta.ref;time.epoch")),
-                        "ref_epoch"
-        ).some
+        Validated.validNec(
+          FieldDescriptor(FieldId("ref_epoch", Ucd.unsafeFromString("meta.ref;time.epoch")),
+                          "ref_epoch"
+          )
+        )
       )
     )
   }
@@ -66,7 +88,8 @@ class VoTableParserSuite extends CatsEffectSuite with VoTableParser with VoTable
         FieldDescriptor(FieldId("flags1", Ucd.unsafeFromString("meta.code")), "flags1") ::
         FieldDescriptor(FieldId("ppmxl", Ucd.unsafeFromString("meta.id;meta.main")), "ppmxl") :: Nil
 
-    parseFields(toStream[IO](fieldsNode)).compile.lastOrError.map(assertEquals(_, result))
+    parseFields(toStream[IO](fieldsNode)).compile.lastOrError
+      .map(assertEquals(_, result.map(Validated.validNec)))
   }
   // test("be able to parse a data  row with a list of fields") {
   //   val fields = parseFields(fieldsNode)
