@@ -3,12 +3,13 @@
 
 package lucuma.catalog
 
-import cats._
-import cats.implicits._
 import scala.util.matching.Regex
+
+import cats._
 import cats.data.NonEmptyList
-import cats.data.ValidatedNec
 import cats.data.Validated
+import cats.data.ValidatedNec
+import cats.implicits._
 import eu.timepit.refined._
 import eu.timepit.refined.cats._
 import eu.timepit.refined.collection.NonEmpty

@@ -74,7 +74,7 @@ private[xml] class NamespaceResolver[F[_]](implicit F: MonadError[F, Throwable])
 
   private def resolve(env: ResolverEnv, name: QName, withDefault: Boolean): F[QName] =
     name match {
-      case QName(Some(pfx), local) if pfx.take(3).toLowerCase =!= "xml" =>
+      case QName(Some(pfx), local@_) if pfx.take(3).toLowerCase =!= "xml" =>
         // prefixes starting by `xml` are reserved
         env.resolve(pfx) match {
           case None => F.raiseError(new XmlException(NSCPrefixDeclared, s"undeclared namespace $pfx"))

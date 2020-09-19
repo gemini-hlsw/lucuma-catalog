@@ -5,45 +5,42 @@ package lucuma.catalog
 
 // import java.io.{ ByteArrayInputStream, InputStream }
 // import cats._
-import cats.implicits._
-// import gpp.catalog.api.CatalogName
-
-// import scala.io.Source
 import scala.xml._
-// import lucuma.core.math.MagnitudeValue
-import lucuma.core.model.Magnitude
-import cats.data._
+
 import cats.data.Validated._
-import lucuma.core.enum.MagnitudeBand
-import lucuma.core.enum.MagnitudeSystem
-import lucuma.core.math.RadialVelocity
-import lucuma.core.math.units._
-import monocle.state.all._
-import monocle.function.Index.listIndex
-import lucuma.core.math.MagnitudeValue
-import lucuma.core.math.Coordinates
+import cats.data._
+import cats.implicits._
 import coulomb._
-import lucuma.core.model.Target
-import lucuma.core.math.Epoch
-import lucuma.core.math.ProperMotion
-import lucuma.core.math.ProperVelocity.AngularVelocityComponent
-import lucuma.core.math.VelocityAxis
-import lucuma.core.math.ProperVelocity
-import lucuma.core.math.Angle
-import lucuma.core.math.RightAscension
-import lucuma.core.math.Declination
-import lucuma.catalog._
-import fs2._
-import fs2.data.xml.XmlEvent
-import fs2.data.xml.XmlEvent.StartTag
-import fs2.data.xml.QName
-import fs2.data.xml.Attr
-import fs2.data.xml.XmlEvent.EndTag
 import eu.timepit.refined._
+import eu.timepit.refined.cats.syntax._
 import eu.timepit.refined.collection.NonEmpty
 import eu.timepit.refined.types.string.NonEmptyString
-import eu.timepit.refined.cats.syntax._
+import fs2._
+import fs2.data.xml.Attr
+import fs2.data.xml.QName
+import fs2.data.xml.XmlEvent
+import fs2.data.xml.XmlEvent.EndTag
+import fs2.data.xml.XmlEvent.StartTag
 import fs2.data.xml.XmlEvent.XmlString
+import lucuma.catalog._
+import lucuma.core.enum.MagnitudeBand
+import lucuma.core.enum.MagnitudeSystem
+import lucuma.core.math.Angle
+import lucuma.core.math.Coordinates
+import lucuma.core.math.Declination
+import lucuma.core.math.Epoch
+import lucuma.core.math.MagnitudeValue
+import lucuma.core.math.ProperMotion
+import lucuma.core.math.ProperVelocity
+import lucuma.core.math.ProperVelocity.AngularVelocityComponent
+import lucuma.core.math.RadialVelocity
+import lucuma.core.math.RightAscension
+import lucuma.core.math.VelocityAxis
+import lucuma.core.math.units._
+import lucuma.core.model.Magnitude
+import lucuma.core.model.Target
+import monocle.function.Index.listIndex
+import monocle.state.all._
 // import sttp.client._
 // import lucuma.core.enum.MagnitudeBand
 

@@ -460,7 +460,7 @@ private[xml] object EventParser {
           nextChar(ctx).flatMap {
             case (ctx, '\n') =>
               readAttributeValue(ctx, is11, delim, current.append('\n'), builder)
-            case (ctx, c) =>
+            case (ctx, c@_) =>
               readAttributeValue(ctx, is11, delim, current.append(' '), builder)
           }
         case ((ctx, c)) if isXmlWhitespace(c) =>
@@ -798,7 +798,7 @@ private[xml] object EventParser {
           ctx <- space(ctx)
           (ctx, systemid) <- peekChar(ctx).flatMap {
             case Some((ctx, c)) if isNCNameStart(c) => readExternalID(ctx).map { case (ctx, name) => (ctx, Some(name)) }
-            case Some((ctx, c))                     => Pull.pure((ctx, None))
+            case Some((ctx, c@_))                     => Pull.pure((ctx, None))
             case None                               => Pull.pure((Context.eos[F], None))
           }
           ctx <- space(ctx)

@@ -3,9 +3,9 @@
 
 package lucuma.catalog
 
-import cats.implicits._
-import cats.data.ValidatedNec
 import cats.data.NonEmptyChain
+import cats.data.ValidatedNec
+import cats.implicits._
 import eu.timepit.refined.cats.syntax._
 import eu.timepit.refined.types.string._
 import monocle.macros.Lenses
