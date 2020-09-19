@@ -14,10 +14,16 @@ import munit.CatsEffectSuite
 import scala.xml.Node
 import cats.data.Validated
 import cats.data.NonEmptyChain
+import cats.MonadError
+import scala.xml.Utility
 
 class VoTableParserSuite extends CatsEffectSuite with VoTableParser with VoTableSamples {
-  def toStream[F[_]: RaiseThrowable](xml: Node): Stream[F, XmlEvent] =
-    Stream.emits(xml.toString).through(events[F])
+  def toStream[F[_]: MonadError[*[_], Throwable]](xml: Node): Stream[F, XmlEvent] =
+    Stream
+      .emits(Utility.trim(xml).toString)
+      .through(events[F])
+      .through(referenceResolver[F]())
+      .through(normalize[F])
 
   test("be able to parse a field definition") {
     val fieldXml =
@@ -100,31 +106,76 @@ class VoTableParserSuite extends CatsEffectSuite with VoTableParser with VoTable
     parseFields(toStream[IO](fieldsNode)).compile.lastOrError
       .map(assertEquals(_, result.map(Validated.validNec)))
   }
-  // test("be able to parse a data  row with a list of fields") {
-  //   val fields = parseFields(fieldsNode)
-  //
-  //   val result = TableRow(
-  //     TableRowItem(FieldDescriptor(FieldId("gmag_err", Ucd("stat.error;phot.mag;em.opt.g")),
-  //                                  "gmag_err"
-  //                  ),
-  //                  "0.0960165"
-  //     ) ::
-  //       TableRowItem(FieldDescriptor(FieldId("rmag_err", Ucd("stat.error;phot.mag;em.opt.r")),
-  //                                    "rmag_err"
-  //                    ),
-  //                    "0.0503736"
-  //       ) ::
-  //       TableRowItem(FieldDescriptor(FieldId("flags1", Ucd("meta.code")), "flags1"), "268435728") ::
-  //       TableRowItem(FieldDescriptor(FieldId("ppmxl", Ucd("meta.id;meta.main")), "ppmxl"),
-  //                    "-2140405448"
-  //       ) :: Nil
-  //   )
-  //   parseTableRow(fields, tableRow) should beEqualTo(result)
-  // }
-//     "be able to parse a list of rows with a list of fields" in {
-//       val fields = parseFields(fieldsNode)
-//
-//       val result = List(
+  test("be able to parse a data  row with a list of fields") {
+    val fields = parseFields(toStream[IO](fieldsNode))
+
+    val result = TableRow(
+      TableRowItem(FieldDescriptor(FieldId.unsafeFrom("gmag_err", "stat.error;phot.mag;em.opt.g"),
+                                   "gmag_err"
+                   ),
+                   "0.0960165"
+      ) ::
+        TableRowItem(FieldDescriptor(FieldId.unsafeFrom("rmag_err", "stat.error;phot.mag;em.opt.r"),
+                                     "rmag_err"
+                     ),
+                     "0.0503736"
+        ) ::
+        TableRowItem(FieldDescriptor(FieldId.unsafeFrom("flags1", "meta.code"), "flags1"),
+                     "268435728"
+        ) ::
+        TableRowItem(FieldDescriptor(FieldId.unsafeFrom("ppmxl", "meta.id;meta.main"), "ppmxl"),
+                     "-2140405448"
+        ) :: Nil
+    )
+    // val xm     = """<TR>
+    //     <TD>0.0960165</TD>
+    //     <TD>0.0503736</TD>
+    //     <TD>268435728</TD>
+    //     <TD>-2140405448</TD>
+    //   </TR>""".stripMargin
+    // println(Utility.trim(tableRow).toString)
+    // val xm2    = """
+    // <TABLE>
+    //     <FIELD ID="gmag_err" datatype="double" name="gmag_err" ucd="stat.error;phot.mag;em.opt.g"/>
+    //     <FIELD ID="rmag_err" datatype="double" name="rmag_err" ucd="stat.error;phot.mag;em.opt.r"/>
+    //     <FIELD ID="flags1" datatype="int" name="flags1" ucd="meta.code"/>
+    //     <FIELD ID="ppmxl" datatype="int" name="ppmxl" ucd="meta.id;meta.main"/>
+    //   </TABLE>""".stripMargin
+    // println(Stream.emits(xm).through(events[IO]).compile.toList.unsafeRunSync())
+    // println(Stream.emits(xm2).through(events[IO]).compile.toList.unsafeRunSync())
+
+    // val input = """<a xmlns:ns="http://test.ns">
+    //           |  <ns:b ns:a="attribute">text</ns:b>
+    //           |</a>
+    //           |<a>
+    //           |  <b/>
+    //           |  test entity resolution &amp; normalization
+    //           |</a>""".stripMargin
+// input: String = """<a xmlns:ns="http://test.ns">
+//   <ns:b ns:a="attribute">text</ns:b>
+// </a>
+// <a>
+//   <b/>
+//   test entity resolution &amp; normalization
+// </a>"""
+
+    // val stream = Stream.emits(input).through(events[IO])
+// stream: Stream[IO, XmlEvent] = Stream(..)
+    // println(stream.compile.toList.unsafeRunSync())
+
+    fields
+      .flatMap { fields =>
+        val fl = fields.collect { case Validated.Valid(f) => f }
+        parseTableRow(fl, toStream[IO](tableRow))
+      }
+      .compile
+      .lastOrError
+      .map(assertEquals(_, result))
+  }
+// //     "be able to parse a list of rows with a list of fields" in {
+// //       val fields = parseFields(fieldsNode)
+// //
+// //       val result = List(
 //         TableRow(
 //           TableRowItem(FieldDescriptor(FieldId("gmag_err", Ucd("stat.error;phot.mag;em.opt.g")), "gmag_err"), "0.0960165") ::
 //           TableRowItem(FieldDescriptor(FieldId("rmag_err", Ucd("stat.error;phot.mag;em.opt.r")), "rmag_err"), "0.0503736") ::

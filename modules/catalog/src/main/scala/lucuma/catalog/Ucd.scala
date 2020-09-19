@@ -13,7 +13,9 @@ import eu.timepit.refined._
 import eu.timepit.refined.cats._
 import eu.timepit.refined.collection.NonEmpty
 import eu.timepit.refined.types.string._
+import monocle.macros.Lenses
 
+@Lenses
 final case class Ucd(tokens: NonEmptyList[NonEmptyString]) {
   def includes(ucd: NonEmptyString): Boolean = tokens.exists(_ === ucd)
 

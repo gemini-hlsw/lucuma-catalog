@@ -24,8 +24,9 @@ inThisBuild(
     addCompilerPlugin(
       ("org.typelevel" %% "kind-projector" % kindProjectorVersion).cross(CrossVersion.full)
     ),
-    addCompilerPlugin("com.olegpy" %% "better-monadic-for" % betterMonadicForVersion)
-  ) ++ gspPublishSettings
+    addCompilerPlugin("com.olegpy" %% "better-monadic-for" % betterMonadicForVersion),
+    scalacOptions in Global += "-Ymacro-annotations"
+  ) ++ lucumaPublishSettings
 )
 
 skip in publish := true
@@ -40,14 +41,17 @@ lazy val catalog = crossProject(JVMPlatform, JSPlatform)
       "edu.gemini"                   %%% "lucuma-core"   % lucumaCoreVersion,
       "org.typelevel"                %%% "cats-core"     % catsVersion,
       "org.scala-lang.modules"       %%% "scala-xml"     % "2.0.0-M1",
+      "com.github.julien-truffaut"   %%% "monocle-core"  % monocleVersion,
+      "com.github.julien-truffaut"   %%% "monocle-macro" % monocleVersion,
       "com.github.julien-truffaut"   %%% "monocle-state" % monocleVersion,
       "com.softwaremill.sttp.client" %%% "core"          % sttpVersion,
       "eu.timepit"                   %%% "refined"       % refinedVersion,
       "eu.timepit"                   %%% "refined-cats"  % refinedVersion
+      // "org.gnieh"                    %%% "fs2-data-xml"  % "0.7.0"
     )
   )
   .jvmConfigure(_.enablePlugins(AutomateHeaderPlugin))
-  .jsSettings(gspScalaJsSettings: _*)
+  .jsSettings(lucumaScalaJsSettings: _*)
   .dependsOn(fs2_data_xml)
 
 lazy val fs2_data_xml = crossProject(JVMPlatform, JSPlatform)
@@ -58,9 +62,17 @@ lazy val fs2_data_xml = crossProject(JVMPlatform, JSPlatform)
     libraryDependencies ++= Seq(
       "co.fs2" %%% "fs2-core" % fs2Version
     ),
-    excludeFilter.in(headerSources) := HiddenFileFilter || "*.scala"
+    excludeFilter.in(headerSources) := (HiddenFileFilter || "*.scala"),
+    scalacOptions ~= (_.filterNot(
+      Set(
+        // By necessity facades will have unused params
+        "-Wdead-code",
+        "-Wunused:params",
+        "-Wunused:explicits"
+      )
+    ))
   )
-  .jsSettings(gspScalaJsSettings: _*)
+  .jsSettings(lucumaScalaJsSettings: _*)
 
 lazy val testkit = crossProject(JVMPlatform, JSPlatform)
   .crossType(CrossType.Pure)
@@ -75,7 +87,7 @@ lazy val testkit = crossProject(JVMPlatform, JSPlatform)
     )
   )
   .jvmConfigure(_.disablePlugins(AutomateHeaderPlugin))
-  .jsSettings(gspScalaJsSettings: _*)
+  .jsSettings(lucumaScalaJsSettings: _*)
 
 lazy val tests = crossProject(JVMPlatform, JSPlatform)
   .crossType(CrossType.Full)
@@ -93,5 +105,5 @@ lazy val tests = crossProject(JVMPlatform, JSPlatform)
     skip in publish := true
   )
   .jvmConfigure(_.enablePlugins(AutomateHeaderPlugin))
-  .jsSettings(gspScalaJsSettings: _*)
+  .jsSettings(lucumaScalaJsSettings: _*)
   .jsSettings(scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule)))

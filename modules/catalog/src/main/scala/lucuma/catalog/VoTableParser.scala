@@ -19,6 +19,7 @@ import lucuma.core.enum.MagnitudeSystem
 import lucuma.core.math.RadialVelocity
 import lucuma.core.math.units._
 import monocle.state.all._
+import monocle.function.Index.listIndex
 import lucuma.core.math.MagnitudeValue
 import lucuma.core.math.Coordinates
 import coulomb._
@@ -42,6 +43,7 @@ import eu.timepit.refined._
 import eu.timepit.refined.collection.NonEmpty
 import eu.timepit.refined.types.string.NonEmptyString
 import eu.timepit.refined.cats.syntax._
+import fs2.data.xml.XmlEvent.XmlString
 // import sttp.client._
 // import lucuma.core.enum.MagnitudeBand
 
@@ -671,6 +673,53 @@ trait VoTableParser {
   //   (for {
   //     f <- xml \\ "FIELD"
   //   } yield parseFieldDescriptor(f)).flatten.toList
+
+  protected def parseTableRow[F[_]](
+    fields: List[FieldDescriptor],
+    xml:    Stream[F, XmlEvent]
+  ): Stream[F, TableRow] =
+    xml
+      .fold((TableRow(Nil), fields)) {
+        case ((t, _), StartTag(QName(_, "TR"), _, _)) =>
+          // println(s"TR $t")
+          (TableRow.items.modify(TableRowItem(fields.head, "") :: _)(t), fields.tail)
+        // (TableRow(TableRowItem(fields.head, "") :: t.items), fields.tail)
+        case (t, StartTag(QName(_, "TD"), _, _))      =>
+          // println(s"STD $t")
+          t
+        case ((t, _), EndTag(QName(_, "TR")))         =>
+          // println("END")
+          (TableRow.items.modify(_.reverse)(t), fields)
+        case ((t, f), EndTag(QName(_, "TD")))         =>
+          // println(s"ETD $t ${f.length}")
+          if (f.isEmpty) {
+            (t, f)
+          } else
+            (TableRow.items.modify(TableRowItem(f.head, "") :: _)(t), f.tail)
+        case ((t, f), XmlString(v, _))                =>
+          (TableRow.items
+             .composeOptional(listIndex.index(0))
+             .composeLens(TableRowItem.data)
+             .set(v)(t),
+           f
+          )
+        // println(s"DATA $v")
+        // (t.copy(t.items.head.copy(data = v) :: t.items.tail), f)
+        // (TableRow(TableRowItem(f, "") :: t.items), f)
+        case (t, _)                                   =>
+          // println(a)
+          // println(fields.toString().head)
+          t
+      }
+      .map(_._1)
+  //   val rows = for {
+  //     tr <- xml \\ "TR"
+  //     td  = tr \ "TD"
+  //     if td.length == fields.length
+  //   } yield for {
+  //     f <- fields.zip(td)
+  //   } yield TableRowItem(f._1, f._2.text)
+  //   TableRow(rows.flatten.toList)
 
   protected def parseTableRow(fields: List[FieldDescriptor], xml: Node): TableRow = {
     val rows = for {

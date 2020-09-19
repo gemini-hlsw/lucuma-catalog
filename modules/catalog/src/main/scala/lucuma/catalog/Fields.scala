@@ -8,8 +8,10 @@ import cats.data.ValidatedNec
 import cats.data.NonEmptyChain
 import eu.timepit.refined.cats.syntax._
 import eu.timepit.refined.types.string._
+import monocle.macros.Lenses
 
 /** Describes a field */
+@Lenses
 case class FieldId(id: NonEmptyString, ucd: Ucd)
 
 object FieldId {
@@ -20,11 +22,18 @@ object FieldId {
 
   def unsafeFrom(id: String, ucd: Ucd): FieldId =
     apply(id, ucd).getOrElse(sys.error(s"Invalid field id $id"))
+
+  def unsafeFrom(id: String, ucd: String): FieldId =
+    Ucd(ucd).andThen(apply(id, _)).getOrElse(sys.error(s"Invalid field id $id"))
 }
 
+@Lenses
 case class FieldDescriptor(id: FieldId, name: String)
 
+@Lenses
 case class TableRowItem(field: FieldDescriptor, data: String)
+
+@Lenses
 case class TableRow(items: List[TableRowItem]) {
   def itemsMap: Map[FieldId, String] = items.map(i => i.field.id -> i.data).toMap
 }

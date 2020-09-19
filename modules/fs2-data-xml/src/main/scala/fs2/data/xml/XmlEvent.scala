@@ -27,8 +27,7 @@ object XmlEvent {
 
   case object StartDocument extends XmlEvent
 
-  case class XmlDecl(version: String, encoding: Option[String], standalone: Option[Boolean])
-      extends XmlEvent
+  case class XmlDecl(version: String, encoding: Option[String], standalone: Option[Boolean]) extends XmlEvent
 
   case class StartTag(name: QName, attributes: List[Attr], isEmpty: Boolean) extends XmlEvent
 

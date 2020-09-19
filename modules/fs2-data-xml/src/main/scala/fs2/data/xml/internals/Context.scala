@@ -18,20 +18,17 @@ package data
 package xml
 package internals
 
-private[internals] case class Context[F[_]](
-  chunk:    Chunk[Char],
-  idx:      Int,
-  rest:     Stream[F, Char],
-  chunkAcc: List[XmlEvent]
-) {
-  def nextIdx: Context[F]   = copy(idx = idx + 1)
+private[internals] case class Context[F[_]](chunk: Chunk[Char],
+                                            idx: Int,
+                                            rest: Stream[F, Char],
+                                            chunkAcc: List[XmlEvent]) {
+  def nextIdx: Context[F] = copy(idx = idx + 1)
   def isEndOfChunk: Boolean = idx >= chunk.size
   def accumulate(evt: XmlEvent, tail: XmlEvent*): Context[F] =
-    copy(chunkAcc = tail.toList.reverse_:::(evt :: chunkAcc))
+    copy(chunkAcc = tail.toList reverse_::: (evt :: chunkAcc))
 }
 
 private[internals] object Context {
   def eos[F[_]]: Context[F] = Context[F](Chunk.empty, 0, Stream.empty, Nil)
-  def apply[F[_]](chunk: Chunk[Char], rest: Stream[F, Char]): Context[F] =
-    Context(chunk, 0, rest, Nil)
+  def apply[F[_]](chunk: Chunk[Char], rest: Stream[F, Char]): Context[F] = Context(chunk, 0, rest, Nil)
 }

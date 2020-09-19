@@ -21,42 +21,36 @@ package internals
 import cats._
 import cats.implicits._
 
-private[xml] class ReferenceResolver[F[_]](entities: Map[String, String])(implicit
-  F:                                                 MonadError[F, Throwable]
-) {
+private[xml] class ReferenceResolver[F[_]](entities: Map[String, String])(implicit F: MonadError[F, Throwable]) {
 
   def pipe: Pipe[F, XmlEvent, XmlEvent] =
     _.evalMap[F, XmlEvent] {
       case evt @ XmlEvent.StartTag(_, attrs, _) =>
         for {
-          attrs <-
-            attrs.traverse(attr =>
-              resolve(attr.value).map(v => attr.copy(value = List(XmlEvent.XmlString(v, false))))
-            )
+          attrs <- attrs.traverse(attr =>
+            resolve(attr.value).map(v => attr.copy(value = List(XmlEvent.XmlString(v, false)))))
         } yield evt.copy(attributes = attrs)
-      case ref @ XmlEvent.XmlCharRef(_)         =>
+      case ref @ XmlEvent.XmlCharRef(_) =>
         resolve(List(ref)).map(XmlEvent.XmlString(_, false))
-      case ref @ XmlEvent.XmlEntityRef(_)       =>
+      case ref @ XmlEvent.XmlEntityRef(_) =>
         resolve(List(ref)).map(XmlEvent.XmlString(_, false))
-      case evt                                  =>
+      case evt =>
         F.pure(evt)
     }
 
   private def resolve(textys: List[XmlEvent.XmlTexty]): F[String] =
     textys
       .foldM(new StringBuilder) {
-        case (acc, XmlEvent.XmlCharRef(n))      =>
+        case (acc, XmlEvent.XmlCharRef(n)) =>
           F.pure(acc.append(new String(Character.toChars(n))))
         case (acc, XmlEvent.XmlEntityRef(name)) =>
           entities.get(name) match {
             case Some(value) =>
               F.pure(acc.append(value))
-            case None        =>
-              F.raiseError[StringBuilder](
-                new XmlException(WFCEntityDeclared, s"undeclared entity $name")
-              )
+            case None =>
+              F.raiseError[StringBuilder](new XmlException(WFCEntityDeclared, s"undeclared entity $name"))
           }
-        case (acc, XmlEvent.XmlString(v, _))    =>
+        case (acc, XmlEvent.XmlString(v, _)) =>
           F.pure(acc.append(v))
       }
       .map(_.result())
@@ -64,8 +58,6 @@ private[xml] class ReferenceResolver[F[_]](entities: Map[String, String])(implic
 }
 
 private[xml] object ReferenceResolver {
-  def apply[F[_]](entities: Map[String, String])(implicit
-    F:                      MonadError[F, Throwable]
-  ): ReferenceResolver[F] =
+  def apply[F[_]](entities: Map[String, String])(implicit F: MonadError[F, Throwable]): ReferenceResolver[F] =
     new ReferenceResolver[F](entities)
 }
