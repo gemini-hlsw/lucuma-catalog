@@ -633,41 +633,16 @@ trait VoTableParser {
     in =>
       go(in, Validated.invalidNec[CatalogProblem, FieldDescriptor](MissingXmlTag("FIELD"))).stream
   }
-  protected def parseFieldDescriptor[F[_]](
-    xml: Stream[F, XmlEvent]
-  ): Stream[F, ValidatedNec[CatalogProblem, FieldDescriptor]] =
-    xml.fold(Validated.invalidNec[CatalogProblem, FieldDescriptor](MissingXmlTag("FIELD"))) {
-      case (_, StartTag(QName(_, "FIELD"), xmlAttr, _)) =>
-        val attr = xmlAttr.map { case Attr(k, v) => (k.local, v.foldMap(_.render)) }.toMap
-        val name = attr.get("name")
 
-        val id: ValidatedNec[CatalogProblem, NonEmptyString] =
-          NonEmptyString
-            .validateNec(attr.get("ID").orElse(name).orEmpty)
-            .leftMap(_ => NonEmptyChain.one(MissingXmlAttribute("ID")))
-
-        val ucd: ValidatedNec[CatalogProblem, Ucd] = Validated
-          .fromOption(attr.get("ucd"), MissingXmlAttribute("ucd"))
-          .toValidatedNec
-          .andThen(Ucd.apply)
-
-        val nameV = Validated.fromOption(name, MissingXmlAttribute("name")).toValidatedNec
-        ((id, ucd).mapN(FieldId.apply), nameV).mapN { (f, n) =>
-          FieldDescriptor(f, n)
-        }
-      case (s, EndTag(QName(_, "FIELD")))               => s
-      case (_, StartTag(QName(_, t), _, _))             => Validated.invalidNec(UnknownXmlTag(t))
-      case (s, _)                                       => s
-    }
-
-  protected def parseFields[F[_]](
-    xml: Stream[F, XmlEvent]
-  ): Stream[F, List[ValidatedNec[CatalogProblem, FieldDescriptor]]] =
-    xml
-      .fold(List.empty[ValidatedNec[CatalogProblem, FieldDescriptor]]) {
-        case (m, StartTag(QName(_, "TABLE"), _, _))       =>
-          m
-        case (f, StartTag(QName(_, "FIELD"), xmlAttr, _)) =>
+  def fds[F[_]]: Pipe[F, XmlEvent, List[ValidatedNec[CatalogProblem, FieldDescriptor]]] = {
+    def go(
+      s: Stream[F, XmlEvent],
+      l: List[ValidatedNec[CatalogProblem, FieldDescriptor]]
+    ): Pull[F, List[ValidatedNec[CatalogProblem, FieldDescriptor]], Unit] =
+      s.pull.uncons1.flatMap {
+        case Some((StartTag(QName(_, "TABLE"), _, _), s))       =>
+          go(s, l)
+        case Some((StartTag(QName(_, "FIELD"), xmlAttr, _), s)) =>
           val attr = xmlAttr.map { case Attr(k, v) => (k.local, v.foldMap(_.render)) }.toMap
           val name = attr.get("name")
 
@@ -682,77 +657,60 @@ trait VoTableParser {
             .andThen(Ucd.apply)
 
           val nameV = Validated.fromOption(name, MissingXmlAttribute("name")).toValidatedNec
-          ((id, ucd).mapN(FieldId.apply), nameV).mapN { (f, n) =>
-            FieldDescriptor(f, n)
-          } :: f
-        case (m, EndTag(QName(_, "TABLE")))               => m.reverse
-        case (m, _)                                       => m
-      }
-
-  // protected def parseFieldDescriptor(xml: Node): Option[FieldDescriptor] =
-  //   xml match {
-  //     case f @ <FIELD>{_*}</FIELD> =>
-  //       def attr(n: String) = (f \ s"@$n").headOption.map(_.text)
-  //
-  //       val name = attr("name")
-  //       (attr("ID").orElse(name), attr("ucd"), name).mapN { (i, u, n) =>
-  //         FieldDescriptor(FieldId(i, Ucd(u)), n)
-  //       }
-  //
-  //     case _ => None
-  //   }
-
-  // protected def parseFields(xml: Node): List[FieldDescriptor] =
-  //   (for {
-  //     f <- xml \\ "FIELD"
-  //   } yield parseFieldDescriptor(f)).flatten.toList
-
-  protected def parseTableRow[F[_]](
-    fields: List[FieldDescriptor],
-    xml:    Stream[F, XmlEvent]
-  ): Stream[F, TableRow] =
-    xml
-      .fold((TableRow(Nil), fields)) {
-        case ((t, _), StartTag(QName(_, "TR"), _, _)) =>
-          // println(s"TR $t")
-          (TableRow.items.modify(TableRowItem(fields.head, "") :: _)(t), fields.tail)
-        // (TableRow(TableRowItem(fields.head, "") :: t.items), fields.tail)
-        case (t, StartTag(QName(_, "TD"), _, _))      =>
-          // println(s"STD $t")
-          t
-        case ((t, _), EndTag(QName(_, "TR")))         =>
-          // println("END")
-          (TableRow.items.modify(_.reverse)(t), fields)
-        case ((t, f), EndTag(QName(_, "TD")))         =>
-          // println(s"ETD $t ${f.length}")
-          if (f.isEmpty) {
-            (t, f)
-          } else
-            (TableRow.items.modify(TableRowItem(f.head, "") :: _)(t), f.tail)
-        case ((t, f), XmlString(v, _))                =>
-          (TableRow.items
-             .composeOptional(listIndex.index(0))
-             .composeLens(TableRowItem.data)
-             .set(v)(t),
-           f
+          go(s,
+             ((id, ucd).mapN(FieldId.apply), nameV).mapN { (f, n) =>
+               FieldDescriptor(f, n)
+             } :: l
           )
-        // println(s"DATA $v")
-        // (t.copy(t.items.head.copy(data = v) :: t.items.tail), f)
-        // (TableRow(TableRowItem(f, "") :: t.items), f)
-        case (t, _)                                   =>
-          // println(a)
-          // println(fields.toString().head)
-          t
+        case Some((EndTag(QName(_, "TABLE")), _))               =>
+          Pull.output1(l.reverse) >> Pull.done
+        case Some((StartTag(QName(_, t), _, _), _))             =>
+          Pull.output1(List(Validated.invalidNec(UnknownXmlTag(t)))) >> Pull.done
+        case Some((EndTag(QName(_, "FIELD")), s))               =>
+          go(s, l)
+        case Some((_, s))                                       =>
+          go(s, l)
+        case None                                               => Pull.done
       }
-      .map(_._1)
-  //   val rows = for {
-  //     tr <- xml \\ "TR"
-  //     td  = tr \ "TD"
-  //     if td.length == fields.length
-  //   } yield for {
-  //     f <- fields.zip(td)
-  //   } yield TableRowItem(f._1, f._2.text)
-  //   TableRow(rows.flatten.toList)
+
+    in => go(in, Nil).stream
+  }
+
+  protected def tr[F[_]](
+    fields: List[FieldDescriptor]
+  ): Pipe[F, XmlEvent, ValidatedNec[CatalogProblem, TableRow]] = {
+    def go(
+      s: Stream[F, XmlEvent],
+      t: TableRow,
+      f: List[FieldDescriptor]
+    ): Pull[F, ValidatedNec[CatalogProblem, TableRow], Unit] =
+      s.pull.uncons1.flatMap {
+        case Some((StartTag(QName(_, "TR"), _, _), s)) =>
+          go(s, TableRow.items.modify(TableRowItem(f.head, "") :: _)(t), f.tail)
+        case Some((StartTag(QName(_, "TD"), _, _), s)) =>
+          go(s, t, f)
+        case Some((EndTag(QName(_, "TR")), _))         =>
+          Pull.output1(Validated.validNec(TableRow.items.modify(_.reverse)(t))) >> Pull.done
+        case Some((EndTag(QName(_, "TD")), s))         =>
+          if (f.isEmpty) {
+            go(s, t, f)
+          } else
+            go(s, TableRow.items.modify(TableRowItem(f.head, "") :: _)(t), f.tail)
+        case Some((XmlString(v, _), s))                =>
+          go(s,
+             TableRow.items
+               .composeOptional(listIndex.index(0))
+               .composeLens(TableRowItem.data)
+               .set(v)(t),
+             f
+          )
+        case Some((u, s))                              =>
+          println(u)
+          go(s, t, fields)
+        case None                                      => Pull.done
+      }
+    in => go(in, TableRow(Nil), fields).stream
+  }
 
   protected def parseTableRow(fields: List[FieldDescriptor], xml: Node): TableRow = {
     val rows = for {

@@ -114,11 +114,14 @@ class VoTableParserSuite extends CatsEffectSuite with VoTableParser with VoTable
                         "ppmxl"
         ) :: Nil
 
-    parseFields(toStream[IO](fieldsNode)).compile.lastOrError
+    toStream[IO](fieldsNode)
+      .through(fds)
+      .compile
+      .lastOrError
       .map(assertEquals(_, result.map(Validated.validNec)))
   }
   test("be able to parse a data  row with a list of fields") {
-    val fields = parseFields(toStream[IO](fieldsNode))
+    val fields = toStream[IO](fieldsNode).through(fds)
 
     val result = TableRow(
       TableRowItem(FieldDescriptor(FieldId.unsafeFrom("gmag_err", "stat.error;phot.mag;em.opt.g"),
@@ -177,11 +180,11 @@ class VoTableParserSuite extends CatsEffectSuite with VoTableParser with VoTable
     fields
       .flatMap { fields =>
         val fl = fields.collect { case Validated.Valid(f) => f }
-        parseTableRow(fl, toStream[IO](tableRow))
+        toStream[IO](tableRow).through(tr(fl))
       }
       .compile
       .lastOrError
-      .map(assertEquals(_, result))
+      .map(assertEquals(_, Validated.validNec(result)))
   }
 // //     "be able to parse a list of rows with a list of fields" in {
 // //       val fields = parseFields(fieldsNode)
