@@ -47,7 +47,6 @@ lazy val catalog = crossProject(JVMPlatform, JSPlatform)
       "com.softwaremill.sttp.client" %%% "core"          % sttpVersion,
       "eu.timepit"                   %%% "refined"       % refinedVersion,
       "eu.timepit"                   %%% "refined-cats"  % refinedVersion
-      // "org.gnieh"                    %%% "fs2-data-xml"  % "0.7.0"
     )
   )
   .jvmConfigure(_.enablePlugins(AutomateHeaderPlugin))

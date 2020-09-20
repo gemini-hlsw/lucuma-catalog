@@ -28,14 +28,13 @@ class VoTableParserSuite extends CatsEffectSuite with VoTableParser with VoTable
   test("be able to parse a field definition") {
     val fieldXml =
       <FIELD ID="gmag_err" datatype="double" name="gmag_err" ucd="stat.error;phot.mag;em.opt.g"/>
-    parseFieldDescriptor(toStream[IO](fieldXml)).compile.lastOrError.map { r =>
+    toStream[IO](fieldXml).through(fd).compile.lastOrError.map { r =>
       assertEquals(
         r,
         Validated.validNec(
-          FieldDescriptor(FieldId.unsafeFrom("gmag_err",
-                                             Ucd.unsafeFromString("stat.error;phot.mag;em.opt.g")
-                          ),
-                          "gmag_err"
+          FieldDescriptor(
+            FieldId.unsafeFrom("gmag_err", Ucd.unsafeFromString("stat.error;phot.mag;em.opt.g")),
+            "gmag_err"
           )
         )
       )
@@ -43,7 +42,10 @@ class VoTableParserSuite extends CatsEffectSuite with VoTableParser with VoTable
   }
   test("ignore empty fields") {
     // Empty field
-    parseFieldDescriptor(toStream[IO](<FIELD/>)).compile.lastOrError
+    toStream[IO](<FIELD/>)
+      .through(fd)
+      .compile
+      .lastOrError
       .map(
         assertEquals(_,
                      Validated.invalid(
@@ -57,12 +59,18 @@ class VoTableParserSuite extends CatsEffectSuite with VoTableParser with VoTable
   }
   test("non field xml") {
     // non field xml
-    parseFieldDescriptor(toStream[IO](<TAG/>)).compile.lastOrError
+    toStream[IO](<TAG/>)
+      .through(fd)
+      .compile
+      .lastOrError
       .map(assertEquals(_, Validated.invalidNec(UnknownXmlTag("TAG"))))
   }
   test("missing attributes") {
     // missing attributes
-    parseFieldDescriptor(toStream[IO](<FIELD ID="abc"/>)).compile.lastOrError
+    toStream[IO](<FIELD ID="abc"/>)
+      .through(fd)
+      .compile
+      .lastOrError
       .map(
         assertEquals(_,
                      Validated.invalid(
@@ -73,18 +81,21 @@ class VoTableParserSuite extends CatsEffectSuite with VoTableParser with VoTable
   }
   test("swap in name for ID if missing in a field definition") {
     val fieldXml = <FIELD datatype="double" name="ref_epoch" ucd="meta.ref;time.epoch" unit="yr"/>
-    parseFieldDescriptor(toStream[IO](fieldXml)).compile.lastOrError.map(
-      assertEquals(
-        _,
-        Validated.validNec(
-          FieldDescriptor(FieldId.unsafeFrom("ref_epoch",
-                                             Ucd.unsafeFromString("meta.ref;time.epoch")
-                          ),
-                          "ref_epoch"
+    toStream[IO](fieldXml)
+      .through(fd)
+      .compile
+      .lastOrError
+      .map(
+        assertEquals(
+          _,
+          Validated.validNec(
+            FieldDescriptor(
+              FieldId.unsafeFrom("ref_epoch", Ucd.unsafeFromString("meta.ref;time.epoch")),
+              "ref_epoch"
+            )
           )
         )
       )
-    )
   }
   test("be able to parse a list of fields") {
     val result =

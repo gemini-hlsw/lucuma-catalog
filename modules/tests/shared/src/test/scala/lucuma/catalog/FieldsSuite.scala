@@ -9,6 +9,8 @@ package lucuma.catalog
 // import lucuma.catalog.votable.CatalogAdapter
 // import cats.data.Validated
 import lucuma.catalog.VoTableParser
+import cats.kernel.laws.discipline.EqTests
+import lucuma.catalog.arb.all._
 // import lucuma.core.math.Parallax
 // import lucuma.core.model.Target
 // import scala.xml.Node
@@ -19,7 +21,8 @@ import lucuma.catalog.VoTableParser
 // import edu.gemini.spModel.core._
 // import gsp.catalog.api._
 
-class FieldsSuite extends munit.FunSuite with VoTableParser {
+class FieldsSuite extends munit.DisciplineSuite with VoTableParser {
+  checkAll("Eq[FieldId]", EqTests[FieldId].eqv)
 
   // test("be able to parse a field definition") {
   //   val fieldXml =

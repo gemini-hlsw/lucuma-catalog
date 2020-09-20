@@ -596,7 +596,43 @@ object CatalogAdapter {
 trait VoTableParser {
 
   import scala.xml.Node
+  def fd[F[_]]: Pipe[F, XmlEvent, ValidatedNec[CatalogProblem, FieldDescriptor]] = {
+    def go(
+      s:  Stream[F, XmlEvent],
+      fd: ValidatedNec[CatalogProblem, FieldDescriptor]
+    ): Pull[F, ValidatedNec[CatalogProblem, FieldDescriptor], Unit] =
+      s.pull.uncons1.flatMap {
+        case Some((StartTag(QName(_, "FIELD"), xmlAttr, _), s)) =>
+          val attr = xmlAttr.map { case Attr(k, v) => (k.local, v.foldMap(_.render)) }.toMap
+          val name = attr.get("name")
 
+          val id: ValidatedNec[CatalogProblem, NonEmptyString] =
+            NonEmptyString
+              .validateNec(attr.get("ID").orElse(name).orEmpty)
+              .leftMap(_ => NonEmptyChain.one(MissingXmlAttribute("ID")))
+
+          val ucd: ValidatedNec[CatalogProblem, Ucd] = Validated
+            .fromOption(attr.get("ucd"), MissingXmlAttribute("ucd"))
+            .toValidatedNec
+            .andThen(Ucd.apply)
+
+          val nameV = Validated.fromOption(name, MissingXmlAttribute("name")).toValidatedNec
+          go(s,
+             ((id, ucd).mapN(FieldId.apply), nameV).mapN { (f, n) =>
+               FieldDescriptor(f, n)
+             }
+          )
+        case Some((StartTag(QName(_, t), _, _), _))             =>
+          Pull.output1(Validated.invalidNec(UnknownXmlTag(t))) >> Pull.done
+        case Some((EndTag(QName(_, "FIELD")), _))               =>
+          Pull.output1(fd)
+        case Some((_, _))                                       =>
+          Pull.output1(fd) >> Pull.done
+        case None                                               => Pull.done
+      }
+    in =>
+      go(in, Validated.invalidNec[CatalogProblem, FieldDescriptor](MissingXmlTag("FIELD"))).stream
+  }
   protected def parseFieldDescriptor[F[_]](
     xml: Stream[F, XmlEvent]
   ): Stream[F, ValidatedNec[CatalogProblem, FieldDescriptor]] =

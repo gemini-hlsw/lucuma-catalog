@@ -16,9 +16,9 @@
 package fs2
 package data
 
-import xml.internals._
-
 import cats._
+
+import xml.internals._
 
 package object xml {
 

@@ -3,9 +3,11 @@
 
 package lucuma.catalog
 
+import cats._
 import cats.data.NonEmptyChain
 import cats.data.ValidatedNec
 import cats.implicits._
+import eu.timepit.refined.cats._
 import eu.timepit.refined.cats.syntax._
 import eu.timepit.refined.types.string._
 import monocle.macros.Lenses
@@ -25,6 +27,8 @@ object FieldId {
 
   def unsafeFrom(id: String, ucd: String): FieldId =
     Ucd(ucd).andThen(apply(id, _)).getOrElse(sys.error(s"Invalid field id $id"))
+
+  implicit val eqFieldId: Eq[FieldId] = Eq.by(x => (x.id, x.ucd))
 }
 
 @Lenses
