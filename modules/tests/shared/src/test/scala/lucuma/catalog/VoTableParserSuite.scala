@@ -97,7 +97,7 @@ class VoTableParserSuite extends CatsEffectSuite with VoTableParser with VoTable
         )
       )
   }
-  test("be able to parse a list of fields") {
+  test("parse a list of fields") {
     val result =
       FieldDescriptor(
         FieldId.unsafeFrom("gmag_err", Ucd.unsafeFromString("stat.error;phot.mag;em.opt.g")),
@@ -120,7 +120,7 @@ class VoTableParserSuite extends CatsEffectSuite with VoTableParser with VoTable
       .lastOrError
       .map(assertEquals(_, result.map(Validated.validNec)))
   }
-  test("be able to parse a data  row with a list of fields") {
+  test("parse a data row with a list of fields") {
     val fields = toStream[IO](fieldsNode).through(fds)
 
     val result = TableRow(
@@ -141,42 +141,6 @@ class VoTableParserSuite extends CatsEffectSuite with VoTableParser with VoTable
                      "-2140405448"
         ) :: Nil
     )
-    // val xm     = """<TR>
-    //     <TD>0.0960165</TD>
-    //     <TD>0.0503736</TD>
-    //     <TD>268435728</TD>
-    //     <TD>-2140405448</TD>
-    //   </TR>""".stripMargin
-    // println(Utility.trim(tableRow).toString)
-    // val xm2    = """
-    // <TABLE>
-    //     <FIELD ID="gmag_err" datatype="double" name="gmag_err" ucd="stat.error;phot.mag;em.opt.g"/>
-    //     <FIELD ID="rmag_err" datatype="double" name="rmag_err" ucd="stat.error;phot.mag;em.opt.r"/>
-    //     <FIELD ID="flags1" datatype="int" name="flags1" ucd="meta.code"/>
-    //     <FIELD ID="ppmxl" datatype="int" name="ppmxl" ucd="meta.id;meta.main"/>
-    //   </TABLE>""".stripMargin
-    // println(Stream.emits(xm).through(events[IO]).compile.toList.unsafeRunSync())
-    // println(Stream.emits(xm2).through(events[IO]).compile.toList.unsafeRunSync())
-
-    // val input = """<a xmlns:ns="http://test.ns">
-    //           |  <ns:b ns:a="attribute">text</ns:b>
-    //           |</a>
-    //           |<a>
-    //           |  <b/>
-    //           |  test entity resolution &amp; normalization
-    //           |</a>""".stripMargin
-// input: String = """<a xmlns:ns="http://test.ns">
-//   <ns:b ns:a="attribute">text</ns:b>
-// </a>
-// <a>
-//   <b/>
-//   test entity resolution &amp; normalization
-// </a>"""
-
-    // val stream = Stream.emits(input).through(events[IO])
-// stream: Stream[IO, XmlEvent] = Stream(..)
-    // println(stream.compile.toList.unsafeRunSync())
-
     fields
       .flatMap { fields =>
         val fl = fields.collect { case Validated.Valid(f) => f }
@@ -185,6 +149,36 @@ class VoTableParserSuite extends CatsEffectSuite with VoTableParser with VoTable
       .compile
       .lastOrError
       .map(assertEquals(_, Validated.validNec(result)))
+  }
+  test("detect missing fields") {
+    val fields = toStream[IO](fieldsNode).through(fds)
+
+    fields
+      .flatMap { fields =>
+        val fl = fields.collect { case Validated.Valid(f) => f }
+        toStream[IO](tableRowMissing).through(tr(fl))
+      }
+      .compile
+      .lastOrError
+      .map(
+        assertEquals(_,
+                     Validated.invalidNec[CatalogProblem, TableRow](
+                       MissingValue(FieldId.unsafeFrom("ppmxl", "meta.id;meta.main"))
+                     )
+        )
+      )
+  }
+  test("detect extra fields") {
+    val fields = toStream[IO](fieldsNode).through(fds)
+
+    fields
+      .flatMap { fields =>
+        val fl = fields.collect { case Validated.Valid(f) => f }
+        toStream[IO](tableRowExtra).through(tr(fl))
+      }
+      .compile
+      .lastOrError
+      .map(assertEquals(_, Validated.invalidNec[CatalogProblem, TableRow](ExtraRow)))
   }
 // //     "be able to parse a list of rows with a list of fields" in {
 // //       val fields = parseFields(fieldsNode)

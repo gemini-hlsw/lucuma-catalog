@@ -21,6 +21,22 @@ trait VoTableSamples {
         <TD>-2140405448</TD>
       </TR>
 
+  val tableRowMissing =
+    <TR>
+        <TD>0.0960165</TD>
+        <TD>0.0503736</TD>
+        <TD>268435728</TD>
+      </TR>
+
+  val tableRowExtra =
+    <TR>
+        <TD>0.0960165</TD>
+        <TD>0.0503736</TD>
+        <TD>268435728</TD>
+        <TD>-2140405448</TD>
+        <TD>-2140405448</TD>
+      </TR>
+
   val dataNode =
     <DATA>
         <TABLEDATA>

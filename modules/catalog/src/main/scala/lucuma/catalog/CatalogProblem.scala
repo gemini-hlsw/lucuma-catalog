@@ -31,6 +31,15 @@ case class InvalidUcd(ucd: String) extends CatalogProblem {
 case class GenericError(msg: String) extends CatalogProblem {
   val displayValue = msg
 }
+case class UnexpectedTag(tag: String) extends CatalogProblem {
+  val displayValue = s"Unexpected tag $tag"
+}
+case object ExtraRow       extends CatalogProblem {
+  val displayValue = s"Extra row in the data"
+}
+case object MissingRow     extends CatalogProblem {
+  val displayValue = s"Missing row in the data"
+}
 case class MissingValue(field: FieldId) extends CatalogProblem {
   val displayValue = s"Missing required field ${field.id}"
 }

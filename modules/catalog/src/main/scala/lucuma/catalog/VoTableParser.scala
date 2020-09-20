@@ -681,35 +681,53 @@ trait VoTableParser {
   ): Pipe[F, XmlEvent, ValidatedNec[CatalogProblem, TableRow]] = {
     def go(
       s: Stream[F, XmlEvent],
-      t: TableRow,
+      t: PartialTableRow,
       f: List[FieldDescriptor]
     ): Pull[F, ValidatedNec[CatalogProblem, TableRow], Unit] =
       s.pull.uncons1.flatMap {
-        case Some((StartTag(QName(_, "TR"), _, _), s)) =>
-          go(s, TableRow.items.modify(TableRowItem(f.head, "") :: _)(t), f.tail)
         case Some((StartTag(QName(_, "TD"), _, _), s)) =>
-          go(s, t, f)
+          f match {
+            case head :: tail =>
+              go(s, PartialTableRow.items.modify(PartialTableRowItem(head).asLeft :: _)(t), tail)
+            case Nil          =>
+              Pull.output1(Validated.invalidNec(ExtraRow)) >> Pull.done
+          }
         case Some((EndTag(QName(_, "TR")), _))         =>
-          Pull.output1(Validated.validNec(TableRow.items.modify(_.reverse)(t))) >> Pull.done
-        case Some((EndTag(QName(_, "TD")), s))         =>
-          if (f.isEmpty) {
-            go(s, t, f)
-          } else
-            go(s, TableRow.items.modify(TableRowItem(f.head, "") :: _)(t), f.tail)
+          f match {
+            case x :: l
+                if f =!= fields || t.items.length =!= fields.length => // this indicates we have a mismatch between fields and data
+              Pull.output1(
+                Validated.invalid(
+                  NonEmptyChain(MissingValue(x.id), l.map(x => MissingValue(x.id)): _*)
+                )
+              ) >> Pull.done
+            case Nil
+                if t.items.length =!= fields.length => // this indicates we have a mismatch between fields and data
+              Pull.output1(
+                Validated.invalid(
+                  NonEmptyChain
+                    .fromSeq(fields.map(x => MissingValue(x.id)))
+                    .getOrElse(NonEmptyChain.one(MissingRow))
+                )
+              ) >> Pull.done
+            case _ =>
+              Pull.output1(Validated.validNec(t.toTableRow)) >> Pull.done
+          }
         case Some((XmlString(v, _), s))                =>
           go(s,
-             TableRow.items
+             PartialTableRow.items
                .composeOptional(listIndex.index(0))
-               .composeLens(TableRowItem.data)
-               .set(v)(t),
+               .modify {
+                 case ti @ Right(_) => ti
+                 case Left(pti)     => TableRowItem(pti.field, v).asRight
+               }(t),
              f
           )
-        case Some((u, s))                              =>
-          println(u)
-          go(s, t, fields)
+        case Some((_, s))                              =>
+          go(s, t, f)
         case None                                      => Pull.done
       }
-    in => go(in, TableRow(Nil), fields).stream
+    in => go(in, PartialTableRow(Nil), fields).stream
   }
 
   protected def parseTableRow(fields: List[FieldDescriptor], xml: Node): TableRow = {

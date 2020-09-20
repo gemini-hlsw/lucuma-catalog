@@ -34,8 +34,23 @@ object FieldId {
 @Lenses
 case class FieldDescriptor(id: FieldId, name: String)
 
+object FieldDescriptor {
+  implicit val eqFieldDescriptor: Eq[FieldDescriptor] = Eq.by(x => (x.id, x.name))
+}
+
+@Lenses
+private[catalog] case class PartialTableRowItem(field: FieldDescriptor)
+
 @Lenses
 case class TableRowItem(field: FieldDescriptor, data: String)
+
+@Lenses
+private[catalog] case class PartialTableRow(
+  items: List[Either[PartialTableRowItem, TableRowItem]]
+) {
+  def isComplete: Boolean  = items.forall(_.isRight)
+  def toTableRow: TableRow = TableRow(items.collect { case Right(r) => r }.reverse)
+}
 
 @Lenses
 case class TableRow(items: List[TableRowItem]) {
