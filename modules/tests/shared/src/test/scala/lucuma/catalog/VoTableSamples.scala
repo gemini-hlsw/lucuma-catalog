@@ -55,7 +55,23 @@ trait VoTableSamples {
         </TABLEDATA>
       </DATA>
 
-  val skyObjects =
+  val dataNodeMissing = <DATA>
+        <TABLEDATA>
+          <TR>
+            <TD>0.0960165</TD>
+            <TD>0.0503736</TD>
+            <TD>268435728</TD>
+          </TR>
+          <TR>
+            <TD>0.51784</TD>
+            <TD>0.252201</TD>
+            <TD>536871168</TD>
+            <TD>-2140404569</TD>
+          </TR>
+        </TABLEDATA>
+      </DATA>
+
+  val targets =
     <TABLE>
         <FIELD ID="flags1" datatype="int" name="flags1" ucd="meta.code"/>
         <FIELD ID="umag" datatype="double" name="umag" ucd="phot.mag;em.opt.u"/>
@@ -103,7 +119,7 @@ trait VoTableSamples {
       </DATA>
     </TABLE>
 
-  val skyObjectsWithRedshift =
+  val targetsWithRedshift =
     <TABLE>
         <FIELD ID="flags1" datatype="int" name="flags1" ucd="meta.code"/>
         <FIELD ID="umag" datatype="double" name="umag" ucd="phot.mag;em.opt.u"/>
@@ -157,7 +173,7 @@ trait VoTableSamples {
       </DATA>
     </TABLE>
 
-  val skyObjectsWithRadialVelocityError =
+  val targetsWithRadialVelocityError =
     <TABLE>
         <FIELD ID="flags1" datatype="int" name="flags1" ucd="meta.code"/>
         <FIELD ID="umag" datatype="double" name="umag" ucd="phot.mag;em.opt.u"/>
@@ -193,7 +209,7 @@ trait VoTableSamples {
       </DATA>
     </TABLE>
 
-  val skyObjectsWithErrors =
+  val targetsWithErrors =
     <TABLE>
         <FIELD ID="gmag_err" datatype="double" name="gmag_err" ucd="stat.error;phot.mag;em.opt.g"/>
         <FIELD ID="rmag_err" datatype="double" name="rmag_err" ucd="stat.error;phot.mag;em.opt.r"/>
@@ -262,7 +278,7 @@ trait VoTableSamples {
       </DATA>
     </TABLE>
 
-  val skyObjectsWithProperMotion =
+  val targetsWithProperMotion =
     <TABLE>
         <FIELD ID="pmde" datatype="double" name="pmde" ucd="pos.pm;pos.eq.dec"/>
         <FIELD ID="pmra" datatype="double" name="pmra" ucd="pos.pm;pos.eq.ra"/>
@@ -424,35 +440,35 @@ trait VoTableSamples {
   val voTable =
     <VOTABLE>
         <RESOURCE type="results">
-          {skyObjects}
+          {targets}
         </RESOURCE>
       </VOTABLE>
 
   val voTableWithErrors =
     <VOTABLE>
         <RESOURCE type="results">
-          {skyObjectsWithErrors}
+          {targetsWithErrors}
         </RESOURCE>
       </VOTABLE>
 
   val voTableWithProperMotion =
     <VOTABLE>
         <RESOURCE type="results">
-          {skyObjectsWithProperMotion}
+          {targetsWithProperMotion}
         </RESOURCE>
       </VOTABLE>
 
   val voTableWithRedshift =
     <VOTABLE>
         <RESOURCE type="results">
-          {skyObjectsWithRedshift}
+          {targetsWithRedshift}
         </RESOURCE>
       </VOTABLE>
 
   val voTableWithRadialVelocityError =
     <VOTABLE>
         <RESOURCE type="results">
-          {skyObjectsWithRadialVelocityError}
+          {targetsWithRadialVelocityError}
         </RESOURCE>
       </VOTABLE>
 

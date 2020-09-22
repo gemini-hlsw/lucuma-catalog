@@ -34,6 +34,9 @@ case class GenericError(msg: String) extends CatalogProblem {
 case class UnexpectedTag(tag: String) extends CatalogProblem {
   val displayValue = s"Unexpected tag $tag"
 }
+case object NoFieldsFound  extends CatalogProblem {
+  val displayValue = s"No fields defined"
+}
 case object ExtraRow       extends CatalogProblem {
   val displayValue = s"Extra row in the data"
 }

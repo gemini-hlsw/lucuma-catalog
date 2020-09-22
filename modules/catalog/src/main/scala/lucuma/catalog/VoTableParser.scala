@@ -730,6 +730,150 @@ trait VoTableParser {
     in => go(in, PartialTableRow(Nil), fields).stream
   }
 
+  protected def trs[F[_]](
+    fields: List[FieldDescriptor]
+  ): Pipe[F, XmlEvent, ValidatedNec[CatalogProblem, TableRow]] = {
+    def go(
+      s: Stream[F, XmlEvent],
+      t: PartialTableRow,
+      f: List[FieldDescriptor]
+    ): Pull[F, ValidatedNec[CatalogProblem, TableRow], Unit] =
+      s.pull.uncons1.flatMap {
+        case Some((StartTag(QName(_, "TD"), _, _), s)) =>
+          f match {
+            case head :: tail =>
+              go(s, PartialTableRow.items.modify(PartialTableRowItem(head).asLeft :: _)(t), tail)
+            case Nil          =>
+              Pull.output1(Validated.invalidNec(ExtraRow)) >> Pull.done
+          }
+        case Some((EndTag(QName(_, "TR")), s))         =>
+          f match {
+            case x :: l =>
+              Pull.output1(
+                Validated.invalid(
+                  NonEmptyChain(MissingValue(x.id), l.map(x => MissingValue(x.id)): _*)
+                )
+              ) >> go(s, PartialTableRow(Nil), fields)
+            case Nil
+                if t.items.length =!= fields.length => // this indicates we have a mismatch between fields and data
+              Pull.output1(
+                Validated.invalid(
+                  NonEmptyChain
+                    .fromSeq(fields.map(x => MissingValue(x.id)))
+                    .getOrElse(NonEmptyChain.one(MissingRow))
+                )
+              ) >> Pull.done
+            case _      =>
+              Pull.output1(Validated.validNec(t.toTableRow)) >> go(s, PartialTableRow(Nil), fields)
+          }
+        case Some((XmlString(v, _), s))                =>
+          go(s,
+             PartialTableRow.items
+               .composeOptional(listIndex.index(0))
+               .modify {
+                 case ti @ Right(_) => ti
+                 case Left(pti)     => TableRowItem(pti.field, v).asRight
+               }(t),
+             f
+          )
+        case Some((_, s))                              =>
+          go(s, t, f)
+        case None                                      => Pull.done
+      }
+    in => go(in, PartialTableRow(Nil), fields).stream
+  }
+
+  protected def trsf[F[_]]: Pipe[F, XmlEvent, ValidatedNec[CatalogProblem, TableRow]] = {
+    def go(
+      s:      Stream[F, XmlEvent],
+      t:      PartialTableRow,
+      f:      List[FieldDescriptor],
+      fields: Option[NonEmptyList[FieldDescriptor]]
+    ): Pull[F, ValidatedNec[CatalogProblem, TableRow], Unit] =
+      s.pull.uncons1.flatMap {
+        case Some((StartTag(QName(_, "FIELD"), xmlAttr, _), s)) =>
+          val attr = xmlAttr.map { case Attr(k, v) => (k.local, v.foldMap(_.render)) }.toMap
+          val name = attr.get("name")
+
+          val id: ValidatedNec[CatalogProblem, NonEmptyString] =
+            NonEmptyString
+              .validateNec(attr.get("ID").orElse(name).orEmpty)
+              .leftMap(_ => NonEmptyChain.one(MissingXmlAttribute("ID")))
+
+          val ucd: ValidatedNec[CatalogProblem, Ucd] = Validated
+            .fromOption(attr.get("ucd"), MissingXmlAttribute("ucd"))
+            .toValidatedNec
+            .andThen(Ucd.apply)
+
+          val nameV = Validated.fromOption(name, MissingXmlAttribute("name")).toValidatedNec
+          ((id, ucd).mapN(FieldId.apply), nameV).mapN { (i, u) =>
+            FieldDescriptor(i, u) :: f
+          } match {
+            case Valid(f)       => go(s, t, f, fields)
+            case i @ Invalid(_) => Pull.output1(i) >> Pull.done // fail fast on field parse failure
+          }
+        case Some((StartTag(QName(_, "DATA"), _, _), s))        =>
+          f match {
+            case h :: tail =>
+              go(s, t, f.reverse, NonEmptyList(h, tail).reverse.some)
+            case _         =>
+              Pull.output1(Validated.invalidNec(NoFieldsFound)) >> Pull.done
+          }
+        case Some((StartTag(QName(_, "TD"), _, _), s))          =>
+          f match {
+            case head :: tail =>
+              go(s,
+                 PartialTableRow.items.modify(PartialTableRowItem(head).asLeft :: _)(t),
+                 tail,
+                 fields
+              )
+            case Nil          =>
+              Pull.output1(Validated.invalidNec(ExtraRow)) >> Pull.done
+          }
+        case Some((EndTag(QName(_, "TR")), s))                  =>
+          f match {
+            case x :: l =>
+              Pull.output1(
+                Validated.invalid(
+                  NonEmptyChain(MissingValue(x.id), l.map(x => MissingValue(x.id)): _*)
+                )
+              ) >> go(s, PartialTableRow(Nil), f, fields)
+            case Nil
+                // this indicates we have a mismatch between fields and data
+                if t.items.length =!= fields.foldMap(_.length) =>
+              Pull.output1(
+                Validated.invalid(
+                  fields match {
+                    case Some(l) => NonEmptyChain.fromNonEmptyList(l.map(x => MissingValue(x.id)))
+                    case None    => NonEmptyChain.one(MissingRow)
+                  }
+                )
+              ) >> Pull.done
+            case _      =>
+              Pull.output1(Validated.validNec(t.toTableRow)) >> go(s,
+                                                                   PartialTableRow(Nil),
+                                                                   fields.foldMap(_.toList),
+                                                                   fields
+              )
+          }
+        case Some((XmlString(v, _), s))                         =>
+          go(s,
+             PartialTableRow.items
+               .composeOptional(listIndex.index(0))
+               .modify {
+                 case ti @ Right(_) => ti
+                 case Left(pti)     => TableRowItem(pti.field, v).asRight
+               }(t),
+             f,
+             fields
+          )
+        case Some((_, s))                                       =>
+          go(s, t, f, fields)
+        case None                                               => Pull.done
+      }
+    in => go(in, PartialTableRow(Nil), Nil, None).stream
+  }
+
   protected def parseTableRow(fields: List[FieldDescriptor], xml: Node): TableRow = {
     val rows = for {
       tr <- xml \\ "TR"

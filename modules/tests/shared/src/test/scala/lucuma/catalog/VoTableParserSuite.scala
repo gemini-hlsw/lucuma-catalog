@@ -180,24 +180,168 @@ class VoTableParserSuite extends CatsEffectSuite with VoTableParser with VoTable
       .lastOrError
       .map(assertEquals(_, Validated.invalidNec[CatalogProblem, TableRow](ExtraRow)))
   }
-// //     "be able to parse a list of rows with a list of fields" in {
-// //       val fields = parseFields(fieldsNode)
-// //
-// //       val result = List(
-//         TableRow(
-//           TableRowItem(FieldDescriptor(FieldId("gmag_err", Ucd("stat.error;phot.mag;em.opt.g")), "gmag_err"), "0.0960165") ::
-//           TableRowItem(FieldDescriptor(FieldId("rmag_err", Ucd("stat.error;phot.mag;em.opt.r")), "rmag_err"), "0.0503736") ::
-//           TableRowItem(FieldDescriptor(FieldId("flags1", Ucd("meta.code")), "flags1"), "268435728") ::
-//           TableRowItem(FieldDescriptor(FieldId("ppmxl", Ucd("meta.id;meta.main")), "ppmxl"), "-2140405448") :: Nil
-//         ),
-//         TableRow(
-//           TableRowItem(FieldDescriptor(FieldId("gmag_err", Ucd("stat.error;phot.mag;em.opt.g")), "gmag_err"), "0.51784") ::
-//           TableRowItem(FieldDescriptor(FieldId("rmag_err", Ucd("stat.error;phot.mag;em.opt.r")), "rmag_err"), "0.252201") ::
-//           TableRowItem(FieldDescriptor(FieldId("flags1", Ucd("meta.code")), "flags1"), "536871168") ::
-//           TableRowItem(FieldDescriptor(FieldId("ppmxl", Ucd("meta.id;meta.main")), "ppmxl"), "-2140404569") :: Nil
-//         ))
-//       parseTableRows(fields, dataNode) should beEqualTo(result)
-//     }
+  test("parse a list of rows with a list of fields") {
+    val fields = toStream[IO](fieldsNode).through(fds)
+
+    val result = List(
+      TableRow(
+        TableRowItem(FieldDescriptor(FieldId.unsafeFrom("gmag_err", "stat.error;phot.mag;em.opt.g"),
+                                     "gmag_err"
+                     ),
+                     "0.0960165"
+        ) ::
+          TableRowItem(FieldDescriptor(FieldId.unsafeFrom("rmag_err",
+                                                          "stat.error;phot.mag;em.opt.r"
+                                       ),
+                                       "rmag_err"
+                       ),
+                       "0.0503736"
+          ) ::
+          TableRowItem(FieldDescriptor(FieldId.unsafeFrom("flags1", "meta.code"), "flags1"),
+                       "268435728"
+          ) ::
+          TableRowItem(FieldDescriptor(FieldId.unsafeFrom("ppmxl", "meta.id;meta.main"), "ppmxl"),
+                       "-2140405448"
+          ) :: Nil
+      ),
+      TableRow(
+        TableRowItem(FieldDescriptor(FieldId.unsafeFrom("gmag_err", "stat.error;phot.mag;em.opt.g"),
+                                     "gmag_err"
+                     ),
+                     "0.51784"
+        ) ::
+          TableRowItem(FieldDescriptor(FieldId.unsafeFrom("rmag_err",
+                                                          "stat.error;phot.mag;em.opt.r"
+                                       ),
+                                       "rmag_err"
+                       ),
+                       "0.252201"
+          ) ::
+          TableRowItem(FieldDescriptor(FieldId.unsafeFrom("flags1", "meta.code"), "flags1"),
+                       "536871168"
+          ) ::
+          TableRowItem(FieldDescriptor(FieldId.unsafeFrom("ppmxl", "meta.id;meta.main"), "ppmxl"),
+                       "-2140404569"
+          ) :: Nil
+      )
+    )
+
+    fields
+      .flatMap { fields =>
+        val fl = fields.collect { case Validated.Valid(f) => f }
+        toStream[IO](dataNode).through(trs(fl))
+      }
+      .compile
+      .toList
+      .map(assertEquals(_, result.map(Validated.validNec)))
+  }
+  test("parse a list of rows with a list of fields and one missing row") {
+    val fields = toStream[IO](fieldsNode).through(fds)
+
+    val result = List(
+      Validated.invalidNec(MissingValue((FieldId.unsafeFrom("ppmxl", "meta.id;meta.main")))),
+      Validated.validNec(
+        TableRow(
+          TableRowItem(FieldDescriptor(FieldId.unsafeFrom("gmag_err",
+                                                          "stat.error;phot.mag;em.opt.g"
+                                       ),
+                                       "gmag_err"
+                       ),
+                       "0.51784"
+          ) ::
+            TableRowItem(FieldDescriptor(FieldId.unsafeFrom("rmag_err",
+                                                            "stat.error;phot.mag;em.opt.r"
+                                         ),
+                                         "rmag_err"
+                         ),
+                         "0.252201"
+            ) ::
+            TableRowItem(FieldDescriptor(FieldId.unsafeFrom("flags1", "meta.code"), "flags1"),
+                         "536871168"
+            ) ::
+            TableRowItem(FieldDescriptor(FieldId.unsafeFrom("ppmxl", "meta.id;meta.main"), "ppmxl"),
+                         "-2140404569"
+            ) :: Nil
+        )
+      )
+    )
+
+    fields
+      .flatMap { fields =>
+        val fl = fields.collect { case Validated.Valid(f) => f }
+        toStream[IO](dataNodeMissing).through(trs(fl))
+      }
+      .compile
+      .toList
+      .map(assertEquals(_, result))
+  }
+  test("parse a list of rows with a list of fields and one missing row") {
+    val result = List(
+      Validated.validNec(
+        TableRow(
+          List(
+            TableRowItem(FieldDescriptor(FieldId.unsafeFrom("flags1", "meta.code"), "flags1"),
+                         "268435728"
+            ),
+            TableRowItem(FieldDescriptor(FieldId.unsafeFrom("umag", "phot.mag;em.opt.u"), "umag"),
+                         "23.0888"
+            ),
+            TableRowItem(
+              FieldDescriptor(FieldId.unsafeFrom("flags2", "meta.code"), "flags2"),
+              "8208"
+            ),
+            TableRowItem(FieldDescriptor(FieldId.unsafeFrom("imag", "phot.mag;em.opt.i"), "imag"),
+                         "20.3051"
+            ),
+            TableRowItem(FieldDescriptor(FieldId.unsafeFrom("decj2000", "pos.eq.dec;meta.main"),
+                                         "dej2000"
+                         ),
+                         "0.209323681906"
+            ),
+            TableRowItem(FieldDescriptor(FieldId.unsafeFrom("raj2000", "pos.eq.ra;meta.main"),
+                                         "raj2000"
+                         ),
+                         "359.745951955"
+            ),
+            TableRowItem(FieldDescriptor(FieldId.unsafeFrom("rmag", "phot.mag;em.opt.r"), "rmag"),
+                         "20.88"
+            ),
+            TableRowItem(FieldDescriptor(FieldId.unsafeFrom("objid", "meta.id;meta.main"), "objid"),
+                         "-2140405448"
+            ),
+            TableRowItem(FieldDescriptor(FieldId.unsafeFrom("gmag", "phot.mag;em.opt.g"), "gmag"),
+                         "22.082"
+            ),
+            TableRowItem(FieldDescriptor(FieldId.unsafeFrom("zmag", "phot.mag;em.opt.z"), "zmag"),
+                         "19.8812"
+            ),
+            TableRowItem(FieldDescriptor(FieldId.unsafeFrom("type", "meta.code"), "type"), "3"),
+            TableRowItem(FieldDescriptor(FieldId.unsafeFrom("ppmxl", "meta.id;meta.main"), "ppmxl"),
+                         "-2140405448"
+            )
+          )
+        )
+      )
+    )
+
+    toStream[IO](targets)
+      .through(trsf)
+      .compile
+      .toList
+      .map(v => assertEquals(v.headOption, result.headOption))
+  }
+  // test("parse an xml into a list of Targets list of rows with a list of fields") {
+  //   val magsTarget1 = List(new Magnitude(23.0888, MagnitudeBand.U), new Magnitude(22.082, MagnitudeBand._g), new Magnitude(20.88, MagnitudeBand.R), new Magnitude(20.3051, MagnitudeBand.I), new Magnitude(19.8812, MagnitudeBand._z))
+  //   val magsTarget2 = List(new Magnitude(23.0853, MagnitudeBand.U), new Magnitude(23.0889, MagnitudeBand._g), new Magnitude(21.7686, MagnitudeBand.R), new Magnitude(20.7891, MagnitudeBand.I), new Magnitude(20.0088, MagnitudeBand._z))
+  //
+  //   val result = ParsedTable(List(
+  //     \/-(SiderealTarget.empty.copy(name = "-2140405448", coordinates = Coordinates(RightAscension.fromDegrees(359.745951955), Declination.fromAngle(Angle.parseDegrees("0.209323681906").getOrElse(Angle.zero)).getOrElse(Declination.zero)), magnitudes = magsTarget1)),
+  //     \/-(SiderealTarget.empty.copy(name = "-2140404569", coordinates = Coordinates(RightAscension.fromDegrees(359.749274134), Declination.fromAngle(Angle.parseDegrees("0.210251239819").getOrElse(Angle.zero)).getOrElse(Declination.zero)), magnitudes = magsTarget2))
+  //   ))
+  //   // There is only one table
+  //   parse(CatalogAdapter.PPMXL, voTable).tables.head should beEqualTo(result)
+  //   parse(CatalogAdapter.PPMXL, voTable).tables.head.containsError should beFalse
+  // }
 //     "be able to convert a TableRow into a SiderealTarget" in {
 //       val fields = parseFields(fieldsNode)
 //
@@ -300,18 +444,6 @@ class VoTableParserSuite extends CatsEffectSuite with VoTableParser with VoTable
 //
 //       // FLUX_R maps to R
 //       CatalogAdapter.Simbad.parseMagnitude((FieldId("FLUX_ERROR_R", magErrorUcd), "20.3051")) should beEqualTo(\/-((FieldId("FLUX_ERROR_R", magErrorUcd), MagnitudeBand.R, 20.3051)))
-//     }
-//     "be able to parse an xml into a list of SiderealTargets list of rows with a list of fields" in {
-//       val magsTarget1 = List(new Magnitude(23.0888, MagnitudeBand.U), new Magnitude(22.082, MagnitudeBand._g), new Magnitude(20.88, MagnitudeBand.R), new Magnitude(20.3051, MagnitudeBand.I), new Magnitude(19.8812, MagnitudeBand._z))
-//       val magsTarget2 = List(new Magnitude(23.0853, MagnitudeBand.U), new Magnitude(23.0889, MagnitudeBand._g), new Magnitude(21.7686, MagnitudeBand.R), new Magnitude(20.7891, MagnitudeBand.I), new Magnitude(20.0088, MagnitudeBand._z))
-//
-//       val result = ParsedTable(List(
-//         \/-(SiderealTarget.empty.copy(name = "-2140405448", coordinates = Coordinates(RightAscension.fromDegrees(359.745951955), Declination.fromAngle(Angle.parseDegrees("0.209323681906").getOrElse(Angle.zero)).getOrElse(Declination.zero)), magnitudes = magsTarget1)),
-//         \/-(SiderealTarget.empty.copy(name = "-2140404569", coordinates = Coordinates(RightAscension.fromDegrees(359.749274134), Declination.fromAngle(Angle.parseDegrees("0.210251239819").getOrElse(Angle.zero)).getOrElse(Declination.zero)), magnitudes = magsTarget2))
-//       ))
-//       // There is only one table
-//       parse(CatalogAdapter.PPMXL, voTable).tables.head should beEqualTo(result)
-//       parse(CatalogAdapter.PPMXL, voTable).tables.head.containsError should beFalse
 //     }
 //     "be able to parse an xml into a list of SiderealTargets including redshift" in {
 //       val result = parse(CatalogAdapter.PPMXL, voTableWithRedshift).tables.head
