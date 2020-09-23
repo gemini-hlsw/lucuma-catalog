@@ -49,6 +49,9 @@ case class MissingValue(field: FieldId) extends CatalogProblem {
 case class FieldValueProblem(ucd: Ucd, value: String) extends CatalogProblem {
   val displayValue = s"Error parsing field $ucd with value $value"
 }
+case class UnsupportedField(field: FieldId) extends CatalogProblem {
+  val displayValue = s"Unsupported field $field"
+}
 case class UnmatchedField(ucd: Ucd) extends CatalogProblem {
   val displayValue = s"Unmatched field $ucd"
 }

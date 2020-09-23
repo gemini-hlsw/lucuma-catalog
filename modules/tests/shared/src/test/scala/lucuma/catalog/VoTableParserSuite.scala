@@ -7,6 +7,7 @@ package lucuma.catalog
 // import edu.gemini.spModel.core._
 // import gsp.catalog.api._
 import cats.effect._
+import cats.implicits._
 import fs2._
 import fs2.data.xml._
 import lucuma.catalog._
@@ -16,6 +17,11 @@ import cats.data.Validated
 import cats.data.NonEmptyChain
 import cats.MonadError
 import scala.xml.Utility
+import lucuma.core.model.Target
+import lucuma.core.math._
+import lucuma.core.model.Magnitude
+import lucuma.core.enum.MagnitudeBand
+import lucuma.core.enum.MagnitudeSystem
 
 class VoTableParserSuite extends CatsEffectSuite with VoTableParser with VoTableSamples {
   def toStream[F[_]: MonadError[*[_], Throwable]](xml: Node): Stream[F, XmlEvent] =
@@ -275,7 +281,7 @@ class VoTableParserSuite extends CatsEffectSuite with VoTableParser with VoTable
       .toList
       .map(assertEquals(_, result))
   }
-  test("parse a list of rows with a list of fields and one missing row") {
+  test("parse a list of rows") {
     val result = List(
       Validated.validNec(
         TableRow(
@@ -330,18 +336,44 @@ class VoTableParserSuite extends CatsEffectSuite with VoTableParser with VoTable
       .toList
       .map(v => assertEquals(v.headOption, result.headOption))
   }
-  // test("parse an xml into a list of Targets list of rows with a list of fields") {
-  //   val magsTarget1 = List(new Magnitude(23.0888, MagnitudeBand.U), new Magnitude(22.082, MagnitudeBand._g), new Magnitude(20.88, MagnitudeBand.R), new Magnitude(20.3051, MagnitudeBand.I), new Magnitude(19.8812, MagnitudeBand._z))
-  //   val magsTarget2 = List(new Magnitude(23.0853, MagnitudeBand.U), new Magnitude(23.0889, MagnitudeBand._g), new Magnitude(21.7686, MagnitudeBand.R), new Magnitude(20.7891, MagnitudeBand.I), new Magnitude(20.0088, MagnitudeBand._z))
-  //
-  //   val result = ParsedTable(List(
-  //     \/-(SiderealTarget.empty.copy(name = "-2140405448", coordinates = Coordinates(RightAscension.fromDegrees(359.745951955), Declination.fromAngle(Angle.parseDegrees("0.209323681906").getOrElse(Angle.zero)).getOrElse(Declination.zero)), magnitudes = magsTarget1)),
-  //     \/-(SiderealTarget.empty.copy(name = "-2140404569", coordinates = Coordinates(RightAscension.fromDegrees(359.749274134), Declination.fromAngle(Angle.parseDegrees("0.210251239819").getOrElse(Angle.zero)).getOrElse(Declination.zero)), magnitudes = magsTarget2))
-  //   ))
-  //   // There is only one table
-  //   parse(CatalogAdapter.PPMXL, voTable).tables.head should beEqualTo(result)
-  //   parse(CatalogAdapter.PPMXL, voTable).tables.head.containsError should beFalse
-  // }
+  test("parse an xml into a list of Targets list of rows with a list of fields") {
+    val magsTarget1 = Vector(
+      Magnitude(MagnitudeValue.fromDouble(22.082), MagnitudeBand.SloanG),
+      Magnitude(MagnitudeValue.fromDouble(19.8812), MagnitudeBand.SloanZ),
+      Magnitude(MagnitudeValue.fromDouble(23.0888), MagnitudeBand.U, MagnitudeSystem.AB),
+      Magnitude(MagnitudeValue.fromDouble(20.88), MagnitudeBand.R, MagnitudeSystem.AB),
+      Magnitude(MagnitudeValue.fromDouble(20.3051), MagnitudeBand.I, MagnitudeSystem.AB)
+    )
+    val results     = Target(
+      name = "-2140405448",
+      track = ProperMotion
+        .const(
+          Coordinates(
+            RightAscension.fromDoubleDegrees(359.745951955),
+            Declination
+              .fromDoubleDegrees(0.209323681906)
+              .getOrElse(Declination.Zero)
+          )
+        )
+        .asRight,
+      magsTarget1
+    )
+    toStream[IO](targets)
+      .through(xml2targets(CatalogAdapter.PPMXL))
+      .compile
+      .toList
+      .map(_.headOption.collect { case Validated.Valid(t) =>
+        assertEquals(t, results)
+      })
+    // val magsTarget2 = List(new Magnitude(23.0853, MagnitudeBand.U), new Magnitude(23.0889, MagnitudeBand._g), new Magnitude(21.7686, MagnitudeBand.R), new Magnitude(20.7891, MagnitudeBand.I), new Magnitude(20.0088, MagnitudeBand._z))
+    //
+    // val result = ParsedTable(List(
+    //   \/-(SiderealTarget.empty.copy(name = "-2140404569", coordinates = Coordinates(RightAscension.fromDegrees(359.749274134), Declination.fromAngle(Angle.parseDegrees("0.210251239819").getOrElse(Angle.zero)).getOrElse(Declination.zero)), magnitudes = magsTarget2))
+    // ))
+    // // There is only one table
+    // parse(CatalogAdapter.PPMXL, voTable).tables.head should beEqualTo(result)
+    // parse(CatalogAdapter.PPMXL, voTable).tables.head.containsError should beFalse
+  }
 //     "be able to convert a TableRow into a SiderealTarget" in {
 //       val fields = parseFields(fieldsNode)
 //

@@ -38,6 +38,20 @@ sealed trait CatalogAdapter {
   def rvField    = FieldId("RV_VALUE", VoTableParser.UCD_RV)
   def plxField   = FieldId("PLX_VALUE", VoTableParser.UCD_PLX)
 
+  // From a Field extract the band from either the field id or the UCD
+  protected def fieldToBand(field: FieldId): Option[MagnitudeBand]
+
+  // Indicates if a field contianing a magnitude should be ignored, by default all fields are considered
+  protected def ignoreMagnitudeField(v: FieldId): Boolean
+
+  // Attempts to extract a magnitude system for a particular band
+  protected def parseMagnitudeSys(
+    p: (FieldId, String)
+  ): ValidatedNec[CatalogProblem, (MagnitudeBand, MagnitudeSystem)]
+
+  // Indicates if the field is a magnitude system
+  protected def isMagnitudeSystemField(v: (FieldId, String)): Boolean
+
   // Indicates if the field is a magnitude
   def isMagnitudeField(v: (FieldId, String)): Boolean =
     containsMagnitude(v._1) &&
@@ -50,44 +64,36 @@ sealed trait CatalogAdapter {
       v._1.ucd.includes(VoTableParser.STAT_ERR) &&
       v._2.nonEmpty
 
-  // Indicates if the field is a magnitude system
-  def isMagnitudeSystemField(v: (FieldId, String)): Boolean
-
   // filter magnitudes as a whole, removing invalid values and duplicates
   // (This is written to be overridden--see PPMXL adapter. By default nothing is done.)
-  def filterAndDeduplicateMagnitudes(ms: List[(FieldId, Magnitude)]): List[Magnitude] =
+  def filterAndDeduplicateMagnitudes(ms: Vector[(FieldId, Magnitude)]): Vector[Magnitude] =
     ms.unzip._2
 
   // Indicates if a parsed magnitude is valid
   def validMagnitude(m: Magnitude): Boolean =
     !(m.value.toDoubleValue.isNaN || m.error.exists(_.toDoubleValue.isNaN))
 
-  // Attempts to extract a magnitude system for a particular band
-  def parseMagnitudeSys(
-    p: (FieldId, String)
-  ): ValidatedNel[CatalogProblem, (MagnitudeBand, MagnitudeSystem)]
-
   // Attempts to extract the radial velocity of a field
-  def parseRadialVelocity(ucd: Ucd, v: String): ValidatedNel[CatalogProblem, RadialVelocity] =
+  def parseRadialVelocity(ucd: Ucd, v: String): ValidatedNec[CatalogProblem, RadialVelocity] =
     CatalogAdapter
       .parseDoubleValue(ucd, v)
       .map(v => RadialVelocity(v.withUnit[MetersPerSecond]))
-      .andThen(Validated.fromOption(_, NonEmptyList.of(FieldValueProblem(ucd, v))))
+      .andThen(Validated.fromOption(_, NonEmptyChain.one(FieldValueProblem(ucd, v))))
 
   // Attempts to extract the angular velocity of a field
   def parseAngularVelocity[A](
     ucd: Ucd,
     v:   String
-  ): ValidatedNel[CatalogProblem, AngularVelocityComponent[A]] =
+  ): ValidatedNec[CatalogProblem, AngularVelocityComponent[A]] =
     CatalogAdapter
       .parseDoubleValue(ucd, v)
       .map(v => AngularVelocityComponent[A](v.withUnit[MilliArcSecondPerYear]))
-      .andThen(Validated.validNel(_)) //.fromOption(_, FieldValueProblem(ucd, v)))
+      .andThen(Validated.validNec(_))
 
   def parseProperVelocity(
     pmra:  Option[String],
     pmdec: Option[String]
-  ): ValidatedNel[CatalogProblem, Option[ProperVelocity]] =
+  ): ValidatedNec[CatalogProblem, Option[ProperVelocity]] =
     (pmra.filter(_.nonEmpty), pmdec.filter(_.nonEmpty)).mapN { (pmra, pmdec) =>
       (parseAngularVelocity[VelocityAxis.RA](VoTableParser.UCD_PMRA, pmra),
        parseAngularVelocity[VelocityAxis.Dec](VoTableParser.UCD_PMDEC, pmdec)
@@ -100,11 +106,11 @@ sealed trait CatalogAdapter {
   def parseMagnitude(
     fieldId: FieldId,
     value:   String
-  ): ValidatedNel[CatalogProblem, (FieldId, MagnitudeBand, Double)] = {
+  ): ValidatedNec[CatalogProblem, (FieldId, MagnitudeBand, Double)] = {
 
     val band = fieldToBand(fieldId)
 
-    (Validated.fromOption(band, UnmatchedField(fieldId.ucd)).toValidatedNel,
+    (Validated.fromOption(band, UnmatchedField(fieldId.ucd)).toValidatedNec,
      CatalogAdapter.parseDoubleValue(fieldId.ucd, value)
     ).mapN { (b, v) =>
       (fieldId, b, v)
@@ -112,15 +118,14 @@ sealed trait CatalogAdapter {
   }
 
   private def combineWithErrorsSystemAndFilter(
-    m: List[(FieldId, MagnitudeBand, Double)],
-    e: List[(FieldId, MagnitudeBand, Double)],
-    s: List[(MagnitudeBand, MagnitudeSystem)]
-  ): List[Magnitude] = {
-
+    m: Vector[(FieldId, MagnitudeBand, Double)],
+    e: Vector[(FieldId, MagnitudeBand, Double)],
+    s: Vector[(MagnitudeBand, MagnitudeSystem)]
+  ): Vector[Magnitude] = {
     val mags      = m.map { case (f, b, d) =>
-      f -> new Magnitude(MagnitudeValue((d * 100).toInt), b, none, MagnitudeSystem.AB)
+      f -> new Magnitude(MagnitudeValue.fromDouble(d), b, none, MagnitudeSystem.AB)
     }
-    val magErrors = e.map { case (_, b, d) => b -> MagnitudeValue((d * 100).toInt) }.toMap
+    val magErrors = e.map { case (_, b, d) => b -> MagnitudeValue.fromDouble(d) }.toMap
     val magSys    = s.toMap
 
     // Link magnitudes with their errors
@@ -142,28 +147,24 @@ sealed trait CatalogAdapter {
    */
   def parseMagnitudes(
     entries: Map[FieldId, String]
-  ): ValidatedNel[CatalogProblem, List[Magnitude]] = {
-    val mags: ValidatedNel[CatalogProblem, List[(FieldId, MagnitudeBand, Double)]]    =
-      entries.toList
+  ): ValidatedNec[CatalogProblem, Vector[Magnitude]] = {
+    val mags: ValidatedNec[CatalogProblem, Vector[(FieldId, MagnitudeBand, Double)]] =
+      entries.toVector
         .filter(isMagnitudeField)
         .traverse(Function.tupled(parseMagnitude))
-    val magErrs: ValidatedNel[CatalogProblem, List[(FieldId, MagnitudeBand, Double)]] =
-      entries.toList
+
+    val magErrs: ValidatedNec[CatalogProblem, Vector[(FieldId, MagnitudeBand, Double)]] =
+      entries.toVector
         .filter(isMagnitudeErrorField)
         .traverse(Function.tupled(parseMagnitude))
-    val magSys: ValidatedNel[CatalogProblem, List[(MagnitudeBand, MagnitudeSystem)]]  =
-      entries.toList
+
+    val magSys: ValidatedNec[CatalogProblem, Vector[(MagnitudeBand, MagnitudeSystem)]] =
+      entries.toVector
         .filter(isMagnitudeSystemField)
         .traverse(parseMagnitudeSys)
 
-    (mags, magErrs, magSys).mapN(combineWithErrorsSystemAndFilter)
+    (mags, magErrs, magSys).mapN(combineWithErrorsSystemAndFilter).map(_.sortBy(_.band))
   }
-
-  // From a Field extract the band from either the field id or the UCD
-  protected def fieldToBand(field: FieldId): Option[MagnitudeBand]
-
-  // Indicates if a field contianing a magnitude should be ignored, by default all fields are considered
-  protected def ignoreMagnitudeField(v: FieldId): Boolean
 
   // Indicates if the field has a magnitude field
   protected def containsMagnitude(v: FieldId): Boolean =
@@ -173,32 +174,46 @@ sealed trait CatalogAdapter {
 }
 
 // Common methods for UCAC4 and PPMXL
-// trait StandardAdapter {
-//
-//   // Find what band the field descriptor should represent, in general prefer "upper case" bands over "lower case" Sloan bands.
-//   // This will prefer U, R and I over u', r' and i' but will map "g" and "z" to the Sloan bands g' and z'.
-//   def parseBand(fieldId: FieldId, band: String): Option[MagnitudeBand] =
-//     MagnitudeBand.all
-//       .find(_.name == band.toUpperCase)
-//       .orElse(MagnitudeBand.all.find(_.name == band))
-//
-//   // From a Field extract the band from either the field id or the UCD
-//   protected def fieldToBand(field: FieldId): Option[MagnitudeBand] = {
-//     // Parses a UCD token to extract the band for catalogs that include the band in the UCD (UCAC4/PPMXL)
-//     def parseBandToken(token: String): Option[String] =
-//       token match {
-//         case CatalogAdapter.magRegex(_, null) => "UC".some
-//         case CatalogAdapter.magRegex(_, b)    => b.replace(".", "").some
-//         case _                                => none
-//       }
-//
-//     (for {
-//       t <- field.ucd.tokens
-//       b <- parseBandToken(t.token)
-//     } yield parseBand(field, b)).headOption.flatten
-//   }
-//
-// }
+trait StandardAdapter extends CatalogAdapter {
+
+  // Find what band the field descriptor should represent, in general prefer "upper case" bands over "lower case" Sloan bands.
+  // This will prefer U, R and I over u', r' and i' but will map "g" and "z" to the Sloan bands g' and z'.
+  def parseBand(fieldId: FieldId, band: String): Option[MagnitudeBand]
+
+  def defaultParseBand(band: String): Option[MagnitudeBand] =
+    MagnitudeBand.all
+      .find(_.shortName === band.toUpperCase)
+      .orElse(MagnitudeBand.all.find(_.shortName === band))
+
+  // From a Field extract the band from either the field id or the UCD
+  protected def fieldToBand(field: FieldId): Option[MagnitudeBand] = {
+    // Parses a UCD token to extract the band for catalogs that include the band in the UCD (UCAC4/PPMXL)
+    def parseBandToken(token: String): Option[String] =
+      token match {
+        case CatalogAdapter.magRegex(_, null) => "UC".some
+        case CatalogAdapter.magRegex(_, b)    => b.replace(".", "").some
+        case _                                => none
+      }
+
+    (for {
+      t <- field.ucd.tokens.toList
+      b <- parseBandToken(t.value)
+    } yield parseBand(field, b)).headOption.flatten
+  }
+
+  // Indicates if a field contianing a magnitude should be ignored, by default all fields are considered
+  override def ignoreMagnitudeField(v: FieldId): Boolean = false
+
+  override def isMagnitudeSystemField(v: (FieldId, String)): Boolean =
+    false
+  //
+  // Attempts to extract a magnitude system for a particular band
+  protected def parseMagnitudeSys(
+    p:                                   (FieldId, String)
+  ): ValidatedNec[CatalogProblem, (MagnitudeBand, MagnitudeSystem)] =
+    Validated.invalidNec(UnsupportedField(p._1))
+
+}
 
 object CatalogAdapter {
 
@@ -207,11 +222,11 @@ object CatalogAdapter {
   def parseDoubleValue(
     ucd: Ucd,
     s:   String
-  ): ValidatedNel[CatalogProblem, Double] =
+  ): ValidatedNec[CatalogProblem, Double] =
     Validated
       .catchNonFatal(s.toDouble)
       .leftMap(_ => FieldValueProblem(ucd, s))
-      .toValidatedNel
+      .toValidatedNec
 
   // case object UCAC4 extends CatalogAdapter with StandardAdapter {
   //
@@ -245,41 +260,43 @@ object CatalogAdapter {
   //     }
   // }
 
-  // case object PPMXL extends CatalogAdapter with StandardAdapter {
-  //
-  //   val catalog: CatalogName =
-  //     CatalogName.PPMXL
-  //
-  //   val idField  = FieldId("ppmxl", VoTableParser.UCD_OBJID)
-  //   val raField  = FieldId("raj2000", VoTableParser.UCD_RA)
-  //   val decField = FieldId("decj2000", VoTableParser.UCD_DEC)
-  //
-  //   // PPMXL may contain two representations for bands R and B, represented with ids r1mag/r2mag or b1mag/b2mac
-  //   // The ids r1mag/r2mag are preferred but if they are absent we should use the alternative values
-  //   val primaryMagnitudesIds   = List("r1mag", "b1mag")
-  //   val alternateMagnitudesIds = List("r2mag", "b2mag")
-  //   val idsMapping             = primaryMagnitudesIds.zip(alternateMagnitudesIds)
-  //
-  //   // Convert angular velocity to mas per year as provided by ppmxl
-  //   override def parseAngularVelocity(ucd: Ucd, v: String): CatalogProblem \/ AngularVelocity =
-  //     CatalogAdapter.parseDoubleValue(ucd, v).map(AngularVelocity.fromDegreesPerYear)
-  //
-  //   override def filterAndDeduplicateMagnitudes(
-  //     magnitudeFields: List[(FieldId, Magnitude)]
-  //   ): List[Magnitude] = {
-  //     // Read all magnitudes, including duplicates
-  //     val magMap1 = (Map.empty[String, Magnitude] /: magnitudeFields) {
-  //       case (m, (FieldId(i, _), mag)) if validMagnitude(mag) => m + (i -> mag)
-  //       case (m, _)                                           => m
-  //     }
-  //     // Now magMap1 might have double entries for R and B.  Get rid of the alternative if so.
-  //     val magMap2 = (magMap1 /: idsMapping) {
-  //       case (m, (id1, id2)) =>
-  //         if (magMap1.contains(id1)) m - id2 else m
-  //     }
-  //     magMap2.values.toList
-  //   }
-  // }
+  case object PPMXL extends CatalogAdapter with StandardAdapter {
+
+    val catalog: CatalogName = CatalogName.PPMXL
+
+    val idField  = FieldId.unsafeFrom("ppmxl", VoTableParser.UCD_OBJID)
+    val raField  = FieldId.unsafeFrom("raj2000", VoTableParser.UCD_RA)
+    val decField = FieldId.unsafeFrom("decj2000", VoTableParser.UCD_DEC)
+
+    // PPMXL may contain two representations for bands R and B, represented with ids r1mag/r2mag or b1mag/b2mac
+    // The ids r1mag/r2mag are preferred but if they are absent we should use the alternative values
+    val primaryMagnitudesIds   = List("r1mag", "b1mag")
+    val alternateMagnitudesIds = List("r2mag", "b2mag")
+    val idsMapping             = primaryMagnitudesIds.zip(alternateMagnitudesIds)
+
+    // Convert angular velocity to mas per year as provided by ppmxl
+    // override def parseAngularVelocity(
+    //   ucd: Ucd,
+    //   v:   String
+    // ): ValidatedNec[CatalogProblem, RadialVelocity] =
+    // CatalogAdapter.parseDoubleValue(ucd, v).map(RadialVelocity.fromDegreesPerYear)
+    override def parseBand(fieldId: FieldId, band: String) = defaultParseBand(band)
+
+    override def filterAndDeduplicateMagnitudes(
+      magnitudeFields: Vector[(FieldId, Magnitude)]
+    ): Vector[Magnitude] = {
+      // Read all magnitudes, including duplicates
+      val magMap1 = magnitudeFields.foldLeft(Map.empty[String, Magnitude]) {
+        case (m, (FieldId(i, _), mag)) if validMagnitude(mag) => m + (i.value -> mag)
+        case (m, _)                                           => m
+      }
+      // Now magMap1 might have double entries for R and B.  Get rid of the alternative if so.
+      val magMap2 = idsMapping.foldLeft(magMap1) { case (m, (id1, id2)) =>
+        if (magMap1.contains(id1)) m - id2 else m
+      }
+      magMap2.values.toVector
+    }
+  }
 
   // case object Gaia extends CatalogAdapter {
   //
@@ -459,7 +476,7 @@ object CatalogAdapter {
     // Attempts to find the magnitude system for a band
     override def parseMagnitudeSys(
       p: (FieldId, String)
-    ): ValidatedNel[CatalogProblem, (MagnitudeBand, MagnitudeSystem)] = {
+    ): ValidatedNec[CatalogProblem, (MagnitudeBand, MagnitudeSystem)] = {
       val band: Option[MagnitudeBand] =
         if (p._2.nonEmpty)
           p._1.id.value match {
@@ -468,8 +485,8 @@ object CatalogAdapter {
           }
         else
           None
-      (Validated.fromOption(band, UnmatchedField(p._1.ucd)).toValidatedNel,
-       Validated.fromOption(MagnitudeSystem.fromTag(p._2), UnmatchedField(p._1.ucd)).toValidatedNel
+      (Validated.fromOption(band, UnmatchedField(p._1.ucd)).toValidatedNec,
+       Validated.fromOption(MagnitudeSystem.fromTag(p._2), UnmatchedField(p._1.ucd)).toValidatedNec
       ).mapN((_, _))
     }
 
@@ -480,7 +497,7 @@ object CatalogAdapter {
   }
 
   val All: List[CatalogAdapter] =
-    List(Simbad)
+    List(Simbad, PPMXL)
   // List(UCAC4, PPMXL, Gaia, Simbad)
 
   def forCatalog(c: CatalogName): Option[CatalogAdapter] =
