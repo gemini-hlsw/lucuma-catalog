@@ -16,6 +16,7 @@ import fs2._
 import fs2.data.xml._
 import fs2.data.xml.XmlEvent._
 import lucuma.catalog._
+import lucuma.catalog.CatalogProblem._
 import lucuma.core.math.Angle
 import lucuma.core.math.Coordinates
 import lucuma.core.math.Declination

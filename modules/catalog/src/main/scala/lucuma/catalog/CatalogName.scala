@@ -9,10 +9,9 @@ sealed trait CatalogName extends Product with Serializable
 
 object CatalogName {
   case object Simbad extends CatalogName
-  case object PPMXL  extends CatalogName
 
   /** @group Typeclass Instances */
   implicit val SectionVisibilityStateEnumerated: Enumerated[CatalogName] =
-    Enumerated.of(Simbad, PPMXL)
+    Enumerated.of(Simbad)
 
 }

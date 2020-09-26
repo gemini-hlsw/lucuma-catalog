@@ -10,6 +10,7 @@ import cats.implicits._
 import eu.timepit.refined.cats._
 import eu.timepit.refined.cats.syntax._
 import eu.timepit.refined.types.string._
+import lucuma.catalog.CatalogProblem._
 import monocle.macros.Lenses
 
 /** Describes a field */

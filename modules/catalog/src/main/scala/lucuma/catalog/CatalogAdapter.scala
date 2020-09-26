@@ -3,13 +3,12 @@
 
 package lucuma.catalog
 
-import scala.xml._
-
 import cats.data.Validated._
 import cats.data._
 import cats.implicits._
 import coulomb._
 import lucuma.catalog._
+import lucuma.catalog.CatalogProblem._
 import lucuma.core.enum.MagnitudeBand
 import lucuma.core.enum.MagnitudeSystem
 import lucuma.core.math.MagnitudeValue
@@ -225,196 +224,6 @@ object CatalogAdapter {
 
   val magRegex = """(?i)em.(opt|IR)(\.\w)?""".r
 
-  // case object UCAC4 extends CatalogAdapter with StandardAdapter {
-  //
-  //   val catalog: CatalogName =
-  //     CatalogName.UCAC4
-  //
-  //   val idField  = FieldId("ucac4", VoTableParser.UCD_OBJID)
-  //   val raField  = FieldId("raj2000", VoTableParser.UCD_RA)
-  //   val decField = FieldId("dej2000", VoTableParser.UCD_DEC)
-  //
-  //   private val ucac4BadMagnitude      = 20.0
-  //   private val ucac4BadMagnitudeError = 0.9.some
-  //
-  //   // UCAC4 ignores A-mags
-  //   override def ignoreMagnitudeField(v: FieldId): Boolean =
-  //     v.id === "amag" || v.id === "e_amag"
-  //
-  //   // Magnitudes with value 20 or error over or equal to 0.9 are invalid in UCAC4
-  //   override def validMagnitude(m: Magnitude): Boolean =
-  //     super.validMagnitude(m) &&
-  //       m.value =/= ucac4BadMagnitude &&
-  //       m.error.map(math.abs) <= ucac4BadMagnitudeError
-  //
-  //   // UCAC4 has a few special cases to map magnitudes, g, r and i refer to the Sloan bands g', r' and i'
-  //   override def parseBand(id: FieldId, band: String): Option[MagnitudeBand] =
-  //     (id.id, id.ucd) match {
-  //       case ("gmag" | "e_gmag", ucd) if ucd.includes(UcdWord("em.opt.r")) => Some(MagnitudeBand._g)
-  //       case ("rmag" | "e_rmag", ucd) if ucd.includes(UcdWord("em.opt.r")) => Some(MagnitudeBand._r)
-  //       case ("imag" | "e_imag", ucd) if ucd.includes(UcdWord("em.opt.i")) => Some(MagnitudeBand._i)
-  //       case _                                                             => super.parseBand(id, band)
-  //     }
-  // }
-
-  case object PPMXL extends CatalogAdapter with StandardAdapter {
-
-    val catalog: CatalogName = CatalogName.PPMXL
-
-    val idField            = FieldId.unsafeFrom("ppmxl", VoTableParser.UCD_OBJID)
-    val nameField: FieldId = idField
-    val raField            = FieldId.unsafeFrom("raj2000", VoTableParser.UCD_RA)
-    val decField           = FieldId.unsafeFrom("decj2000", VoTableParser.UCD_DEC)
-
-    // PPMXL may contain two representations for bands R and B, represented with ids r1mag/r2mag or b1mag/b2mac
-    // The ids r1mag/r2mag are preferred but if they are absent we should use the alternative values
-    val primaryMagnitudesIds   = List("r1mag", "b1mag")
-    val alternateMagnitudesIds = List("r2mag", "b2mag")
-    val idsMapping             = primaryMagnitudesIds.zip(alternateMagnitudesIds)
-
-    // Convert angular velocity to mas per year as provided by ppmxl
-    // override def parseAngularVelocity(
-    //   ucd: Ucd,
-    //   v:   String
-    // ): ValidatedNec[CatalogProblem, RadialVelocity] =
-    // CatalogAdapter.parseDoubleValue(ucd, v).map(RadialVelocity.fromDegreesPerYear)
-    override def parseBand(fieldId: FieldId, band: String) = defaultParseBand(band)
-
-    override def filterAndDeduplicateMagnitudes(
-      magnitudeFields: Vector[(FieldId, Magnitude)]
-    ): Vector[Magnitude] = {
-      // Read all magnitudes, including duplicates
-      val magMap1 = magnitudeFields.foldLeft(Map.empty[String, Magnitude]) {
-        case (m, (FieldId(i, _), mag)) if validMagnitude(mag) => m + (i.value -> mag)
-        case (m, _)                                           => m
-      }
-      // Now magMap1 might have double entries for R and B.  Get rid of the alternative if so.
-      val magMap2 = idsMapping.foldLeft(magMap1) { case (m, (id1, id2)) =>
-        if (magMap1.contains(id1)) m - id2 else m
-      }
-      magMap2.values.toVector
-    }
-  }
-
-  // case object Gaia extends CatalogAdapter {
-  //
-  //   val catalog: CatalogName =
-  //     CatalogName.Gaia
-  //
-  //   override val idField    = FieldId("designation", VoTableParser.UCD_OBJID)
-  //   override val raField    = FieldId("ra", VoTableParser.UCD_RA)
-  //   override val decField   = FieldId("dec", VoTableParser.UCD_DEC)
-  //   override val pmRaField  = FieldId("pmra", VoTableParser.UCD_PMRA)
-  //   override val pmDecField = FieldId("pmdec", VoTableParser.UCD_PMDEC)
-  //   override val rvField    = FieldId("radial_velocity", VoTableParser.UCD_RV)
-  //   override val plxField   = FieldId("parallax", VoTableParser.UCD_PLX)
-  //
-  //   // These are used to derive all other magnitude values.
-  //   val gMagField = FieldId("phot_g_mean_mag", Ucd("phot.mag;stat.mean;em.opt"))
-  //   val bpRpField = FieldId("bp_rp", Ucd("phot.color"))
-  //
-  //   /**
-  //     * List of all Gaia fields of interest.  These are used in forming the ADQL
-  //     * query that produces the VO Table.  See VoTableClient and the GaiaBackend.
-  //     */
-  //   val allFields: List[FieldId] =
-  //     List(
-  //       idField,
-  //       raField,
-  //       pmRaField,
-  //       decField,
-  //       pmDecField,
-  //       epochField,
-  //       plxField,
-  //       rvField,
-  //       gMagField,
-  //       bpRpField
-  //     )
-  //
-  //   final case class Conversion(
-  //     b:  MagnitudeBand,
-  //     g:  Double,
-  //     p1: Double,
-  //     p2: Double,
-  //     p3: Double
-  //   ) {
-  //
-  //     /**
-  //       * Convert the catalog g-mag value to a magnitude in another band.
-  //       */
-  //     def convert(gMag: Double, bpRp: Double): Magnitude =
-  //       Magnitude(
-  //         gMag + g + p1 * bpRp + p2 * Math.pow(bpRp, 2) + p3 * Math.pow(bpRp, 3),
-  //         b,
-  //         None,
-  //         MagnitudeSystem.Vega // Note that Gaia magnitudes are in the Vega system.
-  //       )
-  //
-  //   }
-  //
-  //   val conversions: List[Conversion] =
-  //     List(
-  //       Conversion(MagnitudeBand.V, 0.017600, 0.00686, 0.173200, 0.000000),
-  //       Conversion(MagnitudeBand.R, 0.003226, -0.38330, 0.134500, 0.000000),
-  //       Conversion(MagnitudeBand.I, -0.020850, -0.74190, 0.096310, 0.000000),
-  //       Conversion(MagnitudeBand._r, 0.128790, -0.24662, 0.027464, 0.049465),
-  //       Conversion(MagnitudeBand._i, 0.296760, -0.64728, 0.101410, 0.000000),
-  //       Conversion(MagnitudeBand._g, -0.135180, 0.46245, 0.251710, -0.021349),
-  //       Conversion(MagnitudeBand.K, 0.188500, -2.09200, 0.134500, 0.000000),
-  //       Conversion(MagnitudeBand.H, 0.162100, -1.96800, 0.132800, 0.000000),
-  //       Conversion(MagnitudeBand.J, 0.018830, -1.39400, 0.078930, 0.000000)
-  //     )
-  //
-  //   override def isMagnitudeField(v: (FieldId, String)): Boolean =
-  //     sys.error("unused")
-  //
-  //   override def isMagnitudeErrorField(v: (FieldId, String)): Boolean =
-  //     sys.error("unused")
-  //
-  //   override def filterAndDeduplicateMagnitudes(ms: List[(FieldId, Magnitude)]): List[Magnitude] =
-  //     sys.error("unused")
-  //
-  //   override def parseMagnitudeSys(
-  //     p: (FieldId, String)
-  //   ): CatalogProblem \/ Option[(MagnitudeBand, MagnitudeSystem)] =
-  //     sys.error("unused")
-  //
-  //   override def parseMagnitude(
-  //     p: (FieldId, String)
-  //   ): CatalogProblem \/ (FieldId, MagnitudeBand, Double) =
-  //     sys.error("unused")
-  //
-  //   override def fieldToBand(f: FieldId): Option[MagnitudeBand] =
-  //     sys.error("unused")
-  //
-  //   override def ignoreMagnitudeField(f: FieldId): Boolean =
-  //     sys.error("unused")
-  //
-  //   override def containsMagnitude(f: FieldId): Boolean =
-  //     sys.error("unused")
-  //
-  //   override def parseMagnitudes(
-  //     entries: Map[FieldId, String]
-  //   ): CatalogProblem \/ List[Magnitude] = {
-  //
-  //     type Try[A] = CatalogProblem \/ A
-  //
-  //     def doubleValue(f: FieldId): OptionT[Try, Double] =
-  //       OptionT[Try, Double](
-  //         entries
-  //           .get(f)
-  //           .filter(_.nonEmpty)
-  //           .traverseU(CatalogAdapter.parseDoubleValue(f.ucd, _))
-  //       )
-  //
-  //     (for {
-  //       gMag <- doubleValue(gMagField)
-  //       bpRp <- doubleValue(bpRpField)
-  //     } yield conversions.map(_.convert(gMag, bpRp))).getOrElse(Nil)
-  //
-  //   }
-  // }
-
   case object Simbad extends CatalogAdapter {
 
     val catalog: CatalogName =
@@ -443,12 +252,6 @@ object CatalogAdapter {
     // Simbad has a few special cases to map sloan magnitudes
     def findBand(id: FieldId): Option[MagnitudeBand] =
       (id.id.value, id.ucd) match {
-        // case ("FLUX_z" | "e_gmag", ucd) if ucd.includes(UcdWord("em.opt.i")) =>
-        //   Some(MagnitudeBand.SloanZ) // Special case
-        // case ("FLUX_g" | "e_rmag", ucd) if ucd.includes(UcdWord("em.opt.b")) =>
-        //   Some(MagnitudeBand.SloanG) // Special case
-        // case ("FLUX_r" | "e_rmag", ucd) if ucd.includes(UcdWord("em.opt.R")) =>
-        //   Some(MagnitudeBand.SloanR) // Special case
         case (magSystemID(b), _) => findBand(b)
         case (errorFluxID(b), _) => findBand(b)
         case (fluxID(b), _)      => findBand(b)
@@ -489,18 +292,10 @@ object CatalogAdapter {
       ).mapN((_, _))
     }
 
-    def containsExceptions(xml: Node): Boolean =
-      // The only case known is with java.lang.NullPointerException but let's make the check
-      // more general
-      (xml \\ "INFO" \ "@value").text.matches("java\\..*Exception")
   }
-
-  val All: List[CatalogAdapter] =
-    List(Simbad, PPMXL)
 
   def forCatalog(c: CatalogName): CatalogAdapter =
     c match {
       case CatalogName.Simbad => Simbad
-      case CatalogName.PPMXL  => PPMXL
     }
 }
