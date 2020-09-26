@@ -6,8 +6,8 @@ lazy val fs2Version              = "2.4.1"
 lazy val catsVersion             = "2.2.0"
 lazy val catsEffectVersion       = "2.2.0"
 lazy val kindProjectorVersion    = "0.11.0"
-lazy val sttpVersion             = "3.0.0-RC2"
-lazy val lucumaCoreVersion       = "0.4.5+3-1054e30b-SNAPSHOT"
+// lazy val sttpVersion             = "3.0.0-RC2"
+lazy val lucumaCoreVersion       = "0.4.5+8-f33cef6e-SNAPSHOT"
 lazy val monocleVersion          = "2.1.0"
 lazy val munitVersion            = "0.7.12"
 lazy val munitDisciplineVersion  = "0.3.0"
@@ -37,16 +37,15 @@ lazy val catalog = crossProject(JVMPlatform, JSPlatform)
   .settings(
     name := "lucuma-catalog",
     libraryDependencies ++= Seq(
-      "co.fs2"                       %%% "fs2-core"      % fs2Version,
-      "edu.gemini"                   %%% "lucuma-core"   % lucumaCoreVersion,
-      "org.typelevel"                %%% "cats-core"     % catsVersion,
-      "org.scala-lang.modules"       %%% "scala-xml"     % "2.0.0-M1",
-      "com.github.julien-truffaut"   %%% "monocle-core"  % monocleVersion,
-      "com.github.julien-truffaut"   %%% "monocle-macro" % monocleVersion,
-      "com.github.julien-truffaut"   %%% "monocle-state" % monocleVersion,
-      "com.softwaremill.sttp.client" %%% "core"          % sttpVersion,
-      "eu.timepit"                   %%% "refined"       % refinedVersion,
-      "eu.timepit"                   %%% "refined-cats"  % refinedVersion
+      "co.fs2"                     %%% "fs2-core"      % fs2Version,
+      "edu.gemini"                 %%% "lucuma-core"   % lucumaCoreVersion,
+      "org.typelevel"              %%% "cats-core"     % catsVersion,
+      "com.github.julien-truffaut" %%% "monocle-core"  % monocleVersion,
+      "com.github.julien-truffaut" %%% "monocle-macro" % monocleVersion,
+      "com.github.julien-truffaut" %%% "monocle-state" % monocleVersion,
+      // "com.softwaremill.sttp.client" %%% "core"          % sttpVersion,
+      "eu.timepit"                 %%% "refined"       % refinedVersion,
+      "eu.timepit"                 %%% "refined-cats"  % refinedVersion
     )
   )
   .jvmConfigure(_.enablePlugins(AutomateHeaderPlugin))
@@ -106,3 +105,8 @@ lazy val tests = crossProject(JVMPlatform, JSPlatform)
   .jvmConfigure(_.enablePlugins(AutomateHeaderPlugin))
   .jsSettings(lucumaScalaJsSettings: _*)
   .jsSettings(scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule)))
+  .jvmSettings(
+    libraryDependencies ++= Seq(
+      "co.fs2" %%% "fs2-io" % fs2Version
+    )
+  )

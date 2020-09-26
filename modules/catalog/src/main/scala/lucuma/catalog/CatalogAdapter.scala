@@ -29,14 +29,15 @@ sealed trait CatalogAdapter {
 
   // Required fields
   def idField: FieldId
+  def nameField: FieldId
   def raField: FieldId
   def decField: FieldId
-  def epochField = FieldId.unsafeFrom("ref_epoch", VoTableParser.UCD_EPOCH)
-  def pmRaField  = FieldId("pmra", VoTableParser.UCD_PMRA)
-  def pmDecField = FieldId("pmde", VoTableParser.UCD_PMDEC)
-  def zField     = FieldId("Z_VALUE", VoTableParser.UCD_Z)
-  def rvField    = FieldId("RV_VALUE", VoTableParser.UCD_RV)
-  def plxField   = FieldId("PLX_VALUE", VoTableParser.UCD_PLX)
+  def epochField: FieldId = FieldId.unsafeFrom("ref_epoch", VoTableParser.UCD_EPOCH)
+  def pmRaField: FieldId  = FieldId.unsafeFrom("pmra", VoTableParser.UCD_PMRA)
+  def pmDecField: FieldId = FieldId.unsafeFrom("pmde", VoTableParser.UCD_PMDEC)
+  def zField: FieldId     = FieldId.unsafeFrom("Z_VALUE", VoTableParser.UCD_Z)
+  def rvField: FieldId    = FieldId.unsafeFrom("RV_VALUE", VoTableParser.UCD_RV)
+  def plxField: FieldId   = FieldId.unsafeFrom("PLX_VALUE", VoTableParser.UCD_PLX)
 
   // From a Field extract the band from either the field id or the UCD
   protected def fieldToBand(field: FieldId): Option[MagnitudeBand]
@@ -75,22 +76,20 @@ sealed trait CatalogAdapter {
 
   // Attempts to extract the radial velocity of a field
   def parseRadialVelocity(ucd: Ucd, v: String): ValidatedNec[CatalogProblem, RadialVelocity] =
-    CatalogAdapter
-      .parseDoubleValue(ucd, v)
+    parseDoubleValue(ucd, v)
       .map(v => RadialVelocity(v.withUnit[MetersPerSecond]))
       .andThen(Validated.fromOption(_, NonEmptyChain.one(FieldValueProblem(ucd, v))))
 
   // Attempts to extract the angular velocity of a field
-  def parseAngularVelocity[A](
+  protected def parseAngularVelocity[A](
     ucd: Ucd,
     v:   String
   ): ValidatedNec[CatalogProblem, AngularVelocityComponent[A]] =
-    CatalogAdapter
-      .parseDoubleValue(ucd, v)
+    parseDoubleValue(ucd, v)
       .map(v => AngularVelocityComponent[A](v.withUnit[MilliArcSecondPerYear]))
       .andThen(Validated.validNec(_))
 
-  def parseProperVelocity(
+  protected def parseProperVelocity(
     pmra:  Option[String],
     pmdec: Option[String]
   ): ValidatedNec[CatalogProblem, Option[ProperVelocity]] =
@@ -102,8 +101,15 @@ sealed trait CatalogAdapter {
       }
     }.sequence
 
+  def parseProperVelocity(
+    entries: Map[FieldId, String]
+  ): ValidatedNec[CatalogProblem, Option[ProperVelocity]] = {
+    val pmRa  = entries.get(pmRaField)
+    val pmDec = entries.get(pmDecField)
+    parseProperVelocity(pmRa, pmDec)
+  }
   // Attempts to extract a band and value for a magnitude from a pair of field and value
-  def parseMagnitude(
+  protected[catalog] def parseMagnitude(
     fieldId: FieldId,
     value:   String
   ): ValidatedNec[CatalogProblem, (FieldId, MagnitudeBand, Double)] = {
@@ -111,7 +117,7 @@ sealed trait CatalogAdapter {
     val band = fieldToBand(fieldId)
 
     (Validated.fromOption(band, UnmatchedField(fieldId.ucd)).toValidatedNec,
-     CatalogAdapter.parseDoubleValue(fieldId.ucd, value)
+     parseDoubleValue(fieldId.ucd, value)
     ).mapN { (b, v) =>
       (fieldId, b, v)
     }
@@ -219,15 +225,6 @@ object CatalogAdapter {
 
   val magRegex = """(?i)em.(opt|IR)(\.\w)?""".r
 
-  def parseDoubleValue(
-    ucd: Ucd,
-    s:   String
-  ): ValidatedNec[CatalogProblem, Double] =
-    Validated
-      .catchNonFatal(s.toDouble)
-      .leftMap(_ => FieldValueProblem(ucd, s))
-      .toValidatedNec
-
   // case object UCAC4 extends CatalogAdapter with StandardAdapter {
   //
   //   val catalog: CatalogName =
@@ -264,9 +261,10 @@ object CatalogAdapter {
 
     val catalog: CatalogName = CatalogName.PPMXL
 
-    val idField  = FieldId.unsafeFrom("ppmxl", VoTableParser.UCD_OBJID)
-    val raField  = FieldId.unsafeFrom("raj2000", VoTableParser.UCD_RA)
-    val decField = FieldId.unsafeFrom("decj2000", VoTableParser.UCD_DEC)
+    val idField            = FieldId.unsafeFrom("ppmxl", VoTableParser.UCD_OBJID)
+    val nameField: FieldId = idField
+    val raField            = FieldId.unsafeFrom("raj2000", VoTableParser.UCD_RA)
+    val decField           = FieldId.unsafeFrom("decj2000", VoTableParser.UCD_DEC)
 
     // PPMXL may contain two representations for bands R and B, represented with ids r1mag/r2mag or b1mag/b2mac
     // The ids r1mag/r2mag are preferred but if they are absent we should use the alternative values
@@ -426,12 +424,13 @@ object CatalogAdapter {
     private val fluxIDExtra      = "FLUX_(.)_.+"
     private val errorFluxID      = "FLUX_ERROR_(.)".r
     private val fluxID           = "FLUX_(.)".r
-    private val magSystemID      = "FLUX_SYSTEM_(.)".r
+    private val magSystemID      = "FLUX_SYSTEM_(.).*".r
     val idField                  = FieldId.unsafeFrom("MAIN_ID", VoTableParser.UCD_OBJID)
+    val nameField: FieldId       = FieldId.unsafeFrom("TYPED_ID", VoTableParser.UCD_TYPEDID)
     val raField                  = FieldId.unsafeFrom("RA_d", VoTableParser.UCD_RA)
     val decField                 = FieldId.unsafeFrom("DEC_d", VoTableParser.UCD_DEC)
-    override val pmRaField       = FieldId("PMRA", VoTableParser.UCD_PMRA)
-    override val pmDecField      = FieldId("PMDEC", VoTableParser.UCD_PMDEC)
+    override val pmRaField       = FieldId.unsafeFrom("PMRA", VoTableParser.UCD_PMRA)
+    override val pmDecField      = FieldId.unsafeFrom("PMDEC", VoTableParser.UCD_PMDEC)
 
     override def ignoreMagnitudeField(v: FieldId): Boolean =
       !v.id.value.toLowerCase.startsWith("flux") ||
@@ -498,8 +497,10 @@ object CatalogAdapter {
 
   val All: List[CatalogAdapter] =
     List(Simbad, PPMXL)
-  // List(UCAC4, PPMXL, Gaia, Simbad)
 
-  def forCatalog(c: CatalogName): Option[CatalogAdapter] =
-    All.find(_.catalog === c)
+  def forCatalog(c: CatalogName): CatalogAdapter =
+    c match {
+      case CatalogName.Simbad => Simbad
+      case CatalogName.PPMXL  => PPMXL
+    }
 }

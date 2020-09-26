@@ -3,25 +3,25 @@
 
 package lucuma.catalog
 
-// import edu.gemini.catalog.api.CatalogName
-// import edu.gemini.spModel.core._
-// import gsp.catalog.api._
 import cats.effect._
+import cats.data.Validated
+import cats.data.NonEmptyChain
+import cats.MonadError
 import cats.implicits._
+import eu.timepit.refined.collection.NonEmpty
+import eu.timepit.refined._
 import fs2._
 import fs2.data.xml._
 import lucuma.catalog._
 import munit.CatsEffectSuite
 import scala.xml.Node
-import cats.data.Validated
-import cats.data.NonEmptyChain
-import cats.MonadError
 import scala.xml.Utility
 import lucuma.core.model.Target
 import lucuma.core.math._
 import lucuma.core.model.Magnitude
 import lucuma.core.enum.MagnitudeBand
 import lucuma.core.enum.MagnitudeSystem
+import scala.collection.immutable.SortedMap
 
 class VoTableParserSuite extends CatsEffectSuite with VoTableParser with VoTableSamples {
   def toStream[F[_]: MonadError[*[_], Throwable]](xml: Node): Stream[F, XmlEvent] =
@@ -345,7 +345,8 @@ class VoTableParserSuite extends CatsEffectSuite with VoTableParser with VoTable
       Magnitude(MagnitudeValue.fromDouble(20.3051), MagnitudeBand.I, MagnitudeSystem.AB)
     )
     val results     = Target(
-      name = "-2140405448",
+      name = refineMV[NonEmpty]("-2140405448"),
+      catalogId = refineMV[NonEmpty]("-2140405448").some,
       track = ProperMotion
         .const(
           Coordinates(
@@ -356,7 +357,7 @@ class VoTableParserSuite extends CatsEffectSuite with VoTableParser with VoTable
           )
         )
         .asRight,
-      magsTarget1
+      SortedMap(magsTarget1.fproductLeft(_.band): _*)
     )
     toStream[IO](targets)
       .through(xml2targets(CatalogAdapter.PPMXL))
@@ -365,15 +366,14 @@ class VoTableParserSuite extends CatsEffectSuite with VoTableParser with VoTable
       .map(_.headOption.collect { case Validated.Valid(t) =>
         assertEquals(t, results)
       })
-    // val magsTarget2 = List(new Magnitude(23.0853, MagnitudeBand.U), new Magnitude(23.0889, MagnitudeBand._g), new Magnitude(21.7686, MagnitudeBand.R), new Magnitude(20.7891, MagnitudeBand.I), new Magnitude(20.0088, MagnitudeBand._z))
-    //
-    // val result = ParsedTable(List(
-    //   \/-(SiderealTarget.empty.copy(name = "-2140404569", coordinates = Coordinates(RightAscension.fromDegrees(359.749274134), Declination.fromAngle(Angle.parseDegrees("0.210251239819").getOrElse(Angle.zero)).getOrElse(Declination.zero)), magnitudes = magsTarget2))
-    // ))
-    // // There is only one table
-    // parse(CatalogAdapter.PPMXL, voTable).tables.head should beEqualTo(result)
-    // parse(CatalogAdapter.PPMXL, voTable).tables.head.containsError should beFalse
   }
+
+  // val magsTarget2 = List(new Magnitude(23.0853, MagnitudeBand.U), new Magnitude(23.0889, MagnitudeBand._g), new Magnitude(21.7686, MagnitudeBand.R), new Magnitude(20.7891, MagnitudeBand.I), new Magnitude(20.0088, MagnitudeBand._z))
+  //
+  // val result = ParsedTable(List(
+  //   \/-(SiderealTarget.empty.copy(name = "-2140404569", coordinates = Coordinates(RightAscension.fromDegrees(359.749274134), Declination.fromAngle(Angle.parseDegrees("0.210251239819").getOrElse(Angle.zero)).getOrElse(Declination.zero)), magnitudes = magsTarget2))
+  // ))
+
 //     "be able to convert a TableRow into a SiderealTarget" in {
 //       val fields = parseFields(fieldsNode)
 //
@@ -629,33 +629,6 @@ class VoTableParserSuite extends CatsEffectSuite with VoTableParser with VoTable
 //       val imag = result.map(_.magnitudeIn(MagnitudeBand._i))
 //       // rmag gets converted to r'
 //       imag should beEqualTo(\/.right(Some(Magnitude(5, MagnitudeBand._i, 0.34.some, MagnitudeSystem.AB))))
-//     }
-//     "parse simbad named queries" in {
-//       // From http://simbad.u-strasbg.fr/simbad/sim-id?Ident=Vega&output.format=VOTable
-//       val xmlFile = "simbad-vega.xml"
-//       // The sample has only one row
-//       val result = VoTableParser.parse(CatalogName.SIMBAD, getClass.getResourceAsStream(s"/$xmlFile")).getOrElse(ParsedVoResource(Nil)).tables.headOption.flatMap(_.rows.headOption).get
-//
-//       // id and coordinates
-//       result.map(_.name) should beEqualTo(\/.right("* alf Lyr"))
-//       result.map(_.coordinates.ra) should beEqualTo(\/.right(RightAscension.fromAngle(Angle.fromDegrees(279.23473479))))
-//       result.map(_.coordinates.dec) should beEqualTo(\/.right(Declination.fromAngle(Angle.fromDegrees(38.78368896)).getOrElse(Declination.zero)))
-//       // proper motions
-//       result.map(_.properMotion.map(_.deltaRA)) should beEqualTo(\/.right(Some(RightAscensionAngularVelocity(AngularVelocity(200.94)))))
-//       result.map(_.properMotion.map(_.deltaDec)) should beEqualTo(\/.right(Some(DeclinationAngularVelocity(AngularVelocity(286.23)))))
-//       // redshift
-//       result.map(_.redshift) should beEqualTo(\/.right(Redshift(-0.000069).some))
-//       // parallax
-//       result.map(_.parallax) should beEqualTo(\/.right(Parallax(130.23).some))
-//       // magnitudes
-//       result.map(_.magnitudeIn(MagnitudeBand.U)) should beEqualTo(\/.right(Some(new Magnitude(0.03, MagnitudeBand.U))))
-//       result.map(_.magnitudeIn(MagnitudeBand.B)) should beEqualTo(\/.right(Some(new Magnitude(0.03, MagnitudeBand.B))))
-//       result.map(_.magnitudeIn(MagnitudeBand.V)) should beEqualTo(\/.right(Some(new Magnitude(0.03, MagnitudeBand.V))))
-//       result.map(_.magnitudeIn(MagnitudeBand.R)) should beEqualTo(\/.right(Some(new Magnitude(0.07, MagnitudeBand.R))))
-//       result.map(_.magnitudeIn(MagnitudeBand.I)) should beEqualTo(\/.right(Some(new Magnitude(0.10, MagnitudeBand.I))))
-//       result.map(_.magnitudeIn(MagnitudeBand.J)) should beEqualTo(\/.right(Some(new Magnitude(-0.18, MagnitudeBand.J))))
-//       result.map(_.magnitudeIn(MagnitudeBand.H)) should beEqualTo(\/.right(Some(new Magnitude(-0.03, MagnitudeBand.H))))
-//       result.map(_.magnitudeIn(MagnitudeBand.K)) should beEqualTo(\/.right(Some(new Magnitude(0.13, MagnitudeBand.K))))
 //     }
 //     "parse simbad named queries with sloan magnitudes" in {
 //       // From http://simbad.u-strasbg.fr/simbad/sim-id?Ident=2MFGC6625&output.format=VOTable

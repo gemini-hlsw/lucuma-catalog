@@ -3,20 +3,18 @@
 
 package lucuma.catalog
 
+import cats._
 import cats.data.Validated._
 import cats.data._
 import cats.implicits._
+import coulomb._
 import eu.timepit.refined._
 import eu.timepit.refined.cats.syntax._
 import eu.timepit.refined.collection.NonEmpty
 import eu.timepit.refined.types.string.NonEmptyString
 import fs2._
-import fs2.data.xml.Attr
-import fs2.data.xml.QName
-import fs2.data.xml.XmlEvent
-import fs2.data.xml.XmlEvent.EndTag
-import fs2.data.xml.XmlEvent.StartTag
-import fs2.data.xml.XmlEvent.XmlString
+import fs2.data.xml._
+import fs2.data.xml.XmlEvent._
 import lucuma.catalog._
 import lucuma.core.math.Angle
 import lucuma.core.math.Coordinates
@@ -24,10 +22,14 @@ import lucuma.core.math.Declination
 import lucuma.core.math.Epoch
 import lucuma.core.math.ProperMotion
 import lucuma.core.math.RightAscension
-import lucuma.core.model.Magnitude
 import lucuma.core.model.Target
 import monocle.function.Index.listIndex
 import monocle.macros.Lenses
+import scala.collection.immutable.SortedMap
+import lucuma.core.math.Parallax
+import lucuma.core.math.RadialVelocity
+import lucuma.core.math.Redshift
+import lucuma.core.math.units.KilometersPerSecond
 
 @Lenses
 private[catalog] case class PartialTableRowItem(field: FieldDescriptor)
@@ -41,13 +43,9 @@ private[catalog] case class PartialTableRow(
 }
 
 object VoTableParser extends VoTableParser {
-  // type CatalogResult = Either[CatalogProblem, ParsedVoResource]
-
-  // by band
-  val MagnitudeOrdering: scala.math.Ordering[Magnitude] =
-    scala.math.Ordering.by(_.band)
 
   val UCD_OBJID      = Ucd.unsafeFromString("meta.id;meta.main")
+  val UCD_TYPEDID    = Ucd.unsafeFromString("meta.id")
   val UCD_EPOCH      = Ucd.unsafeFromString("meta.ref;time.epoch")
   val UCD_RA         = Ucd.unsafeFromString("pos.eq.ra;meta.main")
   val UCD_DEC        = Ucd.unsafeFromString("pos.eq.dec;meta.main")
@@ -64,8 +62,7 @@ object VoTableParser extends VoTableParser {
 
 trait VoTableParser {
 
-  import scala.xml.Node
-  def fd[F[_]]: Pipe[F, XmlEvent, ValidatedNec[CatalogProblem, FieldDescriptor]] = {
+  protected def fd[F[_]]: Pipe[F, XmlEvent, ValidatedNec[CatalogProblem, FieldDescriptor]] = {
     def go(
       s:  Stream[F, XmlEvent],
       fd: ValidatedNec[CatalogProblem, FieldDescriptor]
@@ -103,7 +100,8 @@ trait VoTableParser {
       go(in, Validated.invalidNec[CatalogProblem, FieldDescriptor](MissingXmlTag("FIELD"))).stream
   }
 
-  def fds[F[_]]: Pipe[F, XmlEvent, List[ValidatedNec[CatalogProblem, FieldDescriptor]]] = {
+  protected def fds[F[_]]
+    : Pipe[F, XmlEvent, List[ValidatedNec[CatalogProblem, FieldDescriptor]]] = {
     def go(
       s: Stream[F, XmlEvent],
       l: List[ValidatedNec[CatalogProblem, FieldDescriptor]]
@@ -343,19 +341,31 @@ trait VoTableParser {
     in => go(in, PartialTableRow(Nil), Nil, None).stream
   }
 
-  def targetRow2Target(
+  /**
+   * Function to convert a TableRow to a target using a given adapter
+   */
+  protected def targetRow2Target(
     adapter: CatalogAdapter,
     row:     TableRow
   ): ValidatedNec[CatalogProblem, Target] = {
     val entries = row.itemsMap
 
-    def parseId: ValidatedNec[CatalogProblem, String] =
+    def parseId: ValidatedNec[CatalogProblem, NonEmptyString] =
       Validated
-        .fromOption(entries.get(adapter.idField), MissingValue(adapter.idField))
+        .fromOption(entries.get(adapter.idField).flatMap(refineV[NonEmpty](_).toOption),
+                    MissingValue(adapter.idField)
+        )
+        .toValidatedNec
+
+    def parseName: ValidatedNec[CatalogProblem, NonEmptyString] =
+      Validated
+        .fromOption(entries.get(adapter.nameField).flatMap(refineV[NonEmpty](_).toOption),
+                    MissingValue(adapter.nameField)
+        )
         .toValidatedNec
 
     def parseDoubleDegrees(ucd: Ucd, v: String): ValidatedNec[CatalogProblem, Angle] =
-      CatalogAdapter.parseDoubleValue(ucd, v).map(Angle.fromDoubleDegrees)
+      parseDoubleValue(ucd, v).map(Angle.fromDoubleDegrees)
 
     def parseDec: ValidatedNec[CatalogProblem, Declination] =
       Validated
@@ -371,28 +381,65 @@ trait VoTableParser {
         .andThen(parseDoubleDegrees(VoTableParser.UCD_RA, _))
         .map(a => RightAscension.fromDoubleDegrees(a.toDoubleDegrees))
 
-    def parseProperMotion: ValidatedNec[CatalogProblem, ProperMotion] =
-      (parseRA, parseDec, parseEpoch).mapN { (ra, dec, epoch) =>
-        ProperMotion(Coordinates(ra, dec), epoch, None, None, None)
-      }
+    val parsePV = adapter.parseProperVelocity(entries)
 
     def parseEpoch: ValidatedNec[CatalogProblem, Epoch] =
       Validated.validNec(
         entries.get(adapter.epochField).flatMap(Epoch.fromString.getOption).getOrElse(Epoch.J2000)
       )
 
+    def parsePlx: ValidatedNec[CatalogProblem, Option[Parallax]] =
+      entries.get(adapter.plxField) match {
+        case Some(p) =>
+          parseDoubleValue(VoTableParser.UCD_PLX, p)
+            .map(p => Parallax.milliarcseconds.reverseGet(p).some)
+        case _       =>
+          Validated.validNec(none)
+      }
+
+    // Read readial velocity. if not found it will try to get it from redshift
+    def parseRadialVelocity: ValidatedNec[CatalogProblem, Option[RadialVelocity]] = {
+      def rvFromZ(z: String) =
+        parseDoubleValue(VoTableParser.UCD_Z, z)
+          .map(z => Redshift(z).toRadialVelocity)
+
+      def fromRV(rv: String) =
+        parseDoubleValue(VoTableParser.UCD_RV, rv)
+          .map(rv => RadialVelocity(rv.withUnit[KilometersPerSecond]))
+
+      (entries.get(adapter.rvField), entries.get(adapter.zField)) match {
+        case (Some(rv), Some(z)) =>
+          fromRV(rv).orElse(rvFromZ(z))
+        case (Some(rv), _)       =>
+          fromRV(rv)
+        case (_, Some(z))        =>
+          rvFromZ(z)
+        case _                   =>
+          Validated.validNec(none)
+      }
+    }
+
+    def parseProperMotion: ValidatedNec[CatalogProblem, ProperMotion] =
+      (parseRA, parseDec, parseEpoch, parsePV, parseRadialVelocity, parsePlx).mapN {
+        (ra, dec, epoch, pv, rv, plx) =>
+          ProperMotion(Coordinates(ra, dec), epoch, pv, rv, plx)
+      }
+
     val parseMagnitudes = adapter.parseMagnitudes(entries)
 
     def parseSiderealTarget: ValidatedNec[CatalogProblem, Target] =
-      (parseId, parseProperMotion, parseMagnitudes).mapN { (id, pm, mags) =>
-        Target(id, pm.asRight, mags)
+      (parseName, parseId, parseProperMotion, parseMagnitudes).mapN { (name, id, pm, mags) =>
+        Target(name, id.some, pm.asRight, SortedMap(mags.fproductLeft(_.band): _*))
       }
 
     parseSiderealTarget.leftMap(x => x.map(u => println(u.displayValue)))
     parseSiderealTarget
   }
 
-  protected def xml2targets[F[_]](
+  /**
+   * FS2 pipe to convert a stream of xml events to targets
+   */
+  def xml2targets[F[_]](
     adapter: CatalogAdapter
   ): Pipe[F, XmlEvent, ValidatedNec[CatalogProblem, Target]] = {
     def go(
@@ -407,188 +454,16 @@ trait VoTableParser {
     in => go(in.through(trsf[F])).stream
   }
 
-  protected def parseTableRow(fields: List[FieldDescriptor], xml: Node): TableRow = {
-    val rows = for {
-      tr <- xml \\ "TR"
-      td  = tr \ "TD"
-      if td.length == fields.length
-    } yield for {
-      f <- fields.zip(td)
-    } yield TableRowItem(f._1, f._2.text)
-    TableRow(rows.flatten.toList)
-  }
-
-  protected def parseTableRows(fields: List[FieldDescriptor], xml: Node) =
-    for {
-      table <- xml \\ "TABLEDATA"
-      tr    <- table \\ "TR"
-    } yield parseTableRow(fields, tr)
-
   /**
-   * Takes an XML Node and attempts to extract the resources and targets from a VOBTable
+   * FS2 pipe to convert a stream of String to targets
    */
-  // protected def parseNode(adapter: CatalogAdapter, xml: Node): ParsedVoResource[List] =
-  //   ParsedVoResource(
-  //     (xml \\ "TABLE").toList.map { table =>
-  //       val fields = parseFields(table)
-  //       val rows   = parseTableRows(fields, table).toList
-  //
-  //       ParsedTable(rows.traverse(tableRow2Target(adapter, fields)))
-  //     }
-  //   )
-
-  /**
-   * Convert a table row to a sidereal target or CatalogProblem
-   */
-  // protected def tableRow2Target(adapter: CatalogAdapter, fields: List[FieldDescriptor])(
-//     row:                                 TableRow
-//   ): ValidatedNel[CatalogProblem, Target] = {
-//     println(fields)
-//     val entries = row.itemsMap
-//
-//     def parseEpoch: ValidatedNel[CatalogProblem, Epoch] =
-//       Validated.validNel(
-//         entries.get(adapter.epochField).flatMap(Epoch.fromString.getOption).getOrElse(Epoch.J2000)
-//       )
-//     // e.fold(Epoch.J2000.validNel[CatalogProblem]) { s =>
-//     //   CatalogAdapter.parseDoubleValue(VoTableParser.UCD_EPOCH, s).map(Epoch.fromString.getOption)
-//     // }
-//
-//     // def parseProperMotion(
-//     //   pm:    (Option[String], Option[String]),
-//     //   epoch: Option[String]
-//     // ): ValidatedNel[CatalogProblem, Option[ProperMotion]] =
-//     //   (pm._1.filter(_.nonEmpty), pm._2.filter(_.nonEmpty)).mapN { (pmra, pmdec) =>
-//     //     for {
-//     //       pv <- adapter.parseProperVelocity(pmra, pmdec)
-//     //       e  <- parseEpoch(epoch)
-//     //     } yield ProperMotion(pmra, pmdec, e)
-//     //   }.sequenceU
-//     //
-//     // def parseDoubleVal[A](
-//     //   s: Option[String],
-//     //   u: Ucd
-//     // )(
-//     //   f: Double => CatalogProblem \/ A
-//     // ): CatalogProblem \/ Option[A] =
-//     //   s.filter(_.nonEmpty).traverseU { ds =>
-//     //     for {
-//     //       d <- CatalogAdapter.parseDoubleValue(u, ds)
-//     //       a <- f(d)
-//     //     } yield a
-//     //   }
-//
-//     // def parseZ(z: Option[String]): CatalogProblem \/ Option[Redshift] =
-//     //   parseDoubleVal(z, VoTableParser.UCD_Z) { d =>
-//     //     Redshift(d).right[CatalogProblem]
-//     //   }
-//     //
-//     // def parseRv(kps: Option[String]): CatalogProblem \/ Option[Redshift] =
-//     //   parseDoubleVal(kps, VoTableParser.UCD_RV) { d =>
-//     //     if (d.abs > Redshift.C.toKilometersPerSecond)
-//     //       GenericError("Invalid radial velocity: " + kps).left
-//     //     else Redshift.fromRadialVelocityJava(d).right
-//     //   }
-//     //
-//     // def parsePlx(plx: Option[String]): CatalogProblem \/ Option[Parallax] =
-//     //   parseDoubleVal(plx, VoTableParser.UCD_PLX)(d => Parallax(0.0.max(d)).right)
-//     //
-//     def parseId: ValidatedNec[CatalogProblem, String] =
-//       Validated
-//         .fromOption(entries.get(adapter.idField), MissingValue(adapter.idField))
-//         .toValidatedNel
-//
-//     def parseDoubleDegrees(ucd: Ucd, v: String): ValidatedNec[CatalogProblem, Angle] =
-//       CatalogAdapter.parseDoubleValue(ucd, v).map(Angle.fromDoubleDegrees)
-//
-//     def parseDec: ValidatedNec[CatalogProblem, Declination] =
-//       Validated
-//         .fromOption(entries.get(adapter.raField), MissingValue(adapter.raField))
-//         .toValidatedNec
-//         .andThen(parseDoubleDegrees(VoTableParser.UCD_DEC, _))
-//         .andThen(a =>
-//           Validated
-//             .fromOption(
-//               Declination.fromAngle.getOption(a),
-//               FieldValueProblem(VoTableParser.UCD_DEC, a.toString)
-//             )
-//             .toValidatedNec
-//         )
-//
-//     def parseRA: ValidatedNec[CatalogProblem, RightAscension] =
-//       Validated
-//         .fromOption(entries.get(adapter.raField), MissingValue(adapter.raField))
-//         .toValidatedNec
-//         .andThen(parseDoubleDegrees(VoTableParser.UCD_RA, _))
-//         .andThen(a =>
-//           Validated
-//             .fromOption(
-//               RightAscension.fromAngleExact.getOption(a),
-//               FieldValueProblem(VoTableParser.UCD_RA, a.toString)
-//             )
-//             .toValidatedNec
-//         )
-//
-//     def parseProperMotion: ValidatedNec[CatalogProblem, ProperMotion] =
-//       (parseRA, parseDec, parseEpoch).mapN { (ra, dec, epoch) =>
-//         ProperMotion(Coordinates(ra, dec), epoch, None, None, None)
-//       }
-//
-//     // def parseId: ValidatedNel[CatalogProblem, String] =
-//     //   Validated
-//     //     .fromOption(entries.get(adapter.idField), MissingValue(adapter.idField))
-//     //     .toValidatedNel
-//     //
-//     // def toSiderealTarget(
-//     //   id:    String,
-//     //   ra:    String,
-//     //   dec:   String,
-//     //   pm:    (Option[String], Option[String]),
-//     //   epoch: Option[String],
-//     //   z:     Option[String],
-//     //   kps:   Option[String],
-//     //   plx:   Option[String]
-//     // ): ValidatedNel[CatalogProblem, Target] =
-//     // for {
-//     //   r            <- Angle.parseDegrees(ra).leftMap(_ => FieldValueProblem(VoTableParser.UCD_RA, ra))
-//     //   d            <- Angle.parseDegrees(dec).leftMap(_ => FieldValueProblem(VoTableParser.UCD_DEC, dec))
-//     //   declination  <- Declination.fromAngle(d) \/> FieldValueProblem(VoTableParser.UCD_DEC, dec)
-//     //   properMotion <- parseProperMotion(pm, epoch)
-//     //   redshift0    <- parseZ(z)
-//     //   redshift1    <- parseRv(kps)
-//     //   parallax     <- parsePlx(plx)
-//     //   mags         <- adapter.parseMagnitudes(entries)
-//     // } yield SiderealTarget(
-//     //   id,
-//     //   Coordinates(RightAscension.fromAngle(r), declination),
-//     //   properMotion,
-//     //   redshift0.orElse(redshift1),
-//     //   parallax,
-//     //   mags,
-//     //   None,
-//     //   None
-//     // )
-//     def parseSiderealTarget: ValidatedNel[CatalogProblem, Target] =
-//       (parseId, parseProperMotion).mapN { (id, pm) =>
-//         Target(id, pm.asRight)
-//       }
-// //     for {
-// //       id <- Validated
-// //               .fromOption(entries.get(adapter.idField), MissingValue(adapter.idField))
-// //               .toValidatedNel
-// //       ra   <- entries.get(adapter.raField) \/> MissingValue(adapter.raField)
-// //       dec  <- entries.get(adapter.decField) \/> MissingValue(adapter.decField)
-// //       pmRa  = entries.get(adapter.pmRaField)
-// //       pmDec = entries.get(adapter.pmDecField)
-// //       epoch = entries.get(adapter.epochField)
-// //       // z     = entries.get(adapter.zField)
-// //       // kps   = entries.get(adapter.rvField)
-// //       // plx   = entries.get(adapter.plxField)
-// //       t    <- toSiderealTarget(id, ra, dec, (pmRa, pmDec), epoch, z, kps, plx)
-// //     } yield t
-// //
-//     // }
-//
-//     parseSiderealTarget
-  // }
+  def targets[F[_]: RaiseThrowable: MonadError[*[_], Throwable]](
+    catalog: CatalogName
+  ): Pipe[F, String, ValidatedNec[CatalogProblem, Target]] =
+    in =>
+      in.flatMap(Stream.emits(_))
+        .through(events[F])
+        .through(referenceResolver[F]())
+        .through(normalize[F])
+        .through(xml2targets[F](CatalogAdapter.forCatalog(catalog)))
 }
