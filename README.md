@@ -47,7 +47,8 @@ Blocker[IO].use { blocker =>
     .unsafeRunSync()
 }
 ```
-Examples for [JVM](modules/tests/jvm/src/main/scala/lucuma/catalog/SimbadQuerySample.scala) and [JS](modules/tests/js/src/main/scala/lucuma/catalog/SimbadQuerySample.scala) are provided that will query [Simbad](http://simbad.u-strasbg.fr/simbad/) using [sttp](https://github.com/softwaremill/sttp) as http client
+Examples for [JVM](modules/tests/jvm/src/main/scala/lucuma/catalog/SimbadQuerySample.scala) and [JS](modules/tests/js/src/main/scala/lucuma/catalog/SimbadQuerySample.scala) are provided
+Each example will query [Simbad](http://simbad.u-strasbg.fr/simbad/) using [sttp](https://github.com/softwaremill/sttp) as http client and pretty print the result.
 
 ## fs2-data-xml
 
