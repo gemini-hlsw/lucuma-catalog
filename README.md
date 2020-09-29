@@ -44,6 +44,7 @@ Blocker[IO].use { blocker =>
     .unsafeRunSync()
 }
 ```
+Examples for jvm and js are provided that will query Simbad using [sttp](https://github.com/softwaremill/sttp) as http client
 
 ## fs2-data-xml
 
