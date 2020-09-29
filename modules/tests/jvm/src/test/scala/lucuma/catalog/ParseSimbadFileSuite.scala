@@ -18,6 +18,8 @@ import lucuma.core.math.Declination
 import lucuma.core.math.ProperVelocity
 import lucuma.core.math.units.MicroArcSecondPerYear
 import lucuma.core.model.Magnitude
+import lucuma.core.model.CatalogId
+import lucuma.core.enum.CatalogName
 import lucuma.core.enum.MagnitudeSystem
 import lucuma.core.math.MagnitudeValue
 import lucuma.core.enum.MagnitudeBand
@@ -45,7 +47,9 @@ class ParseSimbadFileSuite extends CatsEffectSuite with VoTableParser {
           case Validated.Valid(t)   =>
             // id and search name
             assertEquals(t.name, refineMV[NonEmpty]("Vega"))
-            assertEquals(t.catalogId, refineMV[NonEmpty]("* alf Lyr").some)
+            assertEquals(t.track.map(_.catalogId).toOption.flatten,
+                         CatalogId(CatalogName.Simbad, refineMV[NonEmpty]("* alf Lyr")).some
+            )
             // base coordinates
             assertEquals(
               Target.baseRA.getOption(t),
@@ -127,7 +131,9 @@ class ParseSimbadFileSuite extends CatsEffectSuite with VoTableParser {
           case Validated.Valid(t)   =>
             // id and search name
             assertEquals(t.name, refineMV[NonEmpty]("2MFGC6625"))
-            assertEquals(t.catalogId, refineMV[NonEmpty]("2MFGC 6625").some)
+            assertEquals(t.track.map(_.catalogId).toOption.flatten,
+                         CatalogId(CatalogName.Simbad, refineMV[NonEmpty]("2MFGC 6625")).some
+            )
             // base coordinates
             assertEquals(
               Target.baseRA.getOption(t),
@@ -209,7 +215,10 @@ class ParseSimbadFileSuite extends CatsEffectSuite with VoTableParser {
           case Validated.Valid(t)   =>
             // id and search name
             assertEquals(t.name, refineMV[NonEmpty]("2SLAQ J000008.13+001634.6"))
-            assertEquals(t.catalogId, refineMV[NonEmpty]("2SLAQ J000008.13+001634.6").some)
+            assertEquals(
+              t.track.map(_.catalogId).toOption.flatten,
+              CatalogId(CatalogName.Simbad, "2SLAQ J000008.13+001634.6")
+            )
             // base coordinates
             assertEquals(
               Target.baseRA.getOption(t),
@@ -382,7 +391,9 @@ class ParseSimbadFileSuite extends CatsEffectSuite with VoTableParser {
           case Validated.Valid(t)   =>
             // id and search name
             assertEquals(t.name, refineMV[NonEmpty]("NGC 2438"))
-            assertEquals(t.catalogId, refineMV[NonEmpty]("NGC  2438").some)
+            assertEquals(t.track.toOption.map(_.catalogId).flatten,
+                         CatalogId(CatalogName.Simbad, "NGC  2438")
+            )
             assertEquals(
               Target.magnitudeIn(MagnitudeBand.J).headOption(t),
               Magnitude(MagnitudeValue.fromDouble(17.02),

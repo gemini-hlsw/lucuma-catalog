@@ -11,6 +11,7 @@ import lucuma.catalog._
 import lucuma.catalog.CatalogProblem._
 import lucuma.core.enum.MagnitudeBand
 import lucuma.core.enum.MagnitudeSystem
+import lucuma.core.enum.CatalogName
 import lucuma.core.math.MagnitudeValue
 import lucuma.core.math.ProperVelocity
 import lucuma.core.math.ProperVelocity.AngularVelocityComponent
@@ -46,7 +47,8 @@ sealed trait CatalogAdapter {
 
   // Attempts to extract a magnitude system for a particular band
   protected def parseMagnitudeSys(
-    p: (FieldId, String)
+    f: FieldId,
+    v: String
   ): ValidatedNec[CatalogProblem, (MagnitudeBand, MagnitudeSystem)]
 
   // Indicates if the field is a magnitude system
@@ -95,9 +97,7 @@ sealed trait CatalogAdapter {
     (pmra.filter(_.nonEmpty), pmdec.filter(_.nonEmpty)).mapN { (pmra, pmdec) =>
       (parseAngularVelocity[VelocityAxis.RA](VoTableParser.UCD_PMRA, pmra),
        parseAngularVelocity[VelocityAxis.Dec](VoTableParser.UCD_PMDEC, pmdec)
-      ).mapN { (pmra, pmdec) =>
-        ProperVelocity(pmra, pmdec)
-      }
+      ).mapN(ProperVelocity(_, _))
     }.sequence
 
   def parseProperVelocity(
@@ -110,26 +110,21 @@ sealed trait CatalogAdapter {
   // Attempts to extract a band and value for a magnitude from a pair of field and value
   protected[catalog] def parseMagnitude(
     fieldId: FieldId,
-    value:   String
-  ): ValidatedNec[CatalogProblem, (FieldId, MagnitudeBand, Double)] = {
-
-    val band = fieldToBand(fieldId)
-
-    (Validated.fromOption(band, UnmatchedField(fieldId.ucd)).toValidatedNec,
+    value: String
+  ): ValidatedNec[CatalogProblem, (FieldId, MagnitudeBand, Double)] =
+    (Validated.fromOption(fieldToBand(fieldId), UnmatchedField(fieldId.ucd)).toValidatedNec,
      parseDoubleValue(fieldId.ucd, value)
-    ).mapN { (b, v) =>
-      (fieldId, b, v)
-    }
-  }
+    ).mapN((fieldId, _, _))
 
   private def combineWithErrorsSystemAndFilter(
     m: Vector[(FieldId, MagnitudeBand, Double)],
     e: Vector[(FieldId, MagnitudeBand, Double)],
     s: Vector[(MagnitudeBand, MagnitudeSystem)]
   ): Vector[Magnitude] = {
-    val mags      = m.map { case (f, b, d) =>
+    val mags = m.map { case (f, b, d) =>
       f -> new Magnitude(MagnitudeValue.fromDouble(d), b, none, MagnitudeSystem.AB)
     }
+
     val magErrors = e.map { case (_, b, d) => b -> MagnitudeValue.fromDouble(d) }.toMap
     val magSys    = s.toMap
 
@@ -166,7 +161,7 @@ sealed trait CatalogAdapter {
     val magSys: ValidatedNec[CatalogProblem, Vector[(MagnitudeBand, MagnitudeSystem)]] =
       entries.toVector
         .filter(isMagnitudeSystemField)
-        .traverse(parseMagnitudeSys)
+        .traverse(Function.tupled(parseMagnitudeSys))
 
     (mags, magErrs, magSys).mapN(combineWithErrorsSystemAndFilter).map(_.sortBy(_.band))
   }
@@ -214,9 +209,10 @@ trait StandardAdapter extends CatalogAdapter {
   //
   // Attempts to extract a magnitude system for a particular band
   protected def parseMagnitudeSys(
-    p:                                   (FieldId, String)
+    f:                                   FieldId,
+    v:                                   String
   ): ValidatedNec[CatalogProblem, (MagnitudeBand, MagnitudeSystem)] =
-    Validated.invalidNec(UnsupportedField(p._1))
+    Validated.invalidNec(UnsupportedField(f))
 
 }
 
@@ -255,7 +251,7 @@ object CatalogAdapter {
         case (magSystemID(b), _) => findBand(b)
         case (errorFluxID(b), _) => findBand(b)
         case (fluxID(b), _)      => findBand(b)
-        case _                   => None
+        case _                   => none
       }
 
     // Simbad doesn't put the band in the ucd for magnitude errors
@@ -277,25 +273,27 @@ object CatalogAdapter {
 
     // Attempts to find the magnitude system for a band
     override def parseMagnitudeSys(
-      p: (FieldId, String)
+      f: FieldId,
+      v: String
     ): ValidatedNec[CatalogProblem, (MagnitudeBand, MagnitudeSystem)] = {
       val band: Option[MagnitudeBand] =
-        if (p._2.nonEmpty)
-          p._1.id.value match {
+        if (v.nonEmpty)
+          f.id.value match {
             case magSystemID(x) => findBand(x)
             case _              => None
           }
         else
           None
-      (Validated.fromOption(band, UnmatchedField(p._1.ucd)).toValidatedNec,
-       Validated.fromOption(MagnitudeSystem.fromTag(p._2), UnmatchedField(p._1.ucd)).toValidatedNec
+      (Validated.fromOption(band, UnmatchedField(f.ucd)).toValidatedNec,
+       Validated.fromOption(MagnitudeSystem.fromTag(v), UnmatchedField(f.ucd)).toValidatedNec
       ).mapN((_, _))
     }
 
   }
 
-  def forCatalog(c: CatalogName): CatalogAdapter =
+  def forCatalog(c: CatalogName): Option[CatalogAdapter] =
     c match {
-      case CatalogName.Simbad => Simbad
+      case CatalogName.Simbad => Simbad.some
+      case _                  => none
     }
 }

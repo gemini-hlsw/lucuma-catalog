@@ -45,3 +45,11 @@ Blocker[IO].use { blocker =>
 }
 ```
 
+## fs2-data-xml
+
+To parse the xml in a stream we are using [fs2-data-xml](https://github.com/satabin/fs2-data), however
+the project is not yet available for both JVM/JS.
+
+The solution is to internalize the code for the specific module and cross compile it here.
+
+This maybe not needed once https://github.com/satabin/fs2-data/issues/58 is solved
