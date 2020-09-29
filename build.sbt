@@ -5,15 +5,15 @@ lazy val fs2Version              = "2.4.1"
 lazy val catsVersion             = "2.2.0"
 lazy val catsEffectVersion       = "2.2.0"
 lazy val kindProjectorVersion    = "0.11.0"
-lazy val sttpVersion             = "3.0.0-RC4"
+lazy val sttpVersion             = "3.0.0-RC5"
 lazy val pprintVersion           = "0.6.0"
 lazy val lucumaCoreVersion       = "0.5.0"
 lazy val monocleVersion          = "2.1.0"
 lazy val munitVersion            = "0.7.12"
 lazy val munitDisciplineVersion  = "0.3.0"
 lazy val munitCatsEffectVersion  = "0.3.0"
-lazy val betterMonadicForVersion = "0.3.0"
-lazy val refinedVersion          = "0.9.15"
+lazy val betterMonadicForVersion = "0.3.1"
+lazy val refinedVersion          = "0.9.17"
 lazy val catsScalacheckVersion   = "0.3.0"
 lazy val scalaXmlVersion         = "1.3.0"
 
@@ -90,7 +90,7 @@ lazy val testkit = crossProject(JVMPlatform, JSPlatform)
 lazy val tests = crossProject(JVMPlatform, JSPlatform)
   .crossType(CrossType.Full)
   .in(file("modules/tests"))
-  .enablePlugins(ScalaJSBundlerPlugin)
+  .jsConfigure(_.enablePlugins(ScalaJSBundlerPlugin))
   .dependsOn(catalog, testkit)
   .settings(
     name := "lucuma-catalog-tests",
@@ -120,7 +120,7 @@ lazy val tests = crossProject(JVMPlatform, JSPlatform)
   )
   .jvmSettings(
     libraryDependencies ++= Seq(
-      "com.softwaremill.sttp.client3" %%% "async-http-client-backend-fs2" % sttpVersion,
-      "co.fs2"                        %%% "fs2-io"                        % fs2Version
+      "com.softwaremill.sttp.client3" %% "async-http-client-backend-fs2" % sttpVersion,
+      "co.fs2"                        %% "fs2-io"                        % fs2Version
     )
   )

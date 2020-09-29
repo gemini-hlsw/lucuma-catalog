@@ -16,4 +16,4 @@ jobs:
       - name: Checking your code format
         run: csbt scalafmtCheckAll headerCheck test:headerCheck
       - name: Run compile
-        run: csbt +compile +test
+        run: csbt +compile +test testsJS/run testsJVM/run

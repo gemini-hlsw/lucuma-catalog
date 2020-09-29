@@ -3,14 +3,15 @@
 
 package lucuma.catalog
 
-import cats.implicits._
-import cats.effect._
-import sttp.client3._
-import fs2._
-import lucuma.core.enum.CatalogName
 import scala.scalajs.js
 import scala.scalajs.js.annotation._
+
 import cats.data.Validated
+import cats.effect._
+import cats.implicits._
+import fs2._
+import lucuma.core.enum.CatalogName
+import sttp.client3._
 
 @JSExportTopLevel("main")
 object SimbadQuerySample extends IOApp {

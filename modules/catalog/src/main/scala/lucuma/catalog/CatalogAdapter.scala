@@ -7,11 +7,11 @@ import cats.data.Validated._
 import cats.data._
 import cats.implicits._
 import coulomb._
-import lucuma.catalog._
 import lucuma.catalog.CatalogProblem._
+import lucuma.catalog._
+import lucuma.core.enum.CatalogName
 import lucuma.core.enum.MagnitudeBand
 import lucuma.core.enum.MagnitudeSystem
-import lucuma.core.enum.CatalogName
 import lucuma.core.math.MagnitudeValue
 import lucuma.core.math.ProperVelocity
 import lucuma.core.math.ProperVelocity.AngularVelocityComponent

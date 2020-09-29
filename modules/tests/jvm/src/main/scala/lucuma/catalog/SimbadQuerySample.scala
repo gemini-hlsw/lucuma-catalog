@@ -3,13 +3,13 @@
 
 package lucuma.catalog
 
-import cats.implicits._
 import cats.effect._
-import sttp.client3.asynchttpclient.fs2.AsyncHttpClientFs2Backend
-import sttp.client3._
-import sttp.capabilities.fs2.Fs2Streams
+import cats.implicits._
 import fs2.text
 import lucuma.core.enum.CatalogName
+import sttp.capabilities.fs2.Fs2Streams
+import sttp.client3._
+import sttp.client3.asynchttpclient.fs2.AsyncHttpClientFs2Backend
 
 object SimbadQuerySample extends IOApp {
   def run(args: List[String]): IO[ExitCode] = {

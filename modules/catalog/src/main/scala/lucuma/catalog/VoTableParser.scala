@@ -3,6 +3,8 @@
 
 package lucuma.catalog
 
+import scala.collection.immutable.SortedMap
+
 import cats._
 import cats.data.Validated._
 import cats.data._
@@ -13,19 +15,18 @@ import eu.timepit.refined.cats.syntax._
 import eu.timepit.refined.collection.NonEmpty
 import eu.timepit.refined.types.string.NonEmptyString
 import fs2._
-import fs2.data.xml._
 import fs2.data.xml.XmlEvent._
-import lucuma.catalog._
+import fs2.data.xml._
 import lucuma.catalog.CatalogProblem._
+import lucuma.catalog._
 import lucuma.core.enum.CatalogName
 import lucuma.core.math._
 import lucuma.core.math.units.KilometersPerSecond
+import lucuma.core.model.CatalogId
+import lucuma.core.model.SiderealTracking
 import lucuma.core.model.Target
 import monocle.function.Index.listIndex
 import monocle.macros.Lenses
-import scala.collection.immutable.SortedMap
-import lucuma.core.model.SiderealTracking
-import lucuma.core.model.CatalogId
 
 @Lenses
 private[catalog] case class PartialTableRowItem(field: FieldDescriptor)

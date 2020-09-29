@@ -30,13 +30,13 @@ import lucuma.core.math.HourAngle
 import lucuma.core.math.Angle
 
 class ParseSimbadFileSuite extends CatsEffectSuite with VoTableParser {
+  val blocker: Blocker = Blocker.liftExecutionContext(scala.concurrent.ExecutionContext.Implicits.global)
 
   test("parse simbad named queries") {
     // From http://simbad.u-strasbg.fr/simbad/sim-id?Ident=Vega&output.format=VOTable
     val xmlFile = "/simbad-vega.xml"
     // The sample has only one row
     val file    = getClass().getResource(xmlFile)
-    Blocker[IO].use { blocker =>
       io.file
         .readAll[IO](Paths.get(file.toURI), blocker, 1024)
         .through(text.utf8Decode)
@@ -114,13 +114,11 @@ class ParseSimbadFileSuite extends CatsEffectSuite with VoTableParser {
           case Validated.Invalid(_) => fail(s"VOTable xml $xmlFile cannot be parsed")
         }
     }
-  }
 
   test("parse simbad named queries with sloan magnitudes") {
     // From http://simbad.u-strasbg.fr/simbad/sim-id?Ident=2MFGC6625&output.format=VOTable
     val xmlFile = "/simbad-2MFGC6625.xml"
     val file    = getClass().getResource(xmlFile)
-    Blocker[IO].use { blocker =>
       io.file
         .readAll[IO](Paths.get(file.toURI), blocker, 1024)
         .through(text.utf8Decode)
@@ -198,13 +196,11 @@ class ParseSimbadFileSuite extends CatsEffectSuite with VoTableParser {
             )
           case Validated.Invalid(_) => fail(s"VOTable xml $xmlFile cannot be parsed")
         }
-    }
   }
   test("parse simbad named queries with mixed magnitudes") {
     // From http://simbad.u-strasbg.fr/simbad/sim-id?Ident=2SLAQ%20J000008.13%2B001634.6&output.format=VOTable
     val xmlFile = "/simbad-J000008.13.xml"
     val file    = getClass().getResource(xmlFile)
-    Blocker[IO].use { blocker =>
       io.file
         .readAll[IO](Paths.get(file.toURI), blocker, 1024)
         .through(text.utf8Decode)
@@ -317,14 +313,12 @@ class ParseSimbadFileSuite extends CatsEffectSuite with VoTableParser {
             )
           case Validated.Invalid(_) => fail(s"VOTable xml $xmlFile cannot be parsed")
         }
-    }
   }
   test("allow negative parallax values") {
     // From http://simbad.u-strasbg.fr/simbad/sim-id?output.format=VOTable&Ident=HIP43018
     val xmlFile = "/simbad_hip43018.xml"
 
     val file = getClass().getResource(xmlFile)
-    Blocker[IO].use { blocker =>
       io.file
         .readAll[IO](Paths.get(file.toURI), blocker, 1024)
         .through(text.utf8Decode)
@@ -341,12 +335,10 @@ class ParseSimbadFileSuite extends CatsEffectSuite with VoTableParser {
           case Validated.Invalid(_) => fail(s"VOTable xml $xmlFile cannot be parsed")
         }
     }
-  }
   test("parse simbad with a not-found name") {
     val xmlFile = "/simbad-not-found.xml"
     // Simbad returns non-valid xml when an element is not found, we need to skip validation :S
     val file    = getClass().getResource(xmlFile)
-    Blocker[IO].use { blocker =>
       io.file
         .readAll[IO](Paths.get(file.toURI), blocker, 1024)
         .through(text.utf8Decode)
@@ -357,13 +349,11 @@ class ParseSimbadFileSuite extends CatsEffectSuite with VoTableParser {
           case Some(_) => fail("Cannot parse values")
           case _       => assert(true)
         }
-    }
   }
   test("parse simbad with an npe") {
     val xmlFile = "/simbad-npe.xml"
     // Simbad returns non-valid xml when there is an internal error like an NPE
     val file    = getClass().getResource(xmlFile)
-    Blocker[IO].use { blocker =>
       io.file
         .readAll[IO](Paths.get(file.toURI), blocker, 1024)
         .through(text.utf8Decode)
@@ -374,13 +364,11 @@ class ParseSimbadFileSuite extends CatsEffectSuite with VoTableParser {
           case Some(_) => fail("Cannot parse values")
           case _       => assert(true)
         }
-    }
   }
   test("support simbad repeated magnitude entries") {
     val xmlFile = "/simbad-ngc-2438.xml"
     // Simbad returns an xml with multiple measurements of the same band, use only the first one
     val file    = getClass().getResource(xmlFile)
-    Blocker[IO].use { blocker =>
       io.file
         .readAll[IO](Paths.get(file.toURI), blocker, 1024)
         .through(text.utf8Decode)
@@ -405,5 +393,4 @@ class ParseSimbadFileSuite extends CatsEffectSuite with VoTableParser {
           case Validated.Invalid(_) => fail(s"VOTable xml $xmlFile cannot be parsed")
         }
     }
-  }
 }
