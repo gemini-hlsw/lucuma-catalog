@@ -2,6 +2,7 @@ import sbtcrossproject.crossProject
 import sbtcrossproject.CrossType
 
 lazy val fs2Version              = "2.4.4"
+lazy val fs2DataVersion          = "0.8.0"
 lazy val catsVersion             = "2.2.0"
 lazy val catsEffectVersion       = "2.2.0"
 lazy val kindProjectorVersion    = "0.11.0"
@@ -39,6 +40,7 @@ lazy val catalog = crossProject(JVMPlatform, JSPlatform)
     name := "lucuma-catalog",
     libraryDependencies ++= Seq(
       "co.fs2"                     %%% "fs2-core"      % fs2Version,
+      "org.gnieh"                  %%% "fs2-data-xml"  % fs2DataVersion,
       "edu.gemini"                 %%% "lucuma-core"   % lucumaCoreVersion,
       "org.typelevel"              %%% "cats-core"     % catsVersion,
       "com.github.julien-truffaut" %%% "monocle-core"  % monocleVersion,
@@ -49,27 +51,6 @@ lazy val catalog = crossProject(JVMPlatform, JSPlatform)
     )
   )
   .jvmConfigure(_.enablePlugins(AutomateHeaderPlugin))
-  .jsSettings(lucumaScalaJsSettings: _*)
-  .dependsOn(fs2_data_xml)
-
-lazy val fs2_data_xml = crossProject(JVMPlatform, JSPlatform)
-  .crossType(CrossType.Pure)
-  .in(file("modules/fs2-data-xml"))
-  .settings(
-    name := "fs2-data-xml",
-    libraryDependencies ++= Seq(
-      "co.fs2" %%% "fs2-core" % fs2Version
-    ),
-    excludeFilter.in(headerSources) := (HiddenFileFilter || "*.scala"),
-    scalacOptions ~= (_.filterNot(
-      Set(
-        // By necessity facades will have unused params
-        "-Wdead-code",
-        "-Wunused:params",
-        "-Wunused:explicits"
-      )
-    ))
-  )
   .jsSettings(lucumaScalaJsSettings: _*)
 
 lazy val testkit = crossProject(JVMPlatform, JSPlatform)
