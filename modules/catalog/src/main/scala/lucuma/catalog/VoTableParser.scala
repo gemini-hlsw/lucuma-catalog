@@ -134,7 +134,7 @@ trait VoTableParser {
         .andThen(parseDoubleDegrees(VoTableParser.UCD_RA, _))
         .map(a => RightAscension.fromDoubleDegrees(a.toDoubleDegrees))
 
-    val parsePV = adapter.parseProperVelocity(entries)
+    val parsePV = adapter.parseProperMotion(entries)
 
     def parseEpoch: ValidatedNec[CatalogProblem, Epoch] =
       Validated.validNec(
