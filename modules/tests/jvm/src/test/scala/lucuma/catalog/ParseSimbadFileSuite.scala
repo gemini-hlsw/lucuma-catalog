@@ -394,6 +394,7 @@ class ParseSimbadFileSuite extends CatsEffectSuite with VoTableParser {
             assertEquals(t.track.toOption.map(_.catalogId).flatten,
                          CatalogId(CatalogName.Simbad, "NGC  2438")
             )
+            assert(t.track.toOption.flatMap(_.properVelocity).isEmpty)
             assertEquals(
               Target.magnitudeIn(MagnitudeBand.J).headOption(t),
               Magnitude(MagnitudeValue.fromDouble(17.02),
@@ -401,6 +402,34 @@ class ParseSimbadFileSuite extends CatsEffectSuite with VoTableParser {
                         MagnitudeValue.fromDouble(0.15).some,
                         MagnitudeSystem.Vega
               ).some
+            )
+          case Validated.Invalid(_) => fail(s"VOTable xml $xmlFile cannot be parsed")
+        }
+    }
+  }
+
+  test("parse xml with missing pm component") {
+    // From http://simbad.u-strasbg.fr/simbad/sim-id?Ident=Vega&output.format=VOTable
+    val xmlFile = "/simbad-vega-partial-pm.xml"
+    // The sample has only one row
+    val file    = getClass().getResource(xmlFile)
+    Blocker[IO].use { blocker =>
+      io.file
+        .readAll[IO](Paths.get(file.toURI), blocker, 1024)
+        .through(text.utf8Decode)
+        .through(targets(CatalogName.Simbad))
+        .compile
+        .lastOrError
+        .map {
+          case Validated.Valid(t)   =>
+            // proper motions
+            assertEquals(
+              Target.properVelocityRA.getOption(t),
+              ProperVelocity.RA.Zero.some
+            )
+            assertEquals(
+              Target.properVelocityDec.getOption(t),
+              ProperVelocity.Dec(286230.withUnit[MicroArcSecondPerYear]).some
             )
           case Validated.Invalid(_) => fail(s"VOTable xml $xmlFile cannot be parsed")
         }

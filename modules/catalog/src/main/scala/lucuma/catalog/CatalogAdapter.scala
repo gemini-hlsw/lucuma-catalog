@@ -94,7 +94,11 @@ sealed trait CatalogAdapter {
     pmra:  Option[String],
     pmdec: Option[String]
   ): ValidatedNec[CatalogProblem, Option[ProperVelocity]] =
-    (pmra.filter(_.nonEmpty), pmdec.filter(_.nonEmpty)).mapN { (pmra, pmdec) =>
+    ((pmra.filter(_.nonEmpty), pmdec.filter(_.nonEmpty)) match {
+      case (a @ Some(_), None) => (a, Some("0"))
+      case (None, a @ Some(_)) => (Some("0"), a)
+      case a                   => a
+    }).mapN { (pmra, pmdec) =>
       (parseAngularVelocity[VelocityAxis.RA](VoTableParser.UCD_PMRA, pmra),
        parseAngularVelocity[VelocityAxis.Dec](VoTableParser.UCD_PMDEC, pmdec)
       ).mapN(ProperVelocity(_, _))
