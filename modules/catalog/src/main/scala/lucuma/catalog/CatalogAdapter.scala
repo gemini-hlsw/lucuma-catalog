@@ -13,8 +13,8 @@ import lucuma.core.enum.CatalogName
 import lucuma.core.enum.MagnitudeBand
 import lucuma.core.enum.MagnitudeSystem
 import lucuma.core.math.MagnitudeValue
-import lucuma.core.math.ProperVelocity
-import lucuma.core.math.ProperVelocity.AngularVelocityComponent
+import lucuma.core.math.ProperMotion
+import lucuma.core.math.ProperMotion.AngularVelocityComponent
 import lucuma.core.math.RadialVelocity
 import lucuma.core.math.VelocityAxis
 import lucuma.core.math.units._
@@ -90,22 +90,26 @@ sealed trait CatalogAdapter {
       .map(v => AngularVelocityComponent[A](v.withUnit[MilliArcSecondPerYear]))
       .andThen(Validated.validNec(_))
 
-  protected def parseProperVelocity(
+  protected def parseProperMotion(
     pmra:  Option[String],
     pmdec: Option[String]
-  ): ValidatedNec[CatalogProblem, Option[ProperVelocity]] =
-    (pmra.filter(_.nonEmpty), pmdec.filter(_.nonEmpty)).mapN { (pmra, pmdec) =>
+  ): ValidatedNec[CatalogProblem, Option[ProperMotion]] =
+    ((pmra.filter(_.nonEmpty), pmdec.filter(_.nonEmpty)) match {
+      case (a @ Some(_), None) => (a, Some("0"))
+      case (None, a @ Some(_)) => (Some("0"), a)
+      case a                   => a
+    }).mapN { (pmra, pmdec) =>
       (parseAngularVelocity[VelocityAxis.RA](VoTableParser.UCD_PMRA, pmra),
        parseAngularVelocity[VelocityAxis.Dec](VoTableParser.UCD_PMDEC, pmdec)
-      ).mapN(ProperVelocity(_, _))
+      ).mapN(ProperMotion(_, _))
     }.sequence
 
-  def parseProperVelocity(
+  def parseProperMotion(
     entries: Map[FieldId, String]
-  ): ValidatedNec[CatalogProblem, Option[ProperVelocity]] = {
+  ): ValidatedNec[CatalogProblem, Option[ProperMotion]] = {
     val pmRa  = entries.get(pmRaField)
     val pmDec = entries.get(pmDecField)
-    parseProperVelocity(pmRa, pmDec)
+    parseProperMotion(pmRa, pmDec)
   }
   // Attempts to extract a band and value for a magnitude from a pair of field and value
   protected[catalog] def parseMagnitude(

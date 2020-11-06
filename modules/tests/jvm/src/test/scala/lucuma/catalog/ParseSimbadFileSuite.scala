@@ -15,7 +15,7 @@ import java.nio.file.Paths
 import lucuma.core.model.Target
 import lucuma.core.math.RightAscension
 import lucuma.core.math.Declination
-import lucuma.core.math.ProperVelocity
+import lucuma.core.math.ProperMotion
 import lucuma.core.math.units.MicroArcSecondPerYear
 import lucuma.core.model.Magnitude
 import lucuma.core.model.CatalogId
@@ -61,12 +61,12 @@ class ParseSimbadFileSuite extends CatsEffectSuite with VoTableParser {
             )
             // proper motions
             assertEquals(
-              Target.properVelocityRA.getOption(t),
-              ProperVelocity.RA(200939.withUnit[MicroArcSecondPerYear]).some
+              Target.properMotionRA.getOption(t),
+              ProperMotion.RA(200939.withUnit[MicroArcSecondPerYear]).some
             )
             assertEquals(
-              Target.properVelocityDec.getOption(t),
-              ProperVelocity.Dec(286230.withUnit[MicroArcSecondPerYear]).some
+              Target.properMotionDec.getOption(t),
+              ProperMotion.Dec(286230.withUnit[MicroArcSecondPerYear]).some
             )
             // magnitudes
             assertEquals(
@@ -149,7 +149,7 @@ class ParseSimbadFileSuite extends CatsEffectSuite with VoTableParser {
                 .some
             )
             // proper velocity
-            assertEquals(Target.properVelocity.getOption(t), none)
+            assertEquals(Target.properMotion.getOption(t), none)
             // radial velocity
             assertEquals(
               Target.radialVelocity.getOption(t).flatten,
@@ -234,7 +234,7 @@ class ParseSimbadFileSuite extends CatsEffectSuite with VoTableParser {
                 .some
             )
             // proper velocity
-            assertEquals(Target.properVelocity.getOption(t), none)
+            assertEquals(Target.properMotion.getOption(t), none)
             // radial velocity
             assertEquals(
               Target.radialVelocity.getOption(t).flatten,
@@ -394,6 +394,7 @@ class ParseSimbadFileSuite extends CatsEffectSuite with VoTableParser {
             assertEquals(t.track.toOption.map(_.catalogId).flatten,
                          CatalogId(CatalogName.Simbad, "NGC  2438")
             )
+            assert(t.track.toOption.flatMap(_.properMotion).isEmpty)
             assertEquals(
               Target.magnitudeIn(MagnitudeBand.J).headOption(t),
               Magnitude(MagnitudeValue.fromDouble(17.02),
@@ -401,6 +402,34 @@ class ParseSimbadFileSuite extends CatsEffectSuite with VoTableParser {
                         MagnitudeValue.fromDouble(0.15).some,
                         MagnitudeSystem.Vega
               ).some
+            )
+          case Validated.Invalid(_) => fail(s"VOTable xml $xmlFile cannot be parsed")
+        }
+    }
+  }
+
+  test("parse xml with missing pm component") {
+    // Taken from the url below and manually edited to remove PM RA
+    // From http://simbad.u-strasbg.fr/simbad/sim-id?Ident=Vega&output.format=VOTable
+    val xmlFile = "/simbad-vega-partial-pm.xml"
+    val file    = getClass().getResource(xmlFile)
+    Blocker[IO].use { blocker =>
+      io.file
+        .readAll[IO](Paths.get(file.toURI), blocker, 1024)
+        .through(text.utf8Decode)
+        .through(targets(CatalogName.Simbad))
+        .compile
+        .lastOrError
+        .map {
+          case Validated.Valid(t)   =>
+            // proper motions
+            assertEquals(
+              Target.properMotionRA.getOption(t),
+              ProperMotion.RA.Zero.some
+            )
+            assertEquals(
+              Target.properMotionDec.getOption(t),
+              ProperMotion.Dec(286230.withUnit[MicroArcSecondPerYear]).some
             )
           case Validated.Invalid(_) => fail(s"VOTable xml $xmlFile cannot be parsed")
         }
