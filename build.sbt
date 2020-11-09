@@ -1,7 +1,7 @@
 import sbtcrossproject.crossProject
 import sbtcrossproject.CrossType
 
-lazy val fs2Version              = "2.4.4"
+lazy val fs2Version              = "2.4.5"
 lazy val fs2DataVersion          = "0.9.0"
 lazy val catsVersion             = "2.2.0"
 lazy val catsEffectVersion       = "2.2.0"
@@ -11,7 +11,7 @@ lazy val pprintVersion           = "0.6.0"
 lazy val lucumaCoreVersion       = "0.7.0"
 lazy val monocleVersion          = "2.1.0"
 lazy val munitVersion            = "0.7.17"
-lazy val munitDisciplineVersion  = "1.0.1"
+lazy val munitDisciplineVersion  = "1.0.2"
 lazy val munitCatsEffectVersion  = "0.3.0"
 lazy val betterMonadicForVersion = "0.3.1"
 lazy val refinedVersion          = "0.9.17"
