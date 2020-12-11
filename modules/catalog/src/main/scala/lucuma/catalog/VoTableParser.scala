@@ -145,7 +145,7 @@ trait VoTableParser {
       entries.get(adapter.plxField) match {
         case Some(p) =>
           parseDoubleValue(VoTableParser.UCD_PLX, p).map(p =>
-            Parallax.milliarcseconds.reverseGet(p).some
+            Parallax.milliarcseconds.reverseGet(math.max(0.0, p)).some
           )
         case _       =>
           Validated.validNec(none)

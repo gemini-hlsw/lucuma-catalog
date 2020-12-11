@@ -319,7 +319,7 @@ class ParseSimbadFileSuite extends CatsEffectSuite with VoTableParser {
         }
     }
   }
-  test("allow negative parallax values") {
+  test("force negative parallax values to zero") {
     // From http://simbad.u-strasbg.fr/simbad/sim-id?output.format=VOTable&Ident=HIP43018
     val xmlFile = "/simbad_hip43018.xml"
 
@@ -336,7 +336,7 @@ class ParseSimbadFileSuite extends CatsEffectSuite with VoTableParser {
             // parallax
             assertEquals(
               Target.parallax.getOption(t).flatten,
-              Parallax.microarcseconds.reverseGet(-570).some
+              Parallax.Zero.some
             )
           case Validated.Invalid(_) => fail(s"VOTable xml $xmlFile cannot be parsed")
         }
