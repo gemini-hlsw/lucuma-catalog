@@ -1,10 +1,7 @@
-// Copyright (c) 2016-2020 Association of Universities for Research in Astronomy, Inc. (AURA)
+// Copyright (c) 2016-2021 Association of Universities for Research in Astronomy, Inc. (AURA)
 // For license information see LICENSE or https://opensource.org/licenses/BSD-3-Clause
 
 package lucuma.catalog
-
-import scala.scalajs.js
-import scala.scalajs.js.annotation._
 
 import cats.data.Validated
 import cats.effect._
@@ -12,6 +9,9 @@ import cats.implicits._
 import fs2._
 import lucuma.core.enum.CatalogName
 import sttp.client3._
+
+import scala.scalajs.js
+import scala.scalajs.js.annotation._
 
 @JSExportTopLevel("main")
 object SimbadQuerySample extends IOApp {

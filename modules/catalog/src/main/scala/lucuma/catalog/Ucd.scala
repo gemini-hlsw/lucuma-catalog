@@ -1,9 +1,7 @@
-// Copyright (c) 2016-2020 Association of Universities for Research in Astronomy, Inc. (AURA)
+// Copyright (c) 2016-2021 Association of Universities for Research in Astronomy, Inc. (AURA)
 // For license information see LICENSE or https://opensource.org/licenses/BSD-3-Clause
 
 package lucuma.catalog
-
-import scala.util.matching.Regex
 
 import cats._
 import cats.data.NonEmptyList
@@ -16,6 +14,8 @@ import eu.timepit.refined.collection.NonEmpty
 import eu.timepit.refined.types.string._
 import lucuma.catalog.CatalogProblem._
 import monocle.macros.Lenses
+
+import scala.util.matching.Regex
 
 @Lenses
 final case class Ucd(tokens: NonEmptyList[NonEmptyString]) {

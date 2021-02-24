@@ -1,9 +1,7 @@
-// Copyright (c) 2016-2020 Association of Universities for Research in Astronomy, Inc. (AURA)
+// Copyright (c) 2016-2021 Association of Universities for Research in Astronomy, Inc. (AURA)
 // For license information see LICENSE or https://opensource.org/licenses/BSD-3-Clause
 
 package lucuma.catalog
-
-import scala.collection.immutable.SortedMap
 
 import cats._
 import cats.data.Validated._
@@ -27,6 +25,8 @@ import lucuma.core.model.SiderealTracking
 import lucuma.core.model.Target
 import monocle.function.Index.listIndex
 import monocle.macros.Lenses
+
+import scala.collection.immutable.SortedMap
 
 @Lenses
 private[catalog] case class PartialTableRowItem(field: FieldDescriptor)
