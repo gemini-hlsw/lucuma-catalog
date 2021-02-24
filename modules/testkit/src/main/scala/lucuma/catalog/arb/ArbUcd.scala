@@ -4,13 +4,12 @@
 package lucuma.catalog.arb
 
 import cats.data.NonEmptyList
+import eu.timepit.refined.scalacheck.string._
 import eu.timepit.refined.types.string.NonEmptyString
 import lucuma.catalog._
-import org.scalacheck.Arbitrary._
 import org.scalacheck.Cogen
 import org.scalacheck.Gen
 import org.scalacheck._
-import eu.timepit.refined.scalacheck.string._
 
 trait ArbUcd {
   val genNonEmptyString = implicitly[Arbitrary[NonEmptyString]].arbitrary

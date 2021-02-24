@@ -3,8 +3,6 @@
 
 package lucuma.catalog
 
-import scala.util.matching.Regex
-
 import cats._
 import cats.data.NonEmptyList
 import cats.data.Validated
@@ -16,6 +14,8 @@ import eu.timepit.refined.collection.NonEmpty
 import eu.timepit.refined.types.string._
 import lucuma.catalog.CatalogProblem._
 import monocle.macros.Lenses
+
+import scala.util.matching.Regex
 
 @Lenses
 final case class Ucd(tokens: NonEmptyList[NonEmptyString]) {

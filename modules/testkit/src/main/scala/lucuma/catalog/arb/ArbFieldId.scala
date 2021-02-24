@@ -3,12 +3,12 @@
 
 package lucuma.catalog.arb
 
+import eu.timepit.refined.scalacheck.string._
 import eu.timepit.refined.types.string.NonEmptyString
 import lucuma.catalog._
-import org.scalacheck.Arbitrary._
+import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.Cogen
 import org.scalacheck._
-import eu.timepit.refined.scalacheck.string._
 
 trait ArbFieldId {
   import ArbUcd._

@@ -3,8 +3,6 @@
 
 package lucuma.catalog
 
-import scala.collection.immutable.SortedMap
-
 import cats._
 import cats.data.Validated._
 import cats.data._
@@ -27,6 +25,8 @@ import lucuma.core.model.SiderealTracking
 import lucuma.core.model.Target
 import monocle.function.Index.listIndex
 import monocle.macros.Lenses
+
+import scala.collection.immutable.SortedMap
 
 @Lenses
 private[catalog] case class PartialTableRowItem(field: FieldDescriptor)
