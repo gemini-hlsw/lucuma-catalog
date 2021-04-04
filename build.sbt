@@ -31,7 +31,7 @@ inThisBuild(
   ) ++ lucumaPublishSettings
 )
 
-skip in publish := true
+publish / skip := true
 
 lazy val catalog = crossProject(JVMPlatform, JSPlatform)
   .crossType(CrossType.Pure)
