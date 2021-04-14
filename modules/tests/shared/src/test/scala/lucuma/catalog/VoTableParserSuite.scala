@@ -19,7 +19,7 @@ class VoTableParserSuite extends CatsEffectSuite with VoTableParser with VoTable
   def toStream[F[_]: MonadError[*[_], Throwable]](xml: Node): Stream[F, XmlEvent] =
     Stream
       .emits(Utility.trim(xml).toString)
-      .through(events[F])
+      .through(events[F, Char])
       .through(referenceResolver[F]())
       .through(normalize[F])
 

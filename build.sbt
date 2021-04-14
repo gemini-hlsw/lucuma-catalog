@@ -1,18 +1,18 @@
 import sbtcrossproject.crossProject
 import sbtcrossproject.CrossType
 
-lazy val fs2Version              = "2.5.4"
-lazy val fs2DataVersion          = "0.10.0"
+lazy val fs2Version              = "3.0.1"
+lazy val fs2DataVersion          = "1.0.0-RC1"
 lazy val catsVersion             = "2.5.0"
-lazy val catsEffectVersion       = "3.0.2"
+lazy val catsEffectVersion       = "3.0.1"
 lazy val kindProjectorVersion    = "0.11.3"
-lazy val sttpVersion             = "3.2.3"
+lazy val sttpVersion             = "3.3.0-RC2"
 lazy val pprintVersion           = "0.6.4"
 lazy val lucumaCoreVersion       = "0.7.10"
 lazy val monocleVersion          = "2.1.0"
 lazy val munitVersion            = "0.7.23"
 lazy val munitDisciplineVersion  = "1.0.7"
-lazy val munitCatsEffectVersion  = "0.3.0"
+lazy val munitCatsEffectVersion  = "1.0.0"
 lazy val betterMonadicForVersion = "0.3.1"
 lazy val refinedVersion          = "0.9.23"
 lazy val catsScalacheckVersion   = "0.3.0"
@@ -76,16 +76,17 @@ lazy val tests = crossProject(JVMPlatform, JSPlatform)
   .settings(
     name := "lucuma-catalog-tests",
     libraryDependencies ++= Seq(
-      "org.typelevel"                 %%% "cats-effect"       % catsEffectVersion      % Test,
-      "org.scalameta"                 %%% "munit"             % munitVersion           % Test,
-      "org.typelevel"                 %%% "discipline-munit"  % munitDisciplineVersion % Test,
-      "org.typelevel"                 %%% "munit-cats-effect" % munitCatsEffectVersion % Test,
-      "org.scala-lang.modules"        %%% "scala-xml"         % scalaXmlVersion        % Test,
-      "com.softwaremill.sttp.client3" %%% "core"              % sttpVersion,
-      "com.lihaoyi"                   %%% "pprint"            % pprintVersion
+      "org.typelevel"                 %%% "cats-effect"         % catsEffectVersion      % Test,
+      "org.scalameta"                 %%% "munit"               % munitVersion           % Test,
+      "org.typelevel"                 %%% "discipline-munit"    % munitDisciplineVersion % Test,
+      "org.typelevel"                 %%% "munit-cats-effect-3" % munitCatsEffectVersion % Test,
+      "org.scala-lang.modules"        %%% "scala-xml"           % scalaXmlVersion        % Test,
+      "com.softwaremill.sttp.client3" %%% "core"                % sttpVersion,
+      "com.softwaremill.sttp.client3" %%% "cats"                % sttpVersion,
+      "com.lihaoyi"                   %%% "pprint"              % pprintVersion
     ),
     testFrameworks += new TestFramework("munit.Framework"),
-    skip in publish := true
+    publish / skip := true
   )
   .jvmConfigure(_.enablePlugins(AutomateHeaderPlugin))
   .jsSettings(lucumaScalaJsSettings: _*)

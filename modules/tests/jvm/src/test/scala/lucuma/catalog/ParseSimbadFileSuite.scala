@@ -10,6 +10,7 @@ import coulomb._
 import eu.timepit.refined.collection.NonEmpty
 import eu.timepit.refined._
 import fs2._
+import fs2.io.file.Files
 import munit.CatsEffectSuite
 import java.nio.file.Paths
 import lucuma.core.model.Target
@@ -37,9 +38,9 @@ class ParseSimbadFileSuite extends CatsEffectSuite with VoTableParser {
     val xmlFile = "/simbad-vega.xml"
     // The sample has only one row
     val file    = getClass().getResource(xmlFile)
-    Resource.unit[IO].use { blocker =>
-      io.file
-        .readAll[IO](Paths.get(file.toURI), blocker, 1024)
+    Resource.unit[IO].use { _ =>
+      Files[IO]
+        .readAll(Paths.get(file.toURI), 1024)
         .through(text.utf8Decode)
         .through(targets(CatalogName.Simbad))
         .compile
@@ -121,9 +122,9 @@ class ParseSimbadFileSuite extends CatsEffectSuite with VoTableParser {
     // From http://simbad.u-strasbg.fr/simbad/sim-id?Ident=2MFGC6625&output.format=VOTable
     val xmlFile = "/simbad-2MFGC6625.xml"
     val file    = getClass().getResource(xmlFile)
-    Resource.unit[IO].use { blocker =>
-      io.file
-        .readAll[IO](Paths.get(file.toURI), blocker, 1024)
+    Resource.unit[IO].use { _ =>
+      Files[IO]
+        .readAll(Paths.get(file.toURI), 1024)
         .through(text.utf8Decode)
         .through(targets(CatalogName.Simbad))
         .compile
@@ -205,9 +206,9 @@ class ParseSimbadFileSuite extends CatsEffectSuite with VoTableParser {
     // From http://simbad.u-strasbg.fr/simbad/sim-id?Ident=2SLAQ%20J000008.13%2B001634.6&output.format=VOTable
     val xmlFile = "/simbad-J000008.13.xml"
     val file    = getClass().getResource(xmlFile)
-    Resource.unit[IO].use { blocker =>
-      io.file
-        .readAll[IO](Paths.get(file.toURI), blocker, 1024)
+    Resource.unit[IO].use { _ =>
+      Files[IO]
+        .readAll(Paths.get(file.toURI), 1024)
         .through(text.utf8Decode)
         .through(targets(CatalogName.Simbad))
         .compile
@@ -325,9 +326,9 @@ class ParseSimbadFileSuite extends CatsEffectSuite with VoTableParser {
     val xmlFile = "/simbad_hip43018.xml"
 
     val file = getClass().getResource(xmlFile)
-    Resource.unit[IO].use { blocker =>
-      io.file
-        .readAll[IO](Paths.get(file.toURI), blocker, 1024)
+    Resource.unit[IO].use { _ =>
+      Files[IO]
+        .readAll(Paths.get(file.toURI), 1024)
         .through(text.utf8Decode)
         .through(targets(CatalogName.Simbad))
         .compile
@@ -347,9 +348,9 @@ class ParseSimbadFileSuite extends CatsEffectSuite with VoTableParser {
     val xmlFile = "/simbad-not-found.xml"
     // Simbad returns non-valid xml when an element is not found, we need to skip validation :S
     val file    = getClass().getResource(xmlFile)
-    Resource.unit[IO].use { blocker =>
-      io.file
-        .readAll[IO](Paths.get(file.toURI), blocker, 1024)
+    Resource.unit[IO].use { _ =>
+      Files[IO]
+        .readAll(Paths.get(file.toURI), 1024)
         .through(text.utf8Decode)
         .through(targets(CatalogName.Simbad))
         .compile
@@ -364,9 +365,9 @@ class ParseSimbadFileSuite extends CatsEffectSuite with VoTableParser {
     val xmlFile = "/simbad-npe.xml"
     // Simbad returns non-valid xml when there is an internal error like an NPE
     val file    = getClass().getResource(xmlFile)
-    Resource.unit[IO].use { blocker =>
-      io.file
-        .readAll[IO](Paths.get(file.toURI), blocker, 1024)
+    Resource.unit[IO].use { _ =>
+      Files[IO]
+        .readAll(Paths.get(file.toURI), 1024)
         .through(text.utf8Decode)
         .through(targets(CatalogName.Simbad))
         .compile
@@ -381,9 +382,9 @@ class ParseSimbadFileSuite extends CatsEffectSuite with VoTableParser {
     val xmlFile = "/simbad-ngc-2438.xml"
     // Simbad returns an xml with multiple measurements of the same band, use only the first one
     val file    = getClass().getResource(xmlFile)
-    Resource.unit[IO].use { blocker =>
-      io.file
-        .readAll[IO](Paths.get(file.toURI), blocker, 1024)
+    Resource.unit[IO].use { _ =>
+      Files[IO]
+        .readAll(Paths.get(file.toURI), 1024)
         .through(text.utf8Decode)
         .through(targets(CatalogName.Simbad))
         .compile
@@ -414,9 +415,9 @@ class ParseSimbadFileSuite extends CatsEffectSuite with VoTableParser {
     // From http://simbad.u-strasbg.fr/simbad/sim-id?Ident=Vega&output.format=VOTable
     val xmlFile = "/simbad-vega-partial-pm.xml"
     val file    = getClass().getResource(xmlFile)
-    Resource.unit[IO].use { blocker =>
-      io.file
-        .readAll[IO](Paths.get(file.toURI), blocker, 1024)
+    Resource.unit[IO].use { _ =>
+      Files[IO]
+        .readAll(Paths.get(file.toURI), 1024)
         .through(text.utf8Decode)
         .through(targets(CatalogName.Simbad))
         .compile
