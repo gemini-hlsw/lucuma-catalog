@@ -12,6 +12,7 @@ import sttp.client3._
 
 import scala.scalajs.js
 import scala.scalajs.js.annotation._
+import sttp.client3.impl.cats.FetchCatsBackend
 
 @JSExportTopLevel("main")
 object SimbadQuerySample extends IOApp {
@@ -40,14 +41,12 @@ object SimbadQuerySample extends IOApp {
     g.Headers = fetchHeaders
     g.Request = Request
 
-    val backend  = FetchBackend()
-    def response = basicRequest
+    val backend = FetchCatsBackend[IO]()
+    basicRequest
       .post(
         uri"http://simbad.u-strasbg.fr/simbad/sim-id?Ident=2SLAQ%20J000008.13%2B001634.6&output.format=VOTable"
       )
       .send(backend)
-
-    IO.fromFuture(IO(response))
       .flatMap {
         _.body
           .traverse(

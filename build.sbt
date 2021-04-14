@@ -82,6 +82,7 @@ lazy val tests = crossProject(JVMPlatform, JSPlatform)
       "org.typelevel"                 %%% "munit-cats-effect-3" % munitCatsEffectVersion % Test,
       "org.scala-lang.modules"        %%% "scala-xml"           % scalaXmlVersion        % Test,
       "com.softwaremill.sttp.client3" %%% "core"                % sttpVersion,
+      "com.softwaremill.sttp.client3" %%% "cats"                % sttpVersion,
       "com.lihaoyi"                   %%% "pprint"              % pprintVersion
     ),
     testFrameworks += new TestFramework("munit.Framework"),
