@@ -69,7 +69,7 @@ trait VoTableParser {
       CatalogAdapter.forCatalog(catalog) match {
         case Some(a) =>
           in.flatMap(Stream.emits(_))
-            .through(events[F])
+            .through(events[F, Char])
             .through(referenceResolver[F]())
             .through(normalize[F])
             .through(xml2targets[F](a))

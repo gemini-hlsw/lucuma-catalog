@@ -12,11 +12,9 @@ import sttp.client3._
 import sttp.client3.asynchttpclient.fs2.AsyncHttpClientFs2Backend
 
 object SimbadQuerySample extends IOApp {
-  def run(args: List[String]): IO[ExitCode] = {
-    val blocker: Blocker =
-      Blocker.liftExecutionContext(scala.concurrent.ExecutionContext.global)
+  def run(args: List[String]): IO[ExitCode] =
     AsyncHttpClientFs2Backend
-      .resource[IO](blocker)
+      .resource[IO]()
       .use { backend =>
         val response = basicRequest
           .post(
@@ -41,5 +39,4 @@ object SimbadQuerySample extends IOApp {
           }
       }
       .as(ExitCode.Success)
-  }
 }
