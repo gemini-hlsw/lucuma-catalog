@@ -19,7 +19,7 @@ import lucuma.core.math.RadialVelocity
 import lucuma.core.math.VelocityAxis
 import lucuma.core.math.units._
 import lucuma.core.model.Magnitude
-import monocle.state.all._
+import lucuma.core.optics.state.all._
 
 // A CatalogAdapter improves parsing handling catalog-specific options like parsing magnitudes and selecting key fields
 sealed trait CatalogAdapter {
