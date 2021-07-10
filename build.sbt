@@ -8,8 +8,8 @@ lazy val catsEffectVersion       = "3.0.1"
 lazy val kindProjectorVersion    = "0.13.0"
 lazy val sttpVersion             = "3.3.9"
 lazy val pprintVersion           = "0.6.6"
-lazy val lucumaCoreVersion       = "0.10.1"
-lazy val monocleVersion          = "2.1.0"
+lazy val lucumaCoreVersion       = "0.11.0"
+lazy val monocleVersion          = "3.0.0"
 lazy val munitVersion            = "0.7.27"
 lazy val munitDisciplineVersion  = "1.0.9"
 lazy val munitCatsEffectVersion  = "1.0.5"
@@ -39,15 +39,15 @@ lazy val catalog = crossProject(JVMPlatform, JSPlatform)
   .settings(
     name := "lucuma-catalog",
     libraryDependencies ++= Seq(
-      "co.fs2"                     %%% "fs2-core"      % fs2Version,
-      "org.gnieh"                  %%% "fs2-data-xml"  % fs2DataVersion,
-      "edu.gemini"                 %%% "lucuma-core"   % lucumaCoreVersion,
-      "org.typelevel"              %%% "cats-core"     % catsVersion,
-      "com.github.julien-truffaut" %%% "monocle-core"  % monocleVersion,
-      "com.github.julien-truffaut" %%% "monocle-macro" % monocleVersion,
-      "com.github.julien-truffaut" %%% "monocle-state" % monocleVersion,
-      "eu.timepit"                 %%% "refined"       % refinedVersion,
-      "eu.timepit"                 %%% "refined-cats"  % refinedVersion
+      "co.fs2"        %%% "fs2-core"      % fs2Version,
+      "org.gnieh"     %%% "fs2-data-xml"  % fs2DataVersion,
+      "edu.gemini"    %%% "lucuma-core"   % lucumaCoreVersion,
+      "org.typelevel" %%% "cats-core"     % catsVersion,
+      "dev.optics"    %%% "monocle-core"  % monocleVersion,
+      "dev.optics"    %%% "monocle-macro" % monocleVersion,
+      "dev.optics"    %%% "monocle-state" % monocleVersion,
+      "eu.timepit"    %%% "refined"       % refinedVersion,
+      "eu.timepit"    %%% "refined-cats"  % refinedVersion
     )
   )
   .jvmConfigure(_.enablePlugins(AutomateHeaderPlugin))

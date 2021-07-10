@@ -265,15 +265,16 @@ trait VoTableParser {
               )
           }
         case Some((XmlString(v, _), s))                         =>
-          go(s,
-             PartialTableRow.items
-               .composeOptional(listIndex.index(0))
-               .modify {
-                 case ti @ Right(_) => ti
-                 case Left(pti)     => TableRowItem(pti.field, v).asRight
-               }(t),
-             f,
-             fields
+          go(
+            s,
+            PartialTableRow.items
+              .andThen(listIndex[Either[PartialTableRowItem, TableRowItem]].index(0))
+              .modify {
+                case ti @ Right(_) => ti
+                case Left(pti)     => TableRowItem(pti.field, v).asRight
+              }(t),
+            f,
+            fields
           )
         case Some((_, s))                                       =>
           go(s, t, f, fields)
@@ -401,14 +402,15 @@ trait VoTableParser {
               Pull.output1(Validated.validNec(t.toTableRow)) >> Pull.done
           }
         case Some((XmlString(v, _), s))                =>
-          go(s,
-             PartialTableRow.items
-               .composeOptional(listIndex.index(0))
-               .modify {
-                 case ti @ Right(_) => ti
-                 case Left(pti)     => TableRowItem(pti.field, v).asRight
-               }(t),
-             f
+          go(
+            s,
+            PartialTableRow.items
+              .andThen(listIndex[Either[PartialTableRowItem, TableRowItem]].index(0))
+              .modify {
+                case ti @ Right(_) => ti
+                case Left(pti)     => TableRowItem(pti.field, v).asRight
+              }(t),
+            f
           )
         case Some((_, s))                              =>
           go(s, t, f)
@@ -454,14 +456,15 @@ trait VoTableParser {
               Pull.output1(Validated.validNec(t.toTableRow)) >> go(s, PartialTableRow(Nil), fields)
           }
         case Some((XmlString(v, _), s))                =>
-          go(s,
-             PartialTableRow.items
-               .composeOptional(listIndex.index(0))
-               .modify {
-                 case ti @ Right(_) => ti
-                 case Left(pti)     => TableRowItem(pti.field, v).asRight
-               }(t),
-             f
+          go(
+            s,
+            PartialTableRow.items
+              .andThen(listIndex[Either[PartialTableRowItem, TableRowItem]].index(0))
+              .modify {
+                case ti @ Right(_) => ti
+                case Left(pti)     => TableRowItem(pti.field, v).asRight
+              }(t),
+            f
           )
         case Some((_, s))                              =>
           go(s, t, f)
