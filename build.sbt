@@ -16,7 +16,7 @@ lazy val munitCatsEffectVersion  = "1.0.5"
 lazy val betterMonadicForVersion = "0.3.1"
 lazy val refinedVersion          = "0.9.27"
 lazy val catsScalacheckVersion   = "0.3.0"
-lazy val scalaXmlVersion         = "2.0.0"
+lazy val scalaXmlVersion         = "2.0.1"
 
 Global / onChangedBuildSource := ReloadOnSourceChanges
 
