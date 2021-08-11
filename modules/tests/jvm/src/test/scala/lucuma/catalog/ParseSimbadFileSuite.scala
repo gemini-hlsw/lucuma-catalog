@@ -11,8 +11,8 @@ import eu.timepit.refined.collection.NonEmpty
 import eu.timepit.refined._
 import fs2._
 import fs2.io.file.Files
+import fs2.io.file.Path
 import munit.CatsEffectSuite
-import java.nio.file.Paths
 import lucuma.core.model.Target
 import lucuma.core.math.RightAscension
 import lucuma.core.math.Declination
@@ -39,8 +39,8 @@ class ParseSimbadFileSuite extends CatsEffectSuite with VoTableParser {
     val file    = getClass().getResource(xmlFile)
     Resource.unit[IO].use { _ =>
       Files[IO]
-        .readAll(Paths.get(file.toURI), 1024)
-        .through(text.utf8Decode)
+        .readAll(Path(file.getPath()))
+        .through(text.utf8.decode)
         .through(targets(CatalogName.Simbad))
         .compile
         .lastOrError
@@ -123,8 +123,8 @@ class ParseSimbadFileSuite extends CatsEffectSuite with VoTableParser {
     val file    = getClass().getResource(xmlFile)
     Resource.unit[IO].use { _ =>
       Files[IO]
-        .readAll(Paths.get(file.toURI), 1024)
-        .through(text.utf8Decode)
+        .readAll(Path(file.getPath()))
+        .through(text.utf8.decode)
         .through(targets(CatalogName.Simbad))
         .compile
         .lastOrError
@@ -207,8 +207,8 @@ class ParseSimbadFileSuite extends CatsEffectSuite with VoTableParser {
     val file    = getClass().getResource(xmlFile)
     Resource.unit[IO].use { _ =>
       Files[IO]
-        .readAll(Paths.get(file.toURI), 1024)
-        .through(text.utf8Decode)
+        .readAll(Path(file.getPath()))
+        .through(text.utf8.decode)
         .through(targets(CatalogName.Simbad))
         .compile
         .lastOrError
@@ -327,8 +327,8 @@ class ParseSimbadFileSuite extends CatsEffectSuite with VoTableParser {
     val file = getClass().getResource(xmlFile)
     Resource.unit[IO].use { _ =>
       Files[IO]
-        .readAll(Paths.get(file.toURI), 1024)
-        .through(text.utf8Decode)
+        .readAll(Path(file.getPath()))
+        .through(text.utf8.decode)
         .through(targets(CatalogName.Simbad))
         .compile
         .lastOrError
@@ -349,8 +349,8 @@ class ParseSimbadFileSuite extends CatsEffectSuite with VoTableParser {
     val file    = getClass().getResource(xmlFile)
     Resource.unit[IO].use { _ =>
       Files[IO]
-        .readAll(Paths.get(file.toURI), 1024)
-        .through(text.utf8Decode)
+        .readAll(Path(file.getPath()))
+        .through(text.utf8.decode)
         .through(targets(CatalogName.Simbad))
         .compile
         .last
@@ -366,8 +366,8 @@ class ParseSimbadFileSuite extends CatsEffectSuite with VoTableParser {
     val file    = getClass().getResource(xmlFile)
     Resource.unit[IO].use { _ =>
       Files[IO]
-        .readAll(Paths.get(file.toURI), 1024)
-        .through(text.utf8Decode)
+        .readAll(Path(file.getPath()))
+        .through(text.utf8.decode)
         .through(targets(CatalogName.Simbad))
         .compile
         .last
@@ -383,8 +383,8 @@ class ParseSimbadFileSuite extends CatsEffectSuite with VoTableParser {
     val file    = getClass().getResource(xmlFile)
     Resource.unit[IO].use { _ =>
       Files[IO]
-        .readAll(Paths.get(file.toURI), 1024)
-        .through(text.utf8Decode)
+        .readAll(Path(file.getPath()))
+        .through(text.utf8.decode)
         .through(targets(CatalogName.Simbad))
         .compile
         .lastOrError
@@ -416,8 +416,8 @@ class ParseSimbadFileSuite extends CatsEffectSuite with VoTableParser {
     val file    = getClass().getResource(xmlFile)
     Resource.unit[IO].use { _ =>
       Files[IO]
-        .readAll(Paths.get(file.toURI), 1024)
-        .through(text.utf8Decode)
+        .readAll(Path(file.getPath()))
+        .through(text.utf8.decode)
         .through(targets(CatalogName.Simbad))
         .compile
         .lastOrError

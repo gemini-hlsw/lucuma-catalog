@@ -27,7 +27,7 @@ object SimbadQuerySample extends IOApp {
           .flatMap(
             _.body
               .traverse(
-                _.through(text.utf8Decode)
+                _.through(text.utf8.decode)
                   .through(VoTableParser.targets(CatalogName.Simbad))
                   .compile
                   .lastOrError
