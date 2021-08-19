@@ -22,7 +22,7 @@ Global / onChangedBuildSource := ReloadOnSourceChanges
 
 inThisBuild(
   Seq(
-    homepage := Some(url("https://github.com/gemini-hlsw/lucuma-catalog")),
+    homepage           := Some(url("https://github.com/gemini-hlsw/lucuma-catalog")),
     addCompilerPlugin(
       ("org.typelevel" %% "kind-projector" % kindProjectorVersion).cross(CrossVersion.full)
     ),
@@ -74,7 +74,7 @@ lazy val tests = crossProject(JVMPlatform, JSPlatform)
   .jsConfigure(_.enablePlugins(ScalaJSBundlerPlugin))
   .dependsOn(catalog, testkit)
   .settings(
-    name := "lucuma-catalog-tests",
+    name           := "lucuma-catalog-tests",
     libraryDependencies ++= Seq(
       "org.typelevel"                 %%% "cats-effect"         % catsEffectVersion      % Test,
       "org.scalameta"                 %%% "munit"               % munitVersion           % Test,
