@@ -144,10 +144,12 @@ sealed trait CatalogAdapter {
   }
 
   /**
-   * A default method for turning all of a table row's fields into a list of
-   * Magnitudes.  GAIA has a different mechanism for doing this.
-   * @param entries fields in a VO table row
-   * @return magnitude data parsed from the table row
+   * A default method for turning all of a table row's fields into a list of Magnitudes. GAIA has a
+   * different mechanism for doing this.
+   * @param entries
+   *   fields in a VO table row
+   * @return
+   *   magnitude data parsed from the table row
    */
   def parseMagnitudes(
     entries: Map[FieldId, String]
