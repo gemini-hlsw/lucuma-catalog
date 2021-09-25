@@ -68,7 +68,7 @@ lazy val testkit = crossProject(JVMPlatform, JSPlatform)
   .jvmConfigure(_.disablePlugins(AutomateHeaderPlugin))
   .jsSettings(lucumaScalaJsSettings: _*)
 
-lazy val tests = crossProject(JVMPlatform, JSPlatform)
+lazy val tests   = crossProject(JVMPlatform, JSPlatform)
   .crossType(CrossType.Full)
   .in(file("modules/tests"))
   .jsConfigure(_.enablePlugins(ScalaJSBundlerPlugin))
