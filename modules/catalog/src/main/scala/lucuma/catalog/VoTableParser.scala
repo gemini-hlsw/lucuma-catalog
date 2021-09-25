@@ -191,7 +191,7 @@ trait VoTableParser {
     parseSiderealTarget
   }
 
-  protected def trsf[F[_]]: Pipe[F, XmlEvent, ValidatedNec[CatalogProblem, TableRow]] = {
+  protected def trsf[F[_]]: Pipe[F, XmlEvent, ValidatedNec[CatalogProblem, TableRow]]      = {
     def go(
       s:      Stream[F, XmlEvent],
       t:      PartialTableRow,
