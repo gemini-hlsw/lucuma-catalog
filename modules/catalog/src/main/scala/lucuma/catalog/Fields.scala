@@ -29,7 +29,7 @@ object FieldId {
   def unsafeFrom(id: String, ucd: String): FieldId =
     Ucd(ucd).andThen(apply(id, _)).getOrElse(sys.error(s"Invalid field id $id"))
 
-  implicit val eqFieldId: Eq[FieldId]              = Eq.by(x => (x.id, x.ucd))
+  implicit val eqFieldId: Eq[FieldId] = Eq.by(x => (x.id, x.ucd))
 }
 
 @Lenses

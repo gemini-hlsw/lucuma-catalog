@@ -21,7 +21,7 @@ trait ArbUcd {
       } yield Ucd(NonEmptyList.fromList(a).get)
     }
 
-  implicit val cogenUcd: Cogen[Ucd]   =
+  implicit val cogenUcd: Cogen[Ucd] =
     Cogen[List[String]].contramap(_.tokens.map(_.value).toList)
 
 }
