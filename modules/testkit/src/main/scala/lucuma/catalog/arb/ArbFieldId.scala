@@ -21,7 +21,7 @@ trait ArbFieldId {
       } yield FieldId(i, u)
     }
 
-  implicit val cogenFieldId: Cogen[FieldId]   =
+  implicit val cogenFieldId: Cogen[FieldId] =
     Cogen[(String, Ucd)].contramap(x => (x.id.value, x.ucd))
 
 }

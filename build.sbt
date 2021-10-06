@@ -1,14 +1,14 @@
 import sbtcrossproject.crossProject
 import sbtcrossproject.CrossType
 
-lazy val fs2Version              = "3.1.3"
-lazy val fs2DataVersion          = "1.1.0"
+lazy val fs2Version              = "3.1.4"
+lazy val fs2DataVersion          = "1.0.1"
 lazy val catsVersion             = "2.6.1"
 lazy val catsEffectVersion       = "3.0.1"
 lazy val kindProjectorVersion    = "0.13.2"
-lazy val sttpVersion             = "3.3.14"
+lazy val sttpVersion             = "3.3.15"
 lazy val pprintVersion           = "0.6.6"
-lazy val lucumaCoreVersion       = "0.13.2"
+lazy val lucumaCoreVersion       = "0.13.3"
 lazy val monocleVersion          = "3.1.0"
 lazy val munitVersion            = "0.7.29"
 lazy val munitDisciplineVersion  = "1.0.9"
@@ -68,7 +68,7 @@ lazy val testkit = crossProject(JVMPlatform, JSPlatform)
   .jvmConfigure(_.disablePlugins(AutomateHeaderPlugin))
   .jsSettings(lucumaScalaJsSettings: _*)
 
-lazy val tests   = crossProject(JVMPlatform, JSPlatform)
+lazy val tests = crossProject(JVMPlatform, JSPlatform)
   .crossType(CrossType.Full)
   .in(file("modules/tests"))
   .jsConfigure(_.enablePlugins(ScalaJSBundlerPlugin))

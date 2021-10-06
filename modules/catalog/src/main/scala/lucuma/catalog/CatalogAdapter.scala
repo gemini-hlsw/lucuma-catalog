@@ -228,7 +228,7 @@ object CatalogAdapter {
 
   case object Simbad extends CatalogAdapter {
 
-    val catalog: CatalogName     =
+    val catalog: CatalogName =
       CatalogName.Simbad
 
     private val errorFluxIDExtra = "FLUX_ERROR_(.)_.+"
@@ -243,7 +243,7 @@ object CatalogAdapter {
     override val pmRaField       = FieldId.unsafeFrom("PMRA", VoTableParser.UCD_PMRA)
     override val pmDecField      = FieldId.unsafeFrom("PMDEC", VoTableParser.UCD_PMDEC)
 
-    override def ignoreMagnitudeField(v: FieldId): Boolean             =
+    override def ignoreMagnitudeField(v: FieldId): Boolean =
       !v.id.value.toLowerCase.startsWith("flux") ||
         v.id.value.matches(errorFluxIDExtra) ||
         v.id.value.matches(fluxIDExtra)
@@ -268,10 +268,10 @@ object CatalogAdapter {
         !ignoreMagnitudeField(v._1) &&
         v._2.nonEmpty
 
-    protected def findBand(band: String): Option[MagnitudeBand]       =
+    protected def findBand(band: String): Option[MagnitudeBand] =
       MagnitudeBand.all.find(_.shortName === band)
 
-    override def fieldToBand(field: FieldId): Option[MagnitudeBand]   =
+    override def fieldToBand(field: FieldId): Option[MagnitudeBand] =
       if ((field.ucd.includes(VoTableParser.UCD_MAG) && !ignoreMagnitudeField(field)))
         findBand(field)
       else
