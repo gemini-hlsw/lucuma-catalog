@@ -21,8 +21,8 @@ import lucuma.core.enum.CatalogName
 import lucuma.core.math._
 import lucuma.core.math.units.KilometersPerSecond
 import lucuma.core.model.CatalogId
+import lucuma.core.model.SiderealTarget
 import lucuma.core.model.SiderealTracking
-import lucuma.core.model.Target
 import monocle.function.Index.listIndex
 import monocle.macros.Lenses
 
@@ -64,7 +64,7 @@ trait VoTableParser {
    */
   def targets[F[_]: RaiseThrowable: MonadError[*[_], Throwable]](
     catalog: CatalogName
-  ): Pipe[F, String, ValidatedNec[CatalogProblem, Target]] =
+  ): Pipe[F, String, ValidatedNec[CatalogProblem, SiderealTarget]] =
     in =>
       CatalogAdapter.forCatalog(catalog) match {
         case Some(a) =>
@@ -81,10 +81,10 @@ trait VoTableParser {
    */
   def xml2targets[F[_]](
     adapter: CatalogAdapter
-  ): Pipe[F, XmlEvent, ValidatedNec[CatalogProblem, Target]] = {
+  ): Pipe[F, XmlEvent, ValidatedNec[CatalogProblem, SiderealTarget]] = {
     def go(
       s: Stream[F, ValidatedNec[CatalogProblem, TableRow]]
-    ): Pull[F, ValidatedNec[CatalogProblem, Target], Unit] =
+    ): Pull[F, ValidatedNec[CatalogProblem, SiderealTarget], Unit] =
       s.pull.uncons1.flatMap {
         case Some((i @ Validated.Invalid(_), s))       => Pull.output1(i) >> go(s)
         case Some((Validated.Valid(row: TableRow), s)) =>
@@ -100,7 +100,7 @@ trait VoTableParser {
   protected def targetRow2Target(
     adapter: CatalogAdapter,
     row:     TableRow
-  ): ValidatedNec[CatalogProblem, Target] = {
+  ): ValidatedNec[CatalogProblem, SiderealTarget] = {
     val entries = row.itemsMap
 
     def parseId: ValidatedNec[CatalogProblem, NonEmptyString] =
@@ -183,9 +183,9 @@ trait VoTableParser {
 
     val parseMagnitudes = adapter.parseMagnitudes(entries)
 
-    def parseSiderealTarget: ValidatedNec[CatalogProblem, Target] =
+    def parseSiderealTarget: ValidatedNec[CatalogProblem, SiderealTarget] =
       (parseName, parseSiderealTracking, parseMagnitudes).mapN { (name, pm, mags) =>
-        Target(name, pm.asRight, SortedMap(mags.fproductLeft(_.band): _*))
+        SiderealTarget(name, pm, SortedMap(mags.fproductLeft(_.band): _*))
       }
 
     parseSiderealTarget
