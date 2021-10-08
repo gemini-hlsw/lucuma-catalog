@@ -1,14 +1,14 @@
 import sbtcrossproject.crossProject
 import sbtcrossproject.CrossType
 
-lazy val fs2Version              = "3.1.4"
+lazy val fs2Version              = "3.1.5"
 lazy val fs2DataVersion          = "1.1.0"
 lazy val catsVersion             = "2.6.1"
 lazy val catsEffectVersion       = "3.0.1"
 lazy val kindProjectorVersion    = "0.13.2"
 lazy val sttpVersion             = "3.3.15"
 lazy val pprintVersion           = "0.6.6"
-lazy val lucumaCoreVersion       = "0.13.3"
+lazy val lucumaCoreVersion       = "0.14.0"
 lazy val monocleVersion          = "3.1.0"
 lazy val munitVersion            = "0.7.29"
 lazy val munitDisciplineVersion  = "1.0.9"

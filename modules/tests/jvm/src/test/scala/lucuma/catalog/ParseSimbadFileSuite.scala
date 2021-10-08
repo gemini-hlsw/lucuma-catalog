@@ -48,7 +48,7 @@ class ParseSimbadFileSuite extends CatsEffectSuite with VoTableParser {
           case Validated.Valid(t)   =>
             // id and search name
             assertEquals(t.name, refineMV[NonEmpty]("Vega"))
-            assertEquals(t.track.map(_.catalogId).toOption.flatten,
+            assertEquals(t.tracking.catalogId,
                          CatalogId(CatalogName.Simbad, refineMV[NonEmpty]("* alf Lyr")).some
             )
             // base coordinates
@@ -132,7 +132,7 @@ class ParseSimbadFileSuite extends CatsEffectSuite with VoTableParser {
           case Validated.Valid(t)   =>
             // id and search name
             assertEquals(t.name, refineMV[NonEmpty]("2MFGC6625"))
-            assertEquals(t.track.map(_.catalogId).toOption.flatten,
+            assertEquals(t.tracking.catalogId,
                          CatalogId(CatalogName.Simbad, refineMV[NonEmpty]("2MFGC 6625")).some
             )
             // base coordinates
@@ -217,7 +217,7 @@ class ParseSimbadFileSuite extends CatsEffectSuite with VoTableParser {
             // id and search name
             assertEquals(t.name, refineMV[NonEmpty]("2SLAQ J000008.13+001634.6"))
             assertEquals(
-              t.track.map(_.catalogId).toOption.flatten,
+              t.tracking.catalogId,
               CatalogId(CatalogName.Simbad, "2SLAQ J000008.13+001634.6")
             )
             // base coordinates
@@ -392,10 +392,8 @@ class ParseSimbadFileSuite extends CatsEffectSuite with VoTableParser {
           case Validated.Valid(t)   =>
             // id and search name
             assertEquals(t.name, refineMV[NonEmpty]("NGC 2438"))
-            assertEquals(t.track.toOption.map(_.catalogId).flatten,
-                         CatalogId(CatalogName.Simbad, "NGC  2438")
-            )
-            assert(t.track.toOption.flatMap(_.properMotion).isEmpty)
+            assertEquals(t.tracking.catalogId, CatalogId(CatalogName.Simbad, "NGC  2438"))
+            assert(t.tracking.properMotion.isEmpty)
             assertEquals(
               Target.magnitudeIn(MagnitudeBand.J).headOption(t),
               Magnitude(MagnitudeValue.fromDouble(17.02),
