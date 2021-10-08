@@ -1,7 +1,7 @@
 import sbtcrossproject.crossProject
 import sbtcrossproject.CrossType
 
-lazy val fs2Version              = "3.1.4"
+lazy val fs2Version              = "3.1.5"
 lazy val fs2DataVersion          = "1.0.1"
 lazy val catsVersion             = "2.6.1"
 lazy val catsEffectVersion       = "3.0.1"
