@@ -39,6 +39,10 @@ sealed trait CatalogAdapter {
   def rvField: FieldId    = FieldId.unsafeFrom("RV_VALUE", VoTableParser.UCD_RV)
   def plxField: FieldId   = FieldId.unsafeFrom("PLX_VALUE", VoTableParser.UCD_PLX)
 
+  // Parse nameField. In Simbad, this can include a prefix, e.g. "NAME "
+  def parseName(entries: Map[FieldId, String]): Option[String] =
+    entries.get(nameField)
+
   // From a Field extract the band from either the field id or the UCD
   protected def fieldToBand(field: FieldId): Option[MagnitudeBand]
 
@@ -242,6 +246,9 @@ object CatalogAdapter {
     val decField                 = FieldId.unsafeFrom("DEC_d", VoTableParser.UCD_DEC)
     override val pmRaField       = FieldId.unsafeFrom("PMRA", VoTableParser.UCD_PMRA)
     override val pmDecField      = FieldId.unsafeFrom("PMDEC", VoTableParser.UCD_PMDEC)
+
+    override def parseName(entries: Map[FieldId, String]): Option[String] =
+      super.parseName(entries).map(_.stripPrefix("NAME "))
 
     override def ignoreMagnitudeField(v: FieldId): Boolean =
       !v.id.value.toLowerCase.startsWith("flux") ||
