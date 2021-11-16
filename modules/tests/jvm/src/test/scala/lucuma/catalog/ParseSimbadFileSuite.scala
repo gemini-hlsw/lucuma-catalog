@@ -434,4 +434,98 @@ class ParseSimbadFileSuite extends CatsEffectSuite with VoTableParser {
         }
     }
   }
+
+  test("parse simbad wildcard queries with name") {
+    // From https://simbad.u-strasbg.fr/simbad/sim-id?Ident=name+vega*&NbIdent=wild&output.format=VOTable
+    val xmlFile = "/simbad-vega-name.xml"
+    // The sample has only one row
+    val file    = getClass().getResource(xmlFile)
+    Resource.unit[IO].use { _ =>
+      Files[IO]
+        .readAll(Path(file.getPath()))
+        .through(text.utf8.decode)
+        .through(targets(CatalogName.Simbad))
+        .compile
+        .lastOrError
+        .map {
+          case Validated.Valid(t)   =>
+            // id and search name
+            assertEquals(t.name, refineMV[NonEmpty]("Vega"))
+            assertEquals(t.tracking.catalogId,
+                         CatalogId(CatalogName.Simbad, refineMV[NonEmpty]("* alf Lyr")).some
+            )
+            // base coordinates
+            assertEquals(
+              Target.baseRA.getOption(t),
+              RightAscension.fromDoubleDegrees(279.23473479).some
+            )
+            assertEquals(
+              Target.baseDec.getOption(t),
+              Declination.fromDoubleDegrees(38.78368896)
+            )
+            // proper motions
+            assertEquals(
+              Target.properMotionRA.getOption(t),
+              ProperMotion.RA(200939.withUnit[MicroArcSecondPerYear]).some
+            )
+            assertEquals(
+              Target.properMotionDec.getOption(t),
+              ProperMotion.Dec(286230.withUnit[MicroArcSecondPerYear]).some
+            )
+            // magnitudes
+            assertEquals(
+              Target.magnitudeIn(MagnitudeBand.U).headOption(t),
+              Magnitude(MagnitudeValue.fromDouble(0.03), MagnitudeBand.U).some
+            )
+            assertEquals(
+              Target.magnitudeIn(MagnitudeBand.B).headOption(t),
+              Magnitude(MagnitudeValue.fromDouble(0.03), MagnitudeBand.B).some
+            )
+            assertEquals(
+              Target.magnitudeIn(MagnitudeBand.V).headOption(t),
+              Magnitude(MagnitudeValue.fromDouble(0.03), MagnitudeBand.V).some
+            )
+            assertEquals(
+              Target.magnitudeIn(MagnitudeBand.R).headOption(t),
+              Magnitude(MagnitudeValue.fromDouble(0.07), MagnitudeBand.R).some
+            )
+            assertEquals(
+              Target.magnitudeIn(MagnitudeBand.I).headOption(t),
+              Magnitude(MagnitudeValue.fromDouble(0.10), MagnitudeBand.I).some
+            )
+            assertEquals(
+              Target.magnitudeIn(MagnitudeBand.J).headOption(t),
+              Magnitude(MagnitudeValue.fromDouble(-0.177),
+                        MagnitudeBand.J,
+                        MagnitudeValue.fromDouble(0.206)
+              ).some
+            )
+            assertEquals(
+              Target.magnitudeIn(MagnitudeBand.H).headOption(t),
+              Magnitude(MagnitudeValue.fromDouble(-0.029),
+                        MagnitudeBand.H,
+                        MagnitudeValue.fromDouble(0.146)
+              ).some
+            )
+            assertEquals(
+              Target.magnitudeIn(MagnitudeBand.K).headOption(t),
+              Magnitude(MagnitudeValue.fromDouble(0.129),
+                        MagnitudeBand.K,
+                        MagnitudeValue.fromDouble(0.186)
+              ).some
+            )
+            // parallax
+            assertEquals(
+              Target.parallax.getOption(t).flatten,
+              Parallax.milliarcseconds.reverseGet(130.23).some
+            )
+            // radial velocity
+            assertEquals(
+              Target.radialVelocity.getOption(t).flatten,
+              RadialVelocity(-20.60.withUnit[KilometersPerSecond])
+            )
+          case Validated.Invalid(_) => fail(s"VOTable xml $xmlFile cannot be parsed")
+        }
+    }
+  }
 }
