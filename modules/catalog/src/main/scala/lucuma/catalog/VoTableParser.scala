@@ -112,7 +112,10 @@ trait VoTableParser {
 
     def parseName: ValidatedNec[CatalogProblem, NonEmptyString] =
       Validated
-        .fromOption(entries.get(adapter.nameField).flatMap(refineV[NonEmpty](_).toOption),
+        .fromOption(entries
+                      .get(adapter.nameField)
+                      .map(_.stripPrefix("NAME "))
+                      .flatMap(refineV[NonEmpty](_).toOption),
                     MissingValue(adapter.nameField)
         )
         .toValidatedNec
