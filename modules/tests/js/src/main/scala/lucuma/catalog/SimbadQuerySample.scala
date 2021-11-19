@@ -9,10 +9,10 @@ import cats.implicits._
 import fs2._
 import lucuma.core.enum.CatalogName
 import sttp.client3._
+import sttp.client3.impl.cats.FetchCatsBackend
 
 import scala.scalajs.js
 import scala.scalajs.js.annotation._
-import sttp.client3.impl.cats.FetchCatsBackend
 
 @JSExportTopLevel("main")
 object SimbadQuerySample extends IOApp {

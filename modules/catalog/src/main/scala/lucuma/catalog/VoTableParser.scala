@@ -192,7 +192,7 @@ trait VoTableParser {
         entries.get(field) match {
           case Some(v) =>
             parseDoubleValue(field.ucd, v)
-              .map(_ * 60 * 1e6)
+              .map(_ * 60 * 1e6) // Units are decimal arcminutes
               .map(_.toLong)
               .map(Angle.fromMicroarcseconds)
               .map(_.some)

@@ -3,33 +3,34 @@
 
 package lucuma.catalog
 
-import cats.effect._
 import cats.data.Validated
+import cats.effect._
 import cats.implicits._
 import coulomb._
-import eu.timepit.refined.collection.NonEmpty
 import eu.timepit.refined._
+import eu.timepit.refined.collection.NonEmpty
 import fs2._
 import fs2.io.file.Files
 import fs2.io.file.Path
-import munit.CatsEffectSuite
-import lucuma.core.model.Target
-import lucuma.core.math.RightAscension
+import lucuma.core.enum.CatalogName
+import lucuma.core.enum.MagnitudeBand
+import lucuma.core.enum.MagnitudeSystem
+import lucuma.core.math.Angle
 import lucuma.core.math.Declination
+import lucuma.core.math.HourAngle
+import lucuma.core.math.MagnitudeValue
+import lucuma.core.math.Parallax
 import lucuma.core.math.ProperMotion
+import lucuma.core.math.RadialVelocity
+import lucuma.core.math.RightAscension
+import lucuma.core.math.units.KilometersPerSecond
 import lucuma.core.math.units.MicroArcSecondPerYear
 import lucuma.core.model.AngularSize
-import lucuma.core.model.Magnitude
 import lucuma.core.model.CatalogId
-import lucuma.core.enum.CatalogName
-import lucuma.core.enum.MagnitudeSystem
-import lucuma.core.math.MagnitudeValue
-import lucuma.core.enum.MagnitudeBand
-import lucuma.core.math.Parallax
-import lucuma.core.math.RadialVelocity
-import lucuma.core.math.units.KilometersPerSecond
-import lucuma.core.math.HourAngle
-import lucuma.core.math.Angle
+import lucuma.core.model.Magnitude
+import lucuma.core.model.SiderealTarget
+import lucuma.core.model.Target
+import munit.CatsEffectSuite
 
 class ParseSimbadFileSuite extends CatsEffectSuite with VoTableParser {
 
@@ -151,7 +152,7 @@ class ParseSimbadFileSuite extends CatsEffectSuite with VoTableParser {
                 .some
             )
             // proper velocity
-            assertEquals(Target.properMotion.getOption(t), none)
+            assertEquals(SiderealTarget.properMotion.get(t), none)
             // radial velocity
             assertEquals(
               Target.radialVelocity.getOption(t).flatten,
@@ -241,7 +242,7 @@ class ParseSimbadFileSuite extends CatsEffectSuite with VoTableParser {
                 .some
             )
             // proper velocity
-            assertEquals(Target.properMotion.getOption(t), none)
+            assertEquals(SiderealTarget.properMotion.get(t), none)
             // radial velocity
             assertEquals(
               Target.radialVelocity.getOption(t).flatten,
