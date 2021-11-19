@@ -20,6 +20,7 @@ import lucuma.catalog._
 import lucuma.core.enum.CatalogName
 import lucuma.core.math._
 import lucuma.core.math.units.KilometersPerSecond
+import lucuma.core.model.AngularSize
 import lucuma.core.model.CatalogId
 import lucuma.core.model.SiderealTarget
 import lucuma.core.model.SiderealTracking
@@ -41,17 +42,19 @@ private[catalog] case class PartialTableRow(
 
 object VoTableParser extends VoTableParser {
 
-  val UCD_OBJID      = Ucd.unsafeFromString("meta.id;meta.main")
-  val UCD_TYPEDID    = Ucd.unsafeFromString("meta.id")
-  val UCD_EPOCH      = Ucd.unsafeFromString("meta.ref;time.epoch")
-  val UCD_RA         = Ucd.unsafeFromString("pos.eq.ra;meta.main")
-  val UCD_DEC        = Ucd.unsafeFromString("pos.eq.dec;meta.main")
-  val UCD_PMDEC      = Ucd.unsafeFromString("pos.pm;pos.eq.dec")
-  val UCD_PMRA       = Ucd.unsafeFromString("pos.pm;pos.eq.ra")
-  val UCD_RV         = Ucd.unsafeFromString("spect.dopplerVeloc.opt")
-  val UCD_Z          = Ucd.unsafeFromString("src.redshift")
-  val UCD_PLX        = Ucd.unsafeFromString("pos.parallax.trig")
-  val UCD_PHOTO_FLUX = Ucd.unsafeFromString("phot.flux")
+  val UCD_OBJID       = Ucd.unsafeFromString("meta.id;meta.main")
+  val UCD_TYPEDID     = Ucd.unsafeFromString("meta.id")
+  val UCD_EPOCH       = Ucd.unsafeFromString("meta.ref;time.epoch")
+  val UCD_RA          = Ucd.unsafeFromString("pos.eq.ra;meta.main")
+  val UCD_DEC         = Ucd.unsafeFromString("pos.eq.dec;meta.main")
+  val UCD_PMDEC       = Ucd.unsafeFromString("pos.pm;pos.eq.dec")
+  val UCD_PMRA        = Ucd.unsafeFromString("pos.pm;pos.eq.ra")
+  val UCD_RV          = Ucd.unsafeFromString("spect.dopplerVeloc.opt")
+  val UCD_Z           = Ucd.unsafeFromString("src.redshift")
+  val UCD_PLX         = Ucd.unsafeFromString("pos.parallax.trig")
+  val UCD_PHOTO_FLUX  = Ucd.unsafeFromString("phot.flux")
+  val UCD_ANGSIZE_MAJ = Ucd.unsafeFromString("phys.angSize.smajAxis")
+  val UCD_ANGSIZE_MIN = Ucd.unsafeFromString("phys.angSize.sminAxis")
 
   val UCD_MAG  = refineMV[NonEmpty]("phot.mag")
   val STAT_ERR = refineMV[NonEmpty]("stat.error")
@@ -183,9 +186,35 @@ trait VoTableParser {
 
     val parseMagnitudes = adapter.parseMagnitudes(entries)
 
+    def parseAngularSize: ValidatedNec[CatalogProblem, Option[AngularSize]] = {
+
+      def parseDoubleMinutesOpt(field: FieldId): ValidatedNec[CatalogProblem, Option[Angle]] =
+        entries.get(field) match {
+          case Some(v) =>
+            parseDoubleValue(field.ucd, v)
+              .map(_ * 60 * 1e6)
+              .map(_.toLong)
+              .map(Angle.fromMicroarcseconds)
+              .map(_.some)
+          case _       =>
+            Validated.validNec(none)
+        }
+
+      def parseAngSizeMajAxis: ValidatedNec[CatalogProblem, Option[Angle]] =
+        parseDoubleMinutesOpt(adapter.angSizeMajAxisField)
+
+      def parseAngSizeMinAxis: ValidatedNec[CatalogProblem, Option[Angle]] =
+        parseDoubleMinutesOpt(adapter.angSizeMinAxisField)
+
+      (parseAngSizeMajAxis, parseAngSizeMinAxis).mapN { (majOpt, minOpt) =>
+        (majOpt, minOpt).mapN((maj, min) => AngularSize(maj, min))
+      }
+    }
+
     def parseSiderealTarget: ValidatedNec[CatalogProblem, SiderealTarget] =
-      (parseName, parseSiderealTracking, parseMagnitudes).mapN { (name, pm, mags) =>
-        SiderealTarget(name, pm, SortedMap(mags.fproductLeft(_.band): _*))
+      (parseName, parseSiderealTracking, parseMagnitudes, parseAngularSize).mapN {
+        (name, pm, mags, angSize) =>
+          SiderealTarget(name, pm, SortedMap(mags.fproductLeft(_.band): _*), angSize)
       }
 
     parseSiderealTarget

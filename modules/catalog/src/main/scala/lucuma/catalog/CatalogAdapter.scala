@@ -38,6 +38,8 @@ sealed trait CatalogAdapter {
   def zField: FieldId     = FieldId.unsafeFrom("Z_VALUE", VoTableParser.UCD_Z)
   def rvField: FieldId    = FieldId.unsafeFrom("RV_VALUE", VoTableParser.UCD_RV)
   def plxField: FieldId   = FieldId.unsafeFrom("PLX_VALUE", VoTableParser.UCD_PLX)
+  def angSizeMajAxisField: FieldId
+  def angSizeMinAxisField: FieldId
 
   // Parse nameField. In Simbad, this can include a prefix, e.g. "NAME "
   def parseName(entries: Map[FieldId, String]): Option[String] =
@@ -235,17 +237,21 @@ object CatalogAdapter {
     val catalog: CatalogName =
       CatalogName.Simbad
 
-    private val errorFluxIDExtra = "FLUX_ERROR_(.)_.+"
-    private val fluxIDExtra      = "FLUX_(.)_.+"
-    private val errorFluxID      = "FLUX_ERROR_(.)".r
-    private val fluxID           = "FLUX_(.)".r
-    private val magSystemID      = "FLUX_SYSTEM_(.).*".r
-    val idField                  = FieldId.unsafeFrom("MAIN_ID", VoTableParser.UCD_OBJID)
-    val nameField: FieldId       = FieldId.unsafeFrom("TYPED_ID", VoTableParser.UCD_TYPEDID)
-    val raField                  = FieldId.unsafeFrom("RA_d", VoTableParser.UCD_RA)
-    val decField                 = FieldId.unsafeFrom("DEC_d", VoTableParser.UCD_DEC)
-    override val pmRaField       = FieldId.unsafeFrom("PMRA", VoTableParser.UCD_PMRA)
-    override val pmDecField      = FieldId.unsafeFrom("PMDEC", VoTableParser.UCD_PMDEC)
+    private val errorFluxIDExtra              = "FLUX_ERROR_(.)_.+"
+    private val fluxIDExtra                   = "FLUX_(.)_.+"
+    private val errorFluxID                   = "FLUX_ERROR_(.)".r
+    private val fluxID                        = "FLUX_(.)".r
+    private val magSystemID                   = "FLUX_SYSTEM_(.).*".r
+    val idField                               = FieldId.unsafeFrom("MAIN_ID", VoTableParser.UCD_OBJID)
+    val nameField: FieldId                    = FieldId.unsafeFrom("TYPED_ID", VoTableParser.UCD_TYPEDID)
+    val raField                               = FieldId.unsafeFrom("RA_d", VoTableParser.UCD_RA)
+    val decField                              = FieldId.unsafeFrom("DEC_d", VoTableParser.UCD_DEC)
+    override val pmRaField                    = FieldId.unsafeFrom("PMRA", VoTableParser.UCD_PMRA)
+    override val pmDecField                   = FieldId.unsafeFrom("PMDEC", VoTableParser.UCD_PMDEC)
+    override val angSizeMajAxisField: FieldId =
+      FieldId.unsafeFrom("GALDIM_MAJAXIS", VoTableParser.UCD_ANGSIZE_MAJ)
+    override val angSizeMinAxisField: FieldId =
+      FieldId.unsafeFrom("GALDIM_MINAXIS", VoTableParser.UCD_ANGSIZE_MIN)
 
     override def parseName(entries: Map[FieldId, String]): Option[String] =
       super.parseName(entries).map(_.stripPrefix("NAME "))
