@@ -3,15 +3,16 @@
 
 package lucuma.catalog
 
-import cats.effect._
-import cats.data.Validated
-import cats.data.NonEmptyChain
 import cats.MonadError
+import cats.data.NonEmptyChain
+import cats.data.Validated
+import cats.effect._
 import fs2._
 import fs2.data.xml._
-import lucuma.catalog._
 import lucuma.catalog.CatalogProblem._
+import lucuma.catalog._
 import munit.CatsEffectSuite
+
 import scala.xml.Node
 import scala.xml.Utility
 

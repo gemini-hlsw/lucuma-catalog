@@ -3,32 +3,34 @@
 
 package lucuma.catalog
 
-import cats.effect._
 import cats.data.Validated
+import cats.effect._
 import cats.implicits._
 import coulomb._
-import eu.timepit.refined.collection.NonEmpty
 import eu.timepit.refined._
+import eu.timepit.refined.collection.NonEmpty
 import fs2._
 import fs2.io.file.Files
 import fs2.io.file.Path
-import munit.CatsEffectSuite
-import lucuma.core.model.Target
-import lucuma.core.math.RightAscension
-import lucuma.core.math.Declination
-import lucuma.core.math.ProperMotion
-import lucuma.core.math.units.MicroArcSecondPerYear
-import lucuma.core.model.Magnitude
-import lucuma.core.model.CatalogId
 import lucuma.core.enum.CatalogName
-import lucuma.core.enum.MagnitudeSystem
-import lucuma.core.math.MagnitudeValue
 import lucuma.core.enum.MagnitudeBand
-import lucuma.core.math.Parallax
-import lucuma.core.math.RadialVelocity
-import lucuma.core.math.units.KilometersPerSecond
-import lucuma.core.math.HourAngle
+import lucuma.core.enum.MagnitudeSystem
 import lucuma.core.math.Angle
+import lucuma.core.math.Declination
+import lucuma.core.math.HourAngle
+import lucuma.core.math.MagnitudeValue
+import lucuma.core.math.Parallax
+import lucuma.core.math.ProperMotion
+import lucuma.core.math.RadialVelocity
+import lucuma.core.math.RightAscension
+import lucuma.core.math.units.KilometersPerSecond
+import lucuma.core.math.units.MicroArcSecondPerYear
+import lucuma.core.model.AngularSize
+import lucuma.core.model.CatalogId
+import lucuma.core.model.Magnitude
+import lucuma.core.model.SiderealTarget
+import lucuma.core.model.Target
+import munit.CatsEffectSuite
 
 class ParseSimbadFileSuite extends CatsEffectSuite with VoTableParser {
 
@@ -139,22 +141,22 @@ class ParseSimbadFileSuite extends CatsEffectSuite with VoTableParser {
             assertEquals(
               Target.baseRA.getOption(t),
               RightAscension.fromHourAngle
-                .get(HourAngle.fromHMS(8, 23, 54, 965, 999))
+                .get(HourAngle.fromHMS(8, 23, 54, 966, 933))
                 .some
             )
             assertEquals(
               Target.baseDec.getOption(t),
               Declination
-                .fromAngleWithCarry(Angle.fromDMS(28, 6, 21, 679, 200))
+                .fromAngleWithCarry(Angle.fromDMS(28, 6, 21, 605, 409))
                 ._1
                 .some
             )
             // proper velocity
-            assertEquals(Target.properMotion.getOption(t), none)
+            assertEquals(SiderealTarget.properMotion.get(t), none)
             // radial velocity
             assertEquals(
               Target.radialVelocity.getOption(t).flatten,
-              RadialVelocity(13828.withUnit[KilometersPerSecond])
+              RadialVelocity(13822.withUnit[KilometersPerSecond])
             )
             // parallax
             assertEquals(
@@ -164,38 +166,43 @@ class ParseSimbadFileSuite extends CatsEffectSuite with VoTableParser {
             // magnitudes
             assertEquals(
               Target.magnitudeIn(MagnitudeBand.SloanU).headOption(t),
-              Magnitude(MagnitudeValue.fromDouble(17.353),
+              Magnitude(MagnitudeValue.fromDouble(16.284),
                         MagnitudeBand.SloanU,
-                        MagnitudeValue.fromDouble(0.009)
+                        MagnitudeValue.fromDouble(0.007)
               ).some
             )
             assertEquals(
               Target.magnitudeIn(MagnitudeBand.SloanG).headOption(t),
-              Magnitude(MagnitudeValue.fromDouble(16.826),
+              Magnitude(MagnitudeValue.fromDouble(15.728),
                         MagnitudeBand.SloanG,
-                        MagnitudeValue.fromDouble(0.004)
+                        MagnitudeValue.fromDouble(0.003)
               ).some
             )
             assertEquals(
               Target.magnitudeIn(MagnitudeBand.SloanR).headOption(t),
-              Magnitude(MagnitudeValue.fromDouble(17.286),
+              Magnitude(MagnitudeValue.fromDouble(15.986),
                         MagnitudeBand.SloanR,
-                        MagnitudeValue.fromDouble(0.005)
+                        MagnitudeValue.fromDouble(0.004)
               ).some
             )
             assertEquals(
               Target.magnitudeIn(MagnitudeBand.SloanI).headOption(t),
-              Magnitude(MagnitudeValue.fromDouble(16.902),
+              Magnitude(MagnitudeValue.fromDouble(15.603),
                         MagnitudeBand.SloanI,
-                        MagnitudeValue.fromDouble(0.005)
+                        MagnitudeValue.fromDouble(0.004)
               ).some
             )
             assertEquals(
               Target.magnitudeIn(MagnitudeBand.SloanZ).headOption(t),
-              Magnitude(MagnitudeValue.fromDouble(17.015),
+              Magnitude(MagnitudeValue.fromDouble(15.682),
                         MagnitudeBand.SloanZ,
-                        MagnitudeValue.fromDouble(0.011)
+                        MagnitudeValue.fromDouble(0.008)
               ).some
+            )
+            // angular size
+            assertEquals(
+              t.angularSize,
+              AngularSize(Angle.fromDMS(0, 0, 35, 400, 0), Angle.fromDMS(0, 0, 6, 359, 999)).some
             )
           case Validated.Invalid(_) => fail(s"VOTable xml $xmlFile cannot be parsed")
         }
@@ -235,7 +242,7 @@ class ParseSimbadFileSuite extends CatsEffectSuite with VoTableParser {
                 .some
             )
             // proper velocity
-            assertEquals(Target.properMotion.getOption(t), none)
+            assertEquals(SiderealTarget.properMotion.get(t), none)
             // radial velocity
             assertEquals(
               Target.radialVelocity.getOption(t).flatten,
@@ -343,6 +350,7 @@ class ParseSimbadFileSuite extends CatsEffectSuite with VoTableParser {
         }
     }
   }
+
   test("parse simbad with a not-found name") {
     val xmlFile = "/simbad-not-found.xml"
     // Simbad returns non-valid xml when an element is not found, we need to skip validation :S
@@ -377,7 +385,8 @@ class ParseSimbadFileSuite extends CatsEffectSuite with VoTableParser {
         }
     }
   }
-  test("support simbad repeated magnitude entries") {
+
+  test("support simbad repeated magnitude entries and angular size") {
     val xmlFile = "/simbad-ngc-2438.xml"
     // Simbad returns an xml with multiple measurements of the same band, use only the first one
     val file    = getClass().getResource(xmlFile)
@@ -401,6 +410,10 @@ class ParseSimbadFileSuite extends CatsEffectSuite with VoTableParser {
                         MagnitudeValue.fromDouble(0.15).some,
                         MagnitudeSystem.Vega
               ).some
+            )
+            assertEquals(
+              t.angularSize,
+              AngularSize(Angle.fromDMS(0, 1, 10, 380, 0), Angle.fromDMS(0, 1, 10, 380, 0)).some
             )
           case Validated.Invalid(_) => fail(s"VOTable xml $xmlFile cannot be parsed")
         }

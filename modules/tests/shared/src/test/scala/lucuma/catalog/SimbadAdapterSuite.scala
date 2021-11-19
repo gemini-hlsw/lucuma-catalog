@@ -3,9 +3,9 @@
 
 package lucuma.catalog
 
-import munit.FunSuite
-import lucuma.core.enum.MagnitudeBand
 import cats.data.Validated
+import lucuma.core.enum.MagnitudeBand
+import munit.FunSuite
 
 class SimbadAdapterSuite extends FunSuite {
 

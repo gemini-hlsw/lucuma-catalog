@@ -3,14 +3,14 @@
 
 package lucuma.catalog
 
-import munit.DisciplineSuite
-import cats.kernel.laws.discipline.EqTests
-import lucuma.catalog._
-import lucuma.catalog.arb.ArbUcd._
+import _root_.cats.data.Validated
 import cats.data.NonEmptyList
+import cats.kernel.laws.discipline.EqTests
 import eu.timepit.refined._
 import eu.timepit.refined.collection._
-import _root_.cats.data.Validated
+import lucuma.catalog._
+import lucuma.catalog.arb.ArbUcd._
+import munit.DisciplineSuite
 
 class UcdSuite extends munit.FunSuite with DisciplineSuite {
   checkAll("Ucd", EqTests[Ucd].eqv)
