@@ -14,7 +14,7 @@ lazy val munitVersion            = "0.7.29"
 lazy val munitDisciplineVersion  = "1.0.9"
 lazy val munitCatsEffectVersion  = "1.0.6"
 lazy val betterMonadicForVersion = "0.3.1"
-lazy val refinedVersion          = "0.9.27"
+lazy val refinedVersion          = "0.9.28"
 lazy val catsScalacheckVersion   = "0.3.1"
 lazy val scalaXmlVersion         = "2.0.1"
 
