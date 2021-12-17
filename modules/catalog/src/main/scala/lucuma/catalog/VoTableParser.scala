@@ -18,12 +18,16 @@ import fs2.data.xml._
 import lucuma.catalog.CatalogProblem._
 import lucuma.catalog._
 import lucuma.core.enum.CatalogName
+import lucuma.core.enum.StellarLibrarySpectrum
 import lucuma.core.math._
 import lucuma.core.math.units.KilometersPerSecond
 import lucuma.core.model.AngularSize
-import lucuma.core.model.CatalogId
-import lucuma.core.model.SiderealTarget
+import lucuma.core.model.CatalogInfo
 import lucuma.core.model.SiderealTracking
+import lucuma.core.model.SourceProfile
+import lucuma.core.model.SpectralDefinition
+import lucuma.core.model.Target
+import lucuma.core.model.UnnormalizedSED
 import monocle.function.Index.listIndex
 import monocle.macros.Lenses
 
@@ -53,6 +57,9 @@ object VoTableParser extends VoTableParser {
   val UCD_Z           = Ucd.unsafeFromString("src.redshift")
   val UCD_PLX         = Ucd.unsafeFromString("pos.parallax.trig")
   val UCD_PHOTO_FLUX  = Ucd.unsafeFromString("phot.flux")
+  val UCD_OTYPE       = Ucd.unsafeFromString("src.class")
+  val UCD_SPTYPE      = Ucd.unsafeFromString("src.spType")
+  val UCD_MORPHTYPE   = Ucd.unsafeFromString("src.morph.type")
   val UCD_ANGSIZE_MAJ = Ucd.unsafeFromString("phys.angSize.smajAxis")
   val UCD_ANGSIZE_MIN = Ucd.unsafeFromString("phys.angSize.sminAxis")
 
@@ -67,7 +74,7 @@ trait VoTableParser {
    */
   def targets[F[_]: RaiseThrowable: MonadError[*[_], Throwable]](
     catalog: CatalogName
-  ): Pipe[F, String, ValidatedNec[CatalogProblem, SiderealTarget]] =
+  ): Pipe[F, String, ValidatedNec[CatalogProblem, Target.Sidereal]] =
     in =>
       CatalogAdapter.forCatalog(catalog) match {
         case Some(a) =>
@@ -84,10 +91,10 @@ trait VoTableParser {
    */
   def xml2targets[F[_]](
     adapter: CatalogAdapter
-  ): Pipe[F, XmlEvent, ValidatedNec[CatalogProblem, SiderealTarget]] = {
+  ): Pipe[F, XmlEvent, ValidatedNec[CatalogProblem, Target.Sidereal]] = {
     def go(
       s: Stream[F, ValidatedNec[CatalogProblem, TableRow]]
-    ): Pull[F, ValidatedNec[CatalogProblem, SiderealTarget], Unit] =
+    ): Pull[F, ValidatedNec[CatalogProblem, Target.Sidereal], Unit] =
       s.pull.uncons1.flatMap {
         case Some((i @ Validated.Invalid(_), s))       => Pull.output1(i) >> go(s)
         case Some((Validated.Valid(row: TableRow), s)) =>
@@ -103,7 +110,7 @@ trait VoTableParser {
   protected def targetRow2Target(
     adapter: CatalogAdapter,
     row:     TableRow
-  ): ValidatedNec[CatalogProblem, SiderealTarget] = {
+  ): ValidatedNec[CatalogProblem, Target.Sidereal] = {
     val entries = row.itemsMap
 
     def parseId: ValidatedNec[CatalogProblem, NonEmptyString] =
@@ -173,18 +180,29 @@ trait VoTableParser {
     }
 
     def parseSiderealTracking: ValidatedNec[CatalogProblem, SiderealTracking] =
-      (parseId, parseRA, parseDec, parseEpoch, parsePV, parseRadialVelocity, parsePlx).mapN {
-        (id, ra, dec, epoch, pv, rv, plx) =>
-          SiderealTracking(CatalogId(adapter.catalog, id).some,
-                           Coordinates(ra, dec),
-                           epoch,
-                           pv,
-                           rv,
-                           plx
+      (parseRA, parseDec, parseEpoch, parsePV, parseRadialVelocity, parsePlx).mapN {
+        (ra, dec, epoch, pv, rv, plx) =>
+          SiderealTracking(
+            Coordinates(ra, dec),
+            epoch,
+            pv,
+            rv,
+            plx
           )
       }
 
-    val parseMagnitudes = adapter.parseMagnitudes(entries)
+    val parseBandBrightnesses = adapter.parseBandBrightnesses(entries)
+
+    def parseObjType: Option[NonEmptyString] =
+      refineV[NonEmpty](
+        List(entries.get(adapter.oTypeField),
+             entries.get(adapter.spTypeField),
+             entries.get(adapter.morphTypeField)
+        ).flatten.mkString("; ")
+      ).toOption
+
+    def parseCatalogInfo: ValidatedNec[CatalogProblem, Option[CatalogInfo]] =
+      parseId.map(id => CatalogInfo(adapter.catalog, id, parseObjType).some)
 
     def parseAngularSize: ValidatedNec[CatalogProblem, Option[AngularSize]] = {
 
@@ -211,11 +229,24 @@ trait VoTableParser {
       }
     }
 
-    def parseSiderealTarget: ValidatedNec[CatalogProblem, SiderealTarget] =
-      (parseName, parseSiderealTracking, parseMagnitudes, parseAngularSize).mapN {
-        (name, pm, mags, angSize) =>
-          SiderealTarget(name, pm, SortedMap(mags.fproductLeft(_.band): _*), angSize)
-      }
+    def parseSiderealTarget: ValidatedNec[CatalogProblem, Target.Sidereal] =
+      (parseName, parseSiderealTracking, parseBandBrightnesses, parseCatalogInfo, parseAngularSize)
+        .mapN { (name, pm, mags, info, angSize) =>
+          Target.Sidereal(
+            name,
+            pm,
+            // We set arbitrary values for `sourceProfile`, `spectralDefinition`, `sed` and  `librarySpectrum`: the first in each ADT.
+            // In the future we will attempt to infer some or all of these from the catalog info.
+            SourceProfile.Point(
+              SpectralDefinition.BandNormalized(
+                UnnormalizedSED.StellarLibrary(StellarLibrarySpectrum.O5V),
+                SortedMap(mags.fproductLeft(_.band): _*)
+              )
+            ),
+            info,
+            angSize
+          )
+        }
 
     parseSiderealTarget
   }

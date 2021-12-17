@@ -9,9 +9,11 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - uses: olafurpg/setup-scala@v13
+        with:
+          java-version: adoptium@17
       - uses: olafurpg/setup-gpg@v3
       - name: Publish
-        run: sbt ci-release
+        run: sbt -v -J-Xmx6g ci-release
         env:
           PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}
           PGP_SECRET: ${{ secrets.PGP_SECRET }}

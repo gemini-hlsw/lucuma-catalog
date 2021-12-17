@@ -13,24 +13,22 @@ import fs2._
 import fs2.io.file.Files
 import fs2.io.file.Path
 import lucuma.core.enum.CatalogName
-import lucuma.core.enum.MagnitudeBand
-import lucuma.core.enum.MagnitudeSystem
+import lucuma.core.enum.Band
 import lucuma.core.math.Angle
 import lucuma.core.math.Declination
 import lucuma.core.math.HourAngle
-import lucuma.core.math.MagnitudeValue
+import lucuma.core.math.BrightnessValue
 import lucuma.core.math.Parallax
 import lucuma.core.math.ProperMotion
 import lucuma.core.math.RadialVelocity
 import lucuma.core.math.RightAscension
-import lucuma.core.math.units.KilometersPerSecond
-import lucuma.core.math.units.MicroArcSecondPerYear
+import lucuma.core.math.units._
 import lucuma.core.model.AngularSize
-import lucuma.core.model.CatalogId
-import lucuma.core.model.Magnitude
-import lucuma.core.model.SiderealTarget
+import lucuma.core.model.CatalogInfo
+import lucuma.core.model.BandBrightness
 import lucuma.core.model.Target
 import munit.CatsEffectSuite
+import lucuma.core.math.BrightnessUnits._
 
 class ParseSimbadFileSuite extends CatsEffectSuite with VoTableParser {
 
@@ -50,8 +48,9 @@ class ParseSimbadFileSuite extends CatsEffectSuite with VoTableParser {
           case Validated.Valid(t)   =>
             // id and search name
             assertEquals(t.name, refineMV[NonEmpty]("Vega"))
-            assertEquals(t.tracking.catalogId,
-                         CatalogId(CatalogName.Simbad, refineMV[NonEmpty]("* alf Lyr")).some
+            assertEquals(
+              t.catalogInfo,
+              CatalogInfo(CatalogName.Simbad, "* alf Lyr", "PulsV*delSct; A0Va")
             )
             // base coordinates
             assertEquals(
@@ -71,38 +70,38 @@ class ParseSimbadFileSuite extends CatsEffectSuite with VoTableParser {
               Target.properMotionDec.getOption(t),
               ProperMotion.Dec(286230.withUnit[MicroArcSecondPerYear]).some
             )
-            // magnitudes
+            // brightnesses
             assertEquals(
-              Target.magnitudeIn(MagnitudeBand.U).headOption(t),
-              Magnitude(MagnitudeValue.fromDouble(0.03), MagnitudeBand.U).some
+              Target.integratedBandBrightnessIn(Band.U).headOption(t),
+              BandBrightness[Integrated](BrightnessValue.fromDouble(0.03), Band.U).some
             )
             assertEquals(
-              Target.magnitudeIn(MagnitudeBand.B).headOption(t),
-              Magnitude(MagnitudeValue.fromDouble(0.03), MagnitudeBand.B).some
+              Target.integratedBandBrightnessIn(Band.B).headOption(t),
+              BandBrightness[Integrated](BrightnessValue.fromDouble(0.03), Band.B).some
             )
             assertEquals(
-              Target.magnitudeIn(MagnitudeBand.V).headOption(t),
-              Magnitude(MagnitudeValue.fromDouble(0.03), MagnitudeBand.V).some
+              Target.integratedBandBrightnessIn(Band.V).headOption(t),
+              BandBrightness[Integrated](BrightnessValue.fromDouble(0.03), Band.V).some
             )
             assertEquals(
-              Target.magnitudeIn(MagnitudeBand.R).headOption(t),
-              Magnitude(MagnitudeValue.fromDouble(0.07), MagnitudeBand.R).some
+              Target.integratedBandBrightnessIn(Band.R).headOption(t),
+              BandBrightness[Integrated](BrightnessValue.fromDouble(0.07), Band.R).some
             )
             assertEquals(
-              Target.magnitudeIn(MagnitudeBand.I).headOption(t),
-              Magnitude(MagnitudeValue.fromDouble(0.10), MagnitudeBand.I).some
+              Target.integratedBandBrightnessIn(Band.I).headOption(t),
+              BandBrightness[Integrated](BrightnessValue.fromDouble(0.10), Band.I).some
             )
             assertEquals(
-              Target.magnitudeIn(MagnitudeBand.J).headOption(t),
-              Magnitude(MagnitudeValue.fromDouble(-0.18), MagnitudeBand.J).some
+              Target.integratedBandBrightnessIn(Band.J).headOption(t),
+              BandBrightness[Integrated](BrightnessValue.fromDouble(-0.18), Band.J).some
             )
             assertEquals(
-              Target.magnitudeIn(MagnitudeBand.H).headOption(t),
-              Magnitude(MagnitudeValue.fromDouble(-0.03), MagnitudeBand.H).some
+              Target.integratedBandBrightnessIn(Band.H).headOption(t),
+              BandBrightness[Integrated](BrightnessValue.fromDouble(-0.03), Band.H).some
             )
             assertEquals(
-              Target.magnitudeIn(MagnitudeBand.K).headOption(t),
-              Magnitude(MagnitudeValue.fromDouble(0.13), MagnitudeBand.K).some
+              Target.integratedBandBrightnessIn(Band.K).headOption(t),
+              BandBrightness[Integrated](BrightnessValue.fromDouble(0.13), Band.K).some
             )
             // parallax
             assertEquals(
@@ -119,7 +118,7 @@ class ParseSimbadFileSuite extends CatsEffectSuite with VoTableParser {
     }
   }
 
-  test("parse simbad named queries with sloan magnitudes") {
+  test("parse simbad named queries with sloan band brightnesses") {
     // From http://simbad.u-strasbg.fr/simbad/sim-id?Ident=2MFGC6625&output.format=VOTable
     val xmlFile = "/simbad-2MFGC6625.xml"
     val file    = getClass().getResource(xmlFile)
@@ -134,9 +133,7 @@ class ParseSimbadFileSuite extends CatsEffectSuite with VoTableParser {
           case Validated.Valid(t)   =>
             // id and search name
             assertEquals(t.name, refineMV[NonEmpty]("2MFGC6625"))
-            assertEquals(t.tracking.catalogId,
-                         CatalogId(CatalogName.Simbad, refineMV[NonEmpty]("2MFGC 6625")).some
-            )
+            assertEquals(t.catalogInfo, CatalogInfo(CatalogName.Simbad, "2MFGC 6625", "EmG; I"))
             // base coordinates
             assertEquals(
               Target.baseRA.getOption(t),
@@ -152,7 +149,7 @@ class ParseSimbadFileSuite extends CatsEffectSuite with VoTableParser {
                 .some
             )
             // proper velocity
-            assertEquals(SiderealTarget.properMotion.get(t), none)
+            assertEquals(Target.Sidereal.properMotion.get(t), none)
             // radial velocity
             assertEquals(
               Target.radialVelocity.getOption(t).flatten,
@@ -163,40 +160,40 @@ class ParseSimbadFileSuite extends CatsEffectSuite with VoTableParser {
               Target.parallax.getOption(t).flatten,
               none
             )
-            // magnitudes
+            // band brightnesses
             assertEquals(
-              Target.magnitudeIn(MagnitudeBand.SloanU).headOption(t),
-              Magnitude(MagnitudeValue.fromDouble(16.284),
-                        MagnitudeBand.SloanU,
-                        MagnitudeValue.fromDouble(0.007)
+              Target.integratedBandBrightnessIn(Band.SloanU).headOption(t),
+              BandBrightness[Integrated](BrightnessValue.fromDouble(16.284),
+                                         Band.SloanU,
+                                         BrightnessValue.fromDouble(0.007)
               ).some
             )
             assertEquals(
-              Target.magnitudeIn(MagnitudeBand.SloanG).headOption(t),
-              Magnitude(MagnitudeValue.fromDouble(15.728),
-                        MagnitudeBand.SloanG,
-                        MagnitudeValue.fromDouble(0.003)
+              Target.integratedBandBrightnessIn(Band.SloanG).headOption(t),
+              BandBrightness[Integrated](BrightnessValue.fromDouble(15.728),
+                                         Band.SloanG,
+                                         BrightnessValue.fromDouble(0.003)
               ).some
             )
             assertEquals(
-              Target.magnitudeIn(MagnitudeBand.SloanR).headOption(t),
-              Magnitude(MagnitudeValue.fromDouble(15.986),
-                        MagnitudeBand.SloanR,
-                        MagnitudeValue.fromDouble(0.004)
+              Target.integratedBandBrightnessIn(Band.SloanR).headOption(t),
+              BandBrightness[Integrated](BrightnessValue.fromDouble(15.986),
+                                         Band.SloanR,
+                                         BrightnessValue.fromDouble(0.004)
               ).some
             )
             assertEquals(
-              Target.magnitudeIn(MagnitudeBand.SloanI).headOption(t),
-              Magnitude(MagnitudeValue.fromDouble(15.603),
-                        MagnitudeBand.SloanI,
-                        MagnitudeValue.fromDouble(0.004)
+              Target.integratedBandBrightnessIn(Band.SloanI).headOption(t),
+              BandBrightness[Integrated](BrightnessValue.fromDouble(15.603),
+                                         Band.SloanI,
+                                         BrightnessValue.fromDouble(0.004)
               ).some
             )
             assertEquals(
-              Target.magnitudeIn(MagnitudeBand.SloanZ).headOption(t),
-              Magnitude(MagnitudeValue.fromDouble(15.682),
-                        MagnitudeBand.SloanZ,
-                        MagnitudeValue.fromDouble(0.008)
+              Target.integratedBandBrightnessIn(Band.SloanZ).headOption(t),
+              BandBrightness[Integrated](BrightnessValue.fromDouble(15.682),
+                                         Band.SloanZ,
+                                         BrightnessValue.fromDouble(0.008)
               ).some
             )
             // angular size
@@ -208,7 +205,7 @@ class ParseSimbadFileSuite extends CatsEffectSuite with VoTableParser {
         }
     }
   }
-  test("parse simbad named queries with mixed magnitudes") {
+  test("parse simbad named queries with mixed band brightnesses") {
     // From http://simbad.u-strasbg.fr/simbad/sim-id?Ident=2SLAQ%20J000008.13%2B001634.6&output.format=VOTable
     val xmlFile = "/simbad-J000008.13.xml"
     val file    = getClass().getResource(xmlFile)
@@ -224,8 +221,8 @@ class ParseSimbadFileSuite extends CatsEffectSuite with VoTableParser {
             // id and search name
             assertEquals(t.name, refineMV[NonEmpty]("2SLAQ J000008.13+001634.6"))
             assertEquals(
-              t.tracking.catalogId,
-              CatalogId(CatalogName.Simbad, "2SLAQ J000008.13+001634.6")
+              t.catalogInfo,
+              CatalogInfo(CatalogName.Simbad, "2SLAQ J000008.13+001634.6", "QSO")
             )
             // base coordinates
             assertEquals(
@@ -242,7 +239,7 @@ class ParseSimbadFileSuite extends CatsEffectSuite with VoTableParser {
                 .some
             )
             // proper velocity
-            assertEquals(SiderealTarget.properMotion.get(t), none)
+            assertEquals(Target.Sidereal.properMotion.get(t), none)
             // radial velocity
             assertEquals(
               Target.radialVelocity.getOption(t).flatten,
@@ -250,77 +247,77 @@ class ParseSimbadFileSuite extends CatsEffectSuite with VoTableParser {
             )
             // parallax
             assertEquals(Target.parallax.getOption(t).flatten, none)
-            // magnitudes
+            // band brightnesses
             assertEquals(
-              Target.magnitudeIn(MagnitudeBand.B).headOption(t),
-              Magnitude(MagnitudeValue.fromDouble(20.35), MagnitudeBand.B).some
+              Target.integratedBandBrightnessIn(Band.B).headOption(t),
+              BandBrightness[Integrated](BrightnessValue.fromDouble(20.35), Band.B).some
             )
             assertEquals(
-              Target.magnitudeIn(MagnitudeBand.V).headOption(t),
-              Magnitude(MagnitudeValue.fromDouble(20.03), MagnitudeBand.V).some
+              Target.integratedBandBrightnessIn(Band.V).headOption(t),
+              BandBrightness[Integrated](BrightnessValue.fromDouble(20.03), Band.V).some
             )
             assertEquals(
-              Target.magnitudeIn(MagnitudeBand.V).headOption(t),
-              Magnitude(MagnitudeValue.fromDouble(20.03), MagnitudeBand.V).some
+              Target.integratedBandBrightnessIn(Band.V).headOption(t),
+              BandBrightness[Integrated](BrightnessValue.fromDouble(20.03), Band.V).some
             )
-            // Bands J, H and K for this target have no standard magnitude system
+            // Bands J, H and K for this target have no standard brightness units
             assertEquals(
-              Target.magnitudeIn(MagnitudeBand.J).headOption(t),
-              Magnitude(MagnitudeValue.fromDouble(19.399),
-                        MagnitudeBand.J,
-                        MagnitudeValue.fromDouble(0.073).some,
-                        MagnitudeSystem.AB
+              Target.integratedBandBrightnessIn(Band.J).headOption(t),
+              BandBrightness[Integrated, ABMagnitude](
+                BrightnessValue.fromDouble(19.399),
+                Band.J,
+                BrightnessValue.fromDouble(0.073)
               ).some
             )
             assertEquals(
-              Target.magnitudeIn(MagnitudeBand.H).headOption(t),
-              Magnitude(MagnitudeValue.fromDouble(19.416),
-                        MagnitudeBand.H,
-                        MagnitudeValue.fromDouble(0.137).some,
-                        MagnitudeSystem.AB
+              Target.integratedBandBrightnessIn(Band.H).headOption(t),
+              BandBrightness[Integrated, ABMagnitude](
+                BrightnessValue.fromDouble(19.416),
+                Band.H,
+                BrightnessValue.fromDouble(0.137)
               ).some
             )
             assertEquals(
-              Target.magnitudeIn(MagnitudeBand.K).headOption(t),
-              Magnitude(MagnitudeValue.fromDouble(19.176),
-                        MagnitudeBand.K,
-                        MagnitudeValue.fromDouble(0.115).some,
-                        MagnitudeSystem.AB
+              Target.integratedBandBrightnessIn(Band.K).headOption(t),
+              BandBrightness[Integrated, ABMagnitude](
+                BrightnessValue.fromDouble(19.176),
+                Band.K,
+                BrightnessValue.fromDouble(0.115)
               ).some
             )
             assertEquals(
-              Target.magnitudeIn(MagnitudeBand.SloanU).headOption(t),
-              Magnitude(MagnitudeValue.fromDouble(20.233),
-                        MagnitudeBand.SloanU,
-                        MagnitudeValue.fromDouble(0.054)
+              Target.integratedBandBrightnessIn(Band.SloanU).headOption(t),
+              BandBrightness[Integrated](BrightnessValue.fromDouble(20.233),
+                                         Band.SloanU,
+                                         BrightnessValue.fromDouble(0.054)
               ).some
             )
             assertEquals(
-              Target.magnitudeIn(MagnitudeBand.SloanG).headOption(t),
-              Magnitude(MagnitudeValue.fromDouble(20.201),
-                        MagnitudeBand.SloanG,
-                        MagnitudeValue.fromDouble(0.021)
+              Target.integratedBandBrightnessIn(Band.SloanG).headOption(t),
+              BandBrightness[Integrated](BrightnessValue.fromDouble(20.201),
+                                         Band.SloanG,
+                                         BrightnessValue.fromDouble(0.021)
               ).some
             )
             assertEquals(
-              Target.magnitudeIn(MagnitudeBand.SloanR).headOption(t),
-              Magnitude(MagnitudeValue.fromDouble(19.929),
-                        MagnitudeBand.SloanR,
-                        MagnitudeValue.fromDouble(0.021)
+              Target.integratedBandBrightnessIn(Band.SloanR).headOption(t),
+              BandBrightness[Integrated](BrightnessValue.fromDouble(19.929),
+                                         Band.SloanR,
+                                         BrightnessValue.fromDouble(0.021)
               ).some
             )
             assertEquals(
-              Target.magnitudeIn(MagnitudeBand.SloanI).headOption(t),
-              Magnitude(MagnitudeValue.fromDouble(19.472),
-                        MagnitudeBand.SloanI,
-                        MagnitudeValue.fromDouble(0.023)
+              Target.integratedBandBrightnessIn(Band.SloanI).headOption(t),
+              BandBrightness[Integrated](BrightnessValue.fromDouble(19.472),
+                                         Band.SloanI,
+                                         BrightnessValue.fromDouble(0.023)
               ).some
             )
             assertEquals(
-              Target.magnitudeIn(MagnitudeBand.SloanZ).headOption(t),
-              Magnitude(MagnitudeValue.fromDouble(19.191),
-                        MagnitudeBand.SloanZ,
-                        MagnitudeValue.fromDouble(0.068)
+              Target.integratedBandBrightnessIn(Band.SloanZ).headOption(t),
+              BandBrightness[Integrated](BrightnessValue.fromDouble(19.191),
+                                         Band.SloanZ,
+                                         BrightnessValue.fromDouble(0.068)
               ).some
             )
           case Validated.Invalid(_) => fail(s"VOTable xml $xmlFile cannot be parsed")
@@ -386,7 +383,7 @@ class ParseSimbadFileSuite extends CatsEffectSuite with VoTableParser {
     }
   }
 
-  test("support simbad repeated magnitude entries and angular size") {
+  test("support simbad repeated band brightnesses entries and angular size") {
     val xmlFile = "/simbad-ngc-2438.xml"
     // Simbad returns an xml with multiple measurements of the same band, use only the first one
     val file    = getClass().getResource(xmlFile)
@@ -401,14 +398,14 @@ class ParseSimbadFileSuite extends CatsEffectSuite with VoTableParser {
           case Validated.Valid(t)   =>
             // id and search name
             assertEquals(t.name, refineMV[NonEmpty]("NGC 2438"))
-            assertEquals(t.tracking.catalogId, CatalogId(CatalogName.Simbad, "NGC  2438"))
+            assertEquals(t.catalogInfo, CatalogInfo(CatalogName.Simbad, "NGC  2438", "PN"))
             assert(t.tracking.properMotion.isEmpty)
             assertEquals(
-              Target.magnitudeIn(MagnitudeBand.J).headOption(t),
-              Magnitude(MagnitudeValue.fromDouble(17.02),
-                        MagnitudeBand.J,
-                        MagnitudeValue.fromDouble(0.15).some,
-                        MagnitudeSystem.Vega
+              Target.integratedBandBrightnessIn(Band.J).headOption(t),
+              BandBrightness[Integrated, VegaMagnitude](
+                BrightnessValue.fromDouble(17.02),
+                Band.J,
+                BrightnessValue.fromDouble(0.15)
               ).some
             )
             assertEquals(
@@ -464,8 +461,9 @@ class ParseSimbadFileSuite extends CatsEffectSuite with VoTableParser {
           case Validated.Valid(t)   =>
             // id and search name
             assertEquals(t.name, refineMV[NonEmpty]("Vega"))
-            assertEquals(t.tracking.catalogId,
-                         CatalogId(CatalogName.Simbad, refineMV[NonEmpty]("* alf Lyr")).some
+            assertEquals(
+              t.catalogInfo,
+              CatalogInfo(CatalogName.Simbad, "* alf Lyr", "PulsV*delSct; A0Va")
             )
             // base coordinates
             assertEquals(
@@ -485,46 +483,46 @@ class ParseSimbadFileSuite extends CatsEffectSuite with VoTableParser {
               Target.properMotionDec.getOption(t),
               ProperMotion.Dec(286230.withUnit[MicroArcSecondPerYear]).some
             )
-            // magnitudes
+            // band brightnesses
             assertEquals(
-              Target.magnitudeIn(MagnitudeBand.U).headOption(t),
-              Magnitude(MagnitudeValue.fromDouble(0.03), MagnitudeBand.U).some
+              Target.integratedBandBrightnessIn(Band.U).headOption(t),
+              BandBrightness[Integrated](BrightnessValue.fromDouble(0.03), Band.U).some
             )
             assertEquals(
-              Target.magnitudeIn(MagnitudeBand.B).headOption(t),
-              Magnitude(MagnitudeValue.fromDouble(0.03), MagnitudeBand.B).some
+              Target.integratedBandBrightnessIn(Band.B).headOption(t),
+              BandBrightness[Integrated](BrightnessValue.fromDouble(0.03), Band.B).some
             )
             assertEquals(
-              Target.magnitudeIn(MagnitudeBand.V).headOption(t),
-              Magnitude(MagnitudeValue.fromDouble(0.03), MagnitudeBand.V).some
+              Target.integratedBandBrightnessIn(Band.V).headOption(t),
+              BandBrightness[Integrated](BrightnessValue.fromDouble(0.03), Band.V).some
             )
             assertEquals(
-              Target.magnitudeIn(MagnitudeBand.R).headOption(t),
-              Magnitude(MagnitudeValue.fromDouble(0.07), MagnitudeBand.R).some
+              Target.integratedBandBrightnessIn(Band.R).headOption(t),
+              BandBrightness[Integrated](BrightnessValue.fromDouble(0.07), Band.R).some
             )
             assertEquals(
-              Target.magnitudeIn(MagnitudeBand.I).headOption(t),
-              Magnitude(MagnitudeValue.fromDouble(0.10), MagnitudeBand.I).some
+              Target.integratedBandBrightnessIn(Band.I).headOption(t),
+              BandBrightness[Integrated](BrightnessValue.fromDouble(0.10), Band.I).some
             )
             assertEquals(
-              Target.magnitudeIn(MagnitudeBand.J).headOption(t),
-              Magnitude(MagnitudeValue.fromDouble(-0.177),
-                        MagnitudeBand.J,
-                        MagnitudeValue.fromDouble(0.206)
+              Target.integratedBandBrightnessIn(Band.J).headOption(t),
+              BandBrightness[Integrated](BrightnessValue.fromDouble(-0.177),
+                                         Band.J,
+                                         BrightnessValue.fromDouble(0.206)
               ).some
             )
             assertEquals(
-              Target.magnitudeIn(MagnitudeBand.H).headOption(t),
-              Magnitude(MagnitudeValue.fromDouble(-0.029),
-                        MagnitudeBand.H,
-                        MagnitudeValue.fromDouble(0.146)
+              Target.integratedBandBrightnessIn(Band.H).headOption(t),
+              BandBrightness[Integrated](BrightnessValue.fromDouble(-0.029),
+                                         Band.H,
+                                         BrightnessValue.fromDouble(0.146)
               ).some
             )
             assertEquals(
-              Target.magnitudeIn(MagnitudeBand.K).headOption(t),
-              Magnitude(MagnitudeValue.fromDouble(0.129),
-                        MagnitudeBand.K,
-                        MagnitudeValue.fromDouble(0.186)
+              Target.integratedBandBrightnessIn(Band.K).headOption(t),
+              BandBrightness[Integrated](BrightnessValue.fromDouble(0.129),
+                                         Band.K,
+                                         BrightnessValue.fromDouble(0.186)
               ).some
             )
             // parallax

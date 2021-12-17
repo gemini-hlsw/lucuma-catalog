@@ -8,7 +8,7 @@ lazy val catsEffectVersion       = "3.0.1"
 lazy val kindProjectorVersion    = "0.13.2"
 lazy val sttpVersion             = "3.3.18"
 lazy val pprintVersion           = "0.7.1"
-lazy val lucumaCoreVersion       = "0.15.1"
+lazy val lucumaCoreVersion       = "0.20.1"
 lazy val monocleVersion          = "3.1.0"
 lazy val munitVersion            = "0.7.29"
 lazy val munitDisciplineVersion  = "1.0.9"
@@ -48,7 +48,8 @@ lazy val catalog = crossProject(JVMPlatform, JSPlatform)
       "dev.optics"    %%% "monocle-state" % monocleVersion,
       "eu.timepit"    %%% "refined"       % refinedVersion,
       "eu.timepit"    %%% "refined-cats"  % refinedVersion
-    )
+    ),
+    scalacOptions ~= (_.filterNot(Set("-Vtype-diffs")))
   )
   .jvmConfigure(_.enablePlugins(AutomateHeaderPlugin))
   .jsSettings(lucumaScalaJsSettings: _*)
