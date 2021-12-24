@@ -23,7 +23,7 @@ object SimbadQuerySample extends IOApp {
 
   @js.native
   @JSImport("node-fetch", "Request")
-  val Request: js.Object = js.native
+  val Request: js.Object         = js.native
   @js.native
   @JSImport("abortcontroller-polyfill/dist/cjs-ponyfill", "AbortController")
   def AbortController: js.Object = js.native
