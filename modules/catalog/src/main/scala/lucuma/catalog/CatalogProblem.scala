@@ -9,6 +9,8 @@ import lucuma.core.enum.CatalogName
 /** Indicates an issue parsing the targets, e.g. missing values, bad format, etc. */
 sealed trait CatalogProblem extends Throwable with Product with Serializable {
   def displayValue: String
+
+  override def toString(): String = displayValue
 }
 
 object CatalogProblem {

@@ -9,19 +9,21 @@ import cats.implicits._
 import coulomb._
 import lucuma.catalog.CatalogProblem._
 import lucuma.catalog._
+import lucuma.core.enum.Band
 import lucuma.core.enum.CatalogName
-import lucuma.core.enum.MagnitudeBand
-import lucuma.core.enum.MagnitudeSystem
-import lucuma.core.math.MagnitudeValue
+import lucuma.core.math.BrightnessUnits._
+import lucuma.core.math.BrightnessValue
 import lucuma.core.math.ProperMotion
 import lucuma.core.math.ProperMotion.AngularVelocityComponent
 import lucuma.core.math.RadialVelocity
 import lucuma.core.math.VelocityAxis
+import lucuma.core.math.dimensional._
 import lucuma.core.math.units._
-import lucuma.core.model.Magnitude
+import lucuma.core.model.BandBrightness
 import lucuma.core.optics.state.all._
+import shapeless.tag.@@
 
-// A CatalogAdapter improves parsing handling catalog-specific options like parsing magnitudes and selecting key fields
+// A CatalogAdapter improves parsing handling catalog-specific options like parsing brightnesses and selecting key fields
 sealed trait CatalogAdapter {
 
   /** Identifies the catalog to which the adapter applies. */
@@ -38,6 +40,9 @@ sealed trait CatalogAdapter {
   def zField: FieldId     = FieldId.unsafeFrom("Z_VALUE", VoTableParser.UCD_Z)
   def rvField: FieldId    = FieldId.unsafeFrom("RV_VALUE", VoTableParser.UCD_RV)
   def plxField: FieldId   = FieldId.unsafeFrom("PLX_VALUE", VoTableParser.UCD_PLX)
+  def oTypeField: FieldId
+  def spTypeField: FieldId
+  def morphTypeField: FieldId
   def angSizeMajAxisField: FieldId
   def angSizeMinAxisField: FieldId
 
@@ -46,40 +51,42 @@ sealed trait CatalogAdapter {
     entries.get(nameField)
 
   // From a Field extract the band from either the field id or the UCD
-  protected def fieldToBand(field: FieldId): Option[MagnitudeBand]
+  protected def fieldToBand(field: FieldId): Option[Band]
 
-  // Indicates if a field contianing a magnitude should be ignored, by default all fields are considered
-  protected def ignoreMagnitudeField(v: FieldId): Boolean
+  // Indicates if a field contianing a brightness value should be ignored, by default all fields are considered
+  protected def ignoreBrightnessValueField(v: FieldId): Boolean
 
-  // Attempts to extract a magnitude system for a particular band
-  protected def parseMagnitudeSys(
+  // Attempts to extract brightness units for a particular band
+  protected def parseBrightnessUnits(
     f: FieldId,
     v: String
-  ): ValidatedNec[CatalogProblem, (MagnitudeBand, MagnitudeSystem)]
+  ): ValidatedNec[CatalogProblem, (Band, UnitType @@ Brightness[Integrated])]
 
-  // Indicates if the field is a magnitude system
-  protected def isMagnitudeSystemField(v: (FieldId, String)): Boolean
+  // Indicates if the field is a brightness units field
+  protected def isBrightnessUnitsField(v: (FieldId, String)): Boolean
 
-  // Indicates if the field is a magnitude
-  def isMagnitudeField(v: (FieldId, String)): Boolean =
-    containsMagnitude(v._1) &&
+  // Indicates if the field is a brightness value
+  def isBrightnessValueField(v: (FieldId, String)): Boolean =
+    containsBrightnessValue(v._1) &&
       !v._1.ucd.includes(VoTableParser.STAT_ERR) &&
       v._2.nonEmpty
 
-  // Indicates if the field is a magnitude error
-  def isMagnitudeErrorField(v: (FieldId, String)): Boolean =
-    containsMagnitude(v._1) &&
+  // Indicates if the field is a brightness error
+  def isBrightnessErrorField(v: (FieldId, String)): Boolean =
+    containsBrightnessValue(v._1) &&
       v._1.ucd.includes(VoTableParser.STAT_ERR) &&
       v._2.nonEmpty
 
-  // filter magnitudes as a whole, removing invalid values and duplicates
+  // filter brightnesses as a whole, removing invalid values and duplicates
   // (This is written to be overridden--see PPMXL adapter. By default nothing is done.)
-  def filterAndDeduplicateMagnitudes(ms: Vector[(FieldId, Magnitude)]): Vector[Magnitude] =
+  def filterAndDeduplicateBrightnesss(
+    ms: Vector[(FieldId, BandBrightness[Integrated])]
+  ): Vector[BandBrightness[Integrated]] =
     ms.unzip._2
 
-  // Indicates if a parsed magnitude is valid
-  def validMagnitude(m: Magnitude): Boolean =
-    !(m.value.toDoubleValue.isNaN || m.error.exists(_.toDoubleValue.isNaN))
+  // Indicates if a parsed brightness is valid
+  def validBrightness(m: BandBrightness[Integrated]): Boolean =
+    !(m.quantity.value.toDoubleValue.isNaN || m.error.exists(_.toDoubleValue.isNaN))
 
   // Attempts to extract the radial velocity of a field
   def parseRadialVelocity(ucd: Ucd, v: String): ValidatedNec[CatalogProblem, RadialVelocity] =
@@ -117,72 +124,76 @@ sealed trait CatalogAdapter {
     val pmDec = entries.get(pmDecField)
     parseProperMotion(pmRa, pmDec)
   }
-  // Attempts to extract a band and value for a magnitude from a pair of field and value
-  protected[catalog] def parseMagnitude(
+  // Attempts to extract a band and value for a brightness from a pair of field and value
+  protected[catalog] def parseBrightnessValue(
     fieldId: FieldId,
     value:   String
-  ): ValidatedNec[CatalogProblem, (FieldId, MagnitudeBand, Double)] =
+  ): ValidatedNec[CatalogProblem, (FieldId, Band, Double)] =
     (Validated.fromOption(fieldToBand(fieldId), UnmatchedField(fieldId.ucd)).toValidatedNec,
      parseDoubleValue(fieldId.ucd, value)
     ).mapN((fieldId, _, _))
 
   private def combineWithErrorsSystemAndFilter(
-    m: Vector[(FieldId, MagnitudeBand, Double)],
-    e: Vector[(FieldId, MagnitudeBand, Double)],
-    s: Vector[(MagnitudeBand, MagnitudeSystem)]
-  ): Vector[Magnitude] = {
-    val mags = m.map { case (f, b, d) =>
-      f -> new Magnitude(MagnitudeValue.fromDouble(d), b, none, MagnitudeSystem.AB)
+    m: Vector[(FieldId, Band, Double)],
+    e: Vector[(FieldId, Band, Double)],
+    u: Vector[(Band, UnitType @@ Brightness[Integrated])]
+  ): Vector[BandBrightness[Integrated]] = {
+    val values = m.map { case (f, b, d) =>
+      import b._ // Make band's default units available
+
+      f -> BandBrightness[Integrated](BrightnessValue.fromDouble(d), b)
     }
 
-    val magErrors = e.map { case (_, b, d) => b -> MagnitudeValue.fromDouble(d) }.toMap
-    val magSys    = s.toMap
+    val errors = e.map { case (_, b, d) => b -> BrightnessValue.fromDouble(d) }.toMap
+    val units  = u.toMap
 
-    // Link magnitudes with their errors
-    filterAndDeduplicateMagnitudes(mags)
+    // Link band brightnesses with their errors
+    filterAndDeduplicateBrightnesss(values)
       .map { m =>
         (for {
-          _ <- Magnitude.error.assign(magErrors.get(m.band))
-          _ <- Magnitude.system.assign(magSys.getOrElse(m.band, m.system))
+          _ <- BandBrightness.error[Integrated].assign(errors.get(m.band))
+          _ <- BandBrightness
+                 .unit[Integrated]
+                 .assign(units.getOrElse(m.band, Qty.unitT.get(m.quantity)))
         } yield ()).run(m).value._1
       }
-      .filter(validMagnitude)
+      .filter(validBrightness)
   }
 
   /**
-   * A default method for turning all of a table row's fields into a list of Magnitudes. GAIA has a
-   * different mechanism for doing this.
+   * A default method for turning all of a table row's fields into a list of brightnesses. GAIA has
+   * a different mechanism for doing this.
    * @param entries
    *   fields in a VO table row
    * @return
-   *   magnitude data parsed from the table row
+   *   band brightnesses data parsed from the table row
    */
-  def parseMagnitudes(
+  def parseBandBrightnesses(
     entries: Map[FieldId, String]
-  ): ValidatedNec[CatalogProblem, Vector[Magnitude]] = {
-    val mags: ValidatedNec[CatalogProblem, Vector[(FieldId, MagnitudeBand, Double)]] =
+  ): ValidatedNec[CatalogProblem, Vector[BandBrightness[Integrated]]] = {
+    val values: ValidatedNec[CatalogProblem, Vector[(FieldId, Band, Double)]] =
       entries.toVector
-        .filter(isMagnitudeField)
-        .traverse(Function.tupled(parseMagnitude))
+        .filter(isBrightnessValueField)
+        .traverse(Function.tupled(parseBrightnessValue))
 
-    val magErrs: ValidatedNec[CatalogProblem, Vector[(FieldId, MagnitudeBand, Double)]] =
+    val errors: ValidatedNec[CatalogProblem, Vector[(FieldId, Band, Double)]] =
       entries.toVector
-        .filter(isMagnitudeErrorField)
-        .traverse(Function.tupled(parseMagnitude))
+        .filter(isBrightnessErrorField)
+        .traverse(Function.tupled(parseBrightnessValue))
 
-    val magSys: ValidatedNec[CatalogProblem, Vector[(MagnitudeBand, MagnitudeSystem)]] =
+    val units: ValidatedNec[CatalogProblem, Vector[(Band, UnitType @@ Brightness[Integrated])]] =
       entries.toVector
-        .filter(isMagnitudeSystemField)
-        .traverse(Function.tupled(parseMagnitudeSys))
+        .filter(isBrightnessUnitsField)
+        .traverse(Function.tupled(parseBrightnessUnits))
 
-    (mags, magErrs, magSys).mapN(combineWithErrorsSystemAndFilter).map(_.sortBy(_.band))
+    (values, errors, units).mapN(combineWithErrorsSystemAndFilter).map(_.sortBy(_.band))
   }
 
-  // Indicates if the field has a magnitude field
-  protected def containsMagnitude(v: FieldId): Boolean =
+  // Indicates if the field has a brightness value field
+  protected def containsBrightnessValue(v: FieldId): Boolean =
     v.ucd.includes(VoTableParser.UCD_MAG) &&
       v.ucd.matches(CatalogAdapter.magRegex) &&
-      !ignoreMagnitudeField(v)
+      !ignoreBrightnessValueField(v)
 }
 
 // Common methods for UCAC4 and PPMXL
@@ -190,15 +201,15 @@ trait StandardAdapter extends CatalogAdapter {
 
   // Find what band the field descriptor should represent, in general prefer "upper case" bands over "lower case" Sloan bands.
   // This will prefer U, R and I over u', r' and i' but will map "g" and "z" to the Sloan bands g' and z'.
-  def parseBand(fieldId: FieldId, band: String): Option[MagnitudeBand]
+  def parseBand(fieldId: FieldId, band: String): Option[Band]
 
-  def defaultParseBand(band: String): Option[MagnitudeBand] =
-    MagnitudeBand.all
+  def defaultParseBand(band: String): Option[Band] =
+    Band.all
       .find(_.shortName === band.toUpperCase)
-      .orElse(MagnitudeBand.all.find(_.shortName === band))
+      .orElse(Band.all.find(_.shortName === band))
 
   // From a Field extract the band from either the field id or the UCD
-  protected def fieldToBand(field: FieldId): Option[MagnitudeBand] = {
+  protected def fieldToBand(field: FieldId): Option[Band] = {
     // Parses a UCD token to extract the band for catalogs that include the band in the UCD (UCAC4/PPMXL)
     def parseBandToken(token: String): Option[String] =
       token match {
@@ -213,17 +224,17 @@ trait StandardAdapter extends CatalogAdapter {
     } yield parseBand(field, b)).headOption.flatten
   }
 
-  // Indicates if a field contianing a magnitude should be ignored, by default all fields are considered
-  override def ignoreMagnitudeField(v: FieldId): Boolean = false
+  // Indicates if a field contianing a brightness value should be ignored, by default all fields are considered
+  override def ignoreBrightnessValueField(v: FieldId): Boolean = false
 
-  override def isMagnitudeSystemField(v: (FieldId, String)): Boolean =
+  override def isBrightnessUnitsField(v: (FieldId, String)): Boolean =
     false
   //
-  // Attempts to extract a magnitude system for a particular band
-  protected def parseMagnitudeSys(
+  // Attempts to extract brightness units for a particular band
+  protected def parseBrightnessUnits(
     f: FieldId,
     v: String
-  ): ValidatedNec[CatalogProblem, (MagnitudeBand, MagnitudeSystem)] =
+  ): ValidatedNec[CatalogProblem, (Band, UnitType @@ Brightness[Integrated])] =
     Validated.invalidNec(UnsupportedField(f))
 
 }
@@ -248,6 +259,9 @@ object CatalogAdapter {
     val decField                              = FieldId.unsafeFrom("DEC_d", VoTableParser.UCD_DEC)
     override val pmRaField                    = FieldId.unsafeFrom("PMRA", VoTableParser.UCD_PMRA)
     override val pmDecField                   = FieldId.unsafeFrom("PMDEC", VoTableParser.UCD_PMDEC)
+    override val oTypeField                   = FieldId.unsafeFrom("OTYPE_S", VoTableParser.UCD_OTYPE)
+    override val spTypeField                  = FieldId.unsafeFrom("SP_TYPE", VoTableParser.UCD_SPTYPE)
+    override val morphTypeField               = FieldId.unsafeFrom("MORPH_TYPE", VoTableParser.UCD_MORPHTYPE)
     override val angSizeMajAxisField: FieldId =
       FieldId.unsafeFrom("GALDIM_MAJAXIS", VoTableParser.UCD_ANGSIZE_MAJ)
     override val angSizeMinAxisField: FieldId =
@@ -256,16 +270,16 @@ object CatalogAdapter {
     override def parseName(entries: Map[FieldId, String]): Option[String] =
       super.parseName(entries).map(_.stripPrefix("NAME "))
 
-    override def ignoreMagnitudeField(v: FieldId): Boolean =
+    override def ignoreBrightnessValueField(v: FieldId): Boolean =
       !v.id.value.toLowerCase.startsWith("flux") ||
         v.id.value.matches(errorFluxIDExtra) ||
         v.id.value.matches(fluxIDExtra)
 
-    override def isMagnitudeSystemField(v: (FieldId, String)): Boolean =
+    override def isBrightnessUnitsField(v: (FieldId, String)): Boolean =
       v._1.id.value.toLowerCase.startsWith("flux_system")
 
-    // Simbad has a few special cases to map sloan magnitudes
-    def findBand(id: FieldId): Option[MagnitudeBand] =
+    // Simbad has a few special cases to map sloan band brightnesses
+    def findBand(id: FieldId): Option[Band] =
       (id.id.value, id.ucd) match {
         case (magSystemID(b), _) => findBand(b)
         case (errorFluxID(b), _) => findBand(b)
@@ -273,29 +287,35 @@ object CatalogAdapter {
         case _                   => none
       }
 
-    // Simbad doesn't put the band in the ucd for magnitude errors
-    override def isMagnitudeErrorField(v: (FieldId, String)): Boolean =
+    // Simbad doesn't put the band in the ucd for  brightnesses errors
+    override def isBrightnessErrorField(v: (FieldId, String)): Boolean =
       v._1.ucd.includes(VoTableParser.UCD_MAG) &&
         v._1.ucd.includes(VoTableParser.STAT_ERR) &&
         errorFluxID.findFirstIn(v._1.id.value).isDefined &&
-        !ignoreMagnitudeField(v._1) &&
+        !ignoreBrightnessValueField(v._1) &&
         v._2.nonEmpty
 
-    protected def findBand(band: String): Option[MagnitudeBand] =
-      MagnitudeBand.all.find(_.shortName === band)
+    protected def findBand(band: String): Option[Band] =
+      Band.all.find(_.shortName === band)
 
-    override def fieldToBand(field: FieldId): Option[MagnitudeBand] =
-      if ((field.ucd.includes(VoTableParser.UCD_MAG) && !ignoreMagnitudeField(field)))
+    override def fieldToBand(field: FieldId): Option[Band] =
+      if ((field.ucd.includes(VoTableParser.UCD_MAG) && !ignoreBrightnessValueField(field)))
         findBand(field)
       else
         none
 
-    // Attempts to find the magnitude system for a band
-    override def parseMagnitudeSys(
+    private val integratedBrightnessUnits: Map[String, UnitType @@ Brightness[Integrated]] =
+      Map(
+        "Vega" -> implicitly[IsTaggedUnit[VegaMagnitude, Brightness[Integrated]]],
+        "AB"   -> implicitly[IsTaggedUnit[ABMagnitude, Brightness[Integrated]]]
+      ).view.mapValues(_.unit).toMap
+
+    // Attempts to find the brightness units for a band
+    override def parseBrightnessUnits(
       f: FieldId,
       v: String
-    ): ValidatedNec[CatalogProblem, (MagnitudeBand, MagnitudeSystem)] = {
-      val band: Option[MagnitudeBand] =
+    ): ValidatedNec[CatalogProblem, (Band, UnitType @@ Brightness[Integrated])] = {
+      val band: Option[Band] =
         if (v.nonEmpty)
           f.id.value match {
             case magSystemID(x) => findBand(x)
@@ -303,11 +323,13 @@ object CatalogAdapter {
           }
         else
           None
+
       (Validated.fromOption(band, UnmatchedField(f.ucd)).toValidatedNec,
-       Validated.fromOption(MagnitudeSystem.fromTag(v), UnmatchedField(f.ucd)).toValidatedNec
+       Validated
+         .fromOption(integratedBrightnessUnits.get(v), UnmatchedField(f.ucd))
+         .toValidatedNec
       ).mapN((_, _))
     }
-
   }
 
   def forCatalog(c: CatalogName): Option[CatalogAdapter] =
