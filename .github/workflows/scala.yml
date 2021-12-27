@@ -12,7 +12,7 @@ jobs:
       - name: Set up JDK
         uses: olafurpg/setup-scala@v13
         with:
-          java-version: adopt-openj9@1.11
+          java-version: adopt@1.11
       - name: Checking your code format
         run: sbt scalafmtCheckAll headerCheck Test/headerCheck
       - name: Run compile
