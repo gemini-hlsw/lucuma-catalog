@@ -21,7 +21,6 @@ import lucuma.core.math.dimensional._
 import lucuma.core.math.units._
 import lucuma.core.model.BandBrightness
 import lucuma.core.optics.state.all._
-import shapeless.tag.@@
 
 // A CatalogAdapter improves parsing handling catalog-specific options like parsing brightnesses and selecting key fields
 sealed trait CatalogAdapter {
@@ -60,7 +59,7 @@ sealed trait CatalogAdapter {
   protected def parseBrightnessUnits(
     f: FieldId,
     v: String
-  ): ValidatedNec[CatalogProblem, (Band, UnitType @@ Brightness[Integrated])]
+  ): ValidatedNec[CatalogProblem, (Band, Units Of Brightness[Integrated])]
 
   // Indicates if the field is a brightness units field
   protected def isBrightnessUnitsField(v: (FieldId, String)): Boolean
@@ -136,12 +135,12 @@ sealed trait CatalogAdapter {
   private def combineWithErrorsSystemAndFilter(
     m: Vector[(FieldId, Band, Double)],
     e: Vector[(FieldId, Band, Double)],
-    u: Vector[(Band, UnitType @@ Brightness[Integrated])]
+    u: Vector[(Band, Units Of Brightness[Integrated])]
   ): Vector[BandBrightness[Integrated]] = {
     val values = m.map { case (f, b, d) =>
       import b._ // Make band's default units available
 
-      f -> BandBrightness[Integrated](BrightnessValue.fromDouble(d), b)
+      f -> BandBrightness.withDefaultUnits[Integrated](BrightnessValue.fromDouble(d), b)
     }
 
     val errors = e.map { case (_, b, d) => b -> BrightnessValue.fromDouble(d) }.toMap
@@ -153,8 +152,8 @@ sealed trait CatalogAdapter {
         (for {
           _ <- BandBrightness.error[Integrated].assign(errors.get(m.band))
           _ <- BandBrightness
-                 .unit[Integrated]
-                 .assign(units.getOrElse(m.band, Qty.unitT.get(m.quantity)))
+                 .units[Integrated]
+                 .assign(units.getOrElse(m.band, Measure.unitsTagged.get(m.quantity)))
         } yield ()).run(m).value._1
       }
       .filter(validBrightness)
@@ -181,7 +180,7 @@ sealed trait CatalogAdapter {
         .filter(isBrightnessErrorField)
         .traverse(Function.tupled(parseBrightnessValue))
 
-    val units: ValidatedNec[CatalogProblem, Vector[(Band, UnitType @@ Brightness[Integrated])]] =
+    val units: ValidatedNec[CatalogProblem, Vector[(Band, Units Of Brightness[Integrated])]] =
       entries.toVector
         .filter(isBrightnessUnitsField)
         .traverse(Function.tupled(parseBrightnessUnits))
@@ -234,7 +233,7 @@ trait StandardAdapter extends CatalogAdapter {
   protected def parseBrightnessUnits(
     f: FieldId,
     v: String
-  ): ValidatedNec[CatalogProblem, (Band, UnitType @@ Brightness[Integrated])] =
+  ): ValidatedNec[CatalogProblem, (Band, Units Of Brightness[Integrated])] =
     Validated.invalidNec(UnsupportedField(f))
 
 }
@@ -304,17 +303,17 @@ object CatalogAdapter {
       else
         none
 
-    private val integratedBrightnessUnits: Map[String, UnitType @@ Brightness[Integrated]] =
+    private val integratedBrightnessUnits: Map[String, Units Of Brightness[Integrated]] =
       Map(
-        "Vega" -> implicitly[IsTaggedUnit[VegaMagnitude, Brightness[Integrated]]],
-        "AB"   -> implicitly[IsTaggedUnit[ABMagnitude, Brightness[Integrated]]]
+        "Vega" -> implicitly[TaggedUnit[VegaMagnitude, Brightness[Integrated]]],
+        "AB"   -> implicitly[TaggedUnit[ABMagnitude, Brightness[Integrated]]]
       ).view.mapValues(_.unit).toMap
 
     // Attempts to find the brightness units for a band
     override def parseBrightnessUnits(
       f: FieldId,
       v: String
-    ): ValidatedNec[CatalogProblem, (Band, UnitType @@ Brightness[Integrated])] = {
+    ): ValidatedNec[CatalogProblem, (Band, Units Of Brightness[Integrated])] = {
       val band: Option[Band] =
         if (v.nonEmpty)
           f.id.value match {

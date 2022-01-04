@@ -73,35 +73,35 @@ class ParseSimbadFileSuite extends CatsEffectSuite with VoTableParser {
             // brightnesses
             assertEquals(
               Target.integratedBandBrightnessIn(Band.U).headOption(t),
-              BandBrightness[Integrated](BrightnessValue.fromDouble(0.03), Band.U).some
+              BandBrightness[VegaMagnitude](BrightnessValue.fromDouble(0.03), Band.U).some
             )
             assertEquals(
               Target.integratedBandBrightnessIn(Band.B).headOption(t),
-              BandBrightness[Integrated](BrightnessValue.fromDouble(0.03), Band.B).some
+              BandBrightness[VegaMagnitude](BrightnessValue.fromDouble(0.03), Band.B).some
             )
             assertEquals(
               Target.integratedBandBrightnessIn(Band.V).headOption(t),
-              BandBrightness[Integrated](BrightnessValue.fromDouble(0.03), Band.V).some
+              BandBrightness[VegaMagnitude](BrightnessValue.fromDouble(0.03), Band.V).some
             )
             assertEquals(
               Target.integratedBandBrightnessIn(Band.R).headOption(t),
-              BandBrightness[Integrated](BrightnessValue.fromDouble(0.07), Band.R).some
+              BandBrightness[VegaMagnitude](BrightnessValue.fromDouble(0.07), Band.R).some
             )
             assertEquals(
               Target.integratedBandBrightnessIn(Band.I).headOption(t),
-              BandBrightness[Integrated](BrightnessValue.fromDouble(0.10), Band.I).some
+              BandBrightness[VegaMagnitude](BrightnessValue.fromDouble(0.10), Band.I).some
             )
             assertEquals(
               Target.integratedBandBrightnessIn(Band.J).headOption(t),
-              BandBrightness[Integrated](BrightnessValue.fromDouble(-0.18), Band.J).some
+              BandBrightness[VegaMagnitude](BrightnessValue.fromDouble(-0.18), Band.J).some
             )
             assertEquals(
               Target.integratedBandBrightnessIn(Band.H).headOption(t),
-              BandBrightness[Integrated](BrightnessValue.fromDouble(-0.03), Band.H).some
+              BandBrightness[VegaMagnitude](BrightnessValue.fromDouble(-0.03), Band.H).some
             )
             assertEquals(
               Target.integratedBandBrightnessIn(Band.K).headOption(t),
-              BandBrightness[Integrated](BrightnessValue.fromDouble(0.13), Band.K).some
+              BandBrightness[VegaMagnitude](BrightnessValue.fromDouble(0.13), Band.K).some
             )
             // parallax
             assertEquals(
@@ -163,37 +163,37 @@ class ParseSimbadFileSuite extends CatsEffectSuite with VoTableParser {
             // band brightnesses
             assertEquals(
               Target.integratedBandBrightnessIn(Band.SloanU).headOption(t),
-              BandBrightness[Integrated](BrightnessValue.fromDouble(16.284),
-                                         Band.SloanU,
-                                         BrightnessValue.fromDouble(0.007)
+              BandBrightness[ABMagnitude](BrightnessValue.fromDouble(16.284),
+                                          Band.SloanU,
+                                          BrightnessValue.fromDouble(0.007)
               ).some
             )
             assertEquals(
               Target.integratedBandBrightnessIn(Band.SloanG).headOption(t),
-              BandBrightness[Integrated](BrightnessValue.fromDouble(15.728),
-                                         Band.SloanG,
-                                         BrightnessValue.fromDouble(0.003)
+              BandBrightness[ABMagnitude](BrightnessValue.fromDouble(15.728),
+                                          Band.SloanG,
+                                          BrightnessValue.fromDouble(0.003)
               ).some
             )
             assertEquals(
               Target.integratedBandBrightnessIn(Band.SloanR).headOption(t),
-              BandBrightness[Integrated](BrightnessValue.fromDouble(15.986),
-                                         Band.SloanR,
-                                         BrightnessValue.fromDouble(0.004)
+              BandBrightness[ABMagnitude](BrightnessValue.fromDouble(15.986),
+                                          Band.SloanR,
+                                          BrightnessValue.fromDouble(0.004)
               ).some
             )
             assertEquals(
               Target.integratedBandBrightnessIn(Band.SloanI).headOption(t),
-              BandBrightness[Integrated](BrightnessValue.fromDouble(15.603),
-                                         Band.SloanI,
-                                         BrightnessValue.fromDouble(0.004)
+              BandBrightness[ABMagnitude](BrightnessValue.fromDouble(15.603),
+                                          Band.SloanI,
+                                          BrightnessValue.fromDouble(0.004)
               ).some
             )
             assertEquals(
               Target.integratedBandBrightnessIn(Band.SloanZ).headOption(t),
-              BandBrightness[Integrated](BrightnessValue.fromDouble(15.682),
-                                         Band.SloanZ,
-                                         BrightnessValue.fromDouble(0.008)
+              BandBrightness[ABMagnitude](BrightnessValue.fromDouble(15.682),
+                                          Band.SloanZ,
+                                          BrightnessValue.fromDouble(0.008)
               ).some
             )
             // angular size
@@ -250,20 +250,20 @@ class ParseSimbadFileSuite extends CatsEffectSuite with VoTableParser {
             // band brightnesses
             assertEquals(
               Target.integratedBandBrightnessIn(Band.B).headOption(t),
-              BandBrightness[Integrated](BrightnessValue.fromDouble(20.35), Band.B).some
+              BandBrightness[VegaMagnitude](BrightnessValue.fromDouble(20.35), Band.B).some
             )
             assertEquals(
               Target.integratedBandBrightnessIn(Band.V).headOption(t),
-              BandBrightness[Integrated](BrightnessValue.fromDouble(20.03), Band.V).some
+              BandBrightness[VegaMagnitude](BrightnessValue.fromDouble(20.03), Band.V).some
             )
             assertEquals(
               Target.integratedBandBrightnessIn(Band.V).headOption(t),
-              BandBrightness[Integrated](BrightnessValue.fromDouble(20.03), Band.V).some
+              BandBrightness[VegaMagnitude](BrightnessValue.fromDouble(20.03), Band.V).some
             )
             // Bands J, H and K for this target have no standard brightness units
             assertEquals(
               Target.integratedBandBrightnessIn(Band.J).headOption(t),
-              BandBrightness[Integrated, ABMagnitude](
+              BandBrightness[ABMagnitude](
                 BrightnessValue.fromDouble(19.399),
                 Band.J,
                 BrightnessValue.fromDouble(0.073)
@@ -271,7 +271,7 @@ class ParseSimbadFileSuite extends CatsEffectSuite with VoTableParser {
             )
             assertEquals(
               Target.integratedBandBrightnessIn(Band.H).headOption(t),
-              BandBrightness[Integrated, ABMagnitude](
+              BandBrightness[ABMagnitude](
                 BrightnessValue.fromDouble(19.416),
                 Band.H,
                 BrightnessValue.fromDouble(0.137)
@@ -279,7 +279,7 @@ class ParseSimbadFileSuite extends CatsEffectSuite with VoTableParser {
             )
             assertEquals(
               Target.integratedBandBrightnessIn(Band.K).headOption(t),
-              BandBrightness[Integrated, ABMagnitude](
+              BandBrightness[ABMagnitude](
                 BrightnessValue.fromDouble(19.176),
                 Band.K,
                 BrightnessValue.fromDouble(0.115)
@@ -287,37 +287,37 @@ class ParseSimbadFileSuite extends CatsEffectSuite with VoTableParser {
             )
             assertEquals(
               Target.integratedBandBrightnessIn(Band.SloanU).headOption(t),
-              BandBrightness[Integrated](BrightnessValue.fromDouble(20.233),
-                                         Band.SloanU,
-                                         BrightnessValue.fromDouble(0.054)
+              BandBrightness[ABMagnitude](BrightnessValue.fromDouble(20.233),
+                                          Band.SloanU,
+                                          BrightnessValue.fromDouble(0.054)
               ).some
             )
             assertEquals(
               Target.integratedBandBrightnessIn(Band.SloanG).headOption(t),
-              BandBrightness[Integrated](BrightnessValue.fromDouble(20.201),
-                                         Band.SloanG,
-                                         BrightnessValue.fromDouble(0.021)
+              BandBrightness[ABMagnitude](BrightnessValue.fromDouble(20.201),
+                                          Band.SloanG,
+                                          BrightnessValue.fromDouble(0.021)
               ).some
             )
             assertEquals(
               Target.integratedBandBrightnessIn(Band.SloanR).headOption(t),
-              BandBrightness[Integrated](BrightnessValue.fromDouble(19.929),
-                                         Band.SloanR,
-                                         BrightnessValue.fromDouble(0.021)
+              BandBrightness[ABMagnitude](BrightnessValue.fromDouble(19.929),
+                                          Band.SloanR,
+                                          BrightnessValue.fromDouble(0.021)
               ).some
             )
             assertEquals(
               Target.integratedBandBrightnessIn(Band.SloanI).headOption(t),
-              BandBrightness[Integrated](BrightnessValue.fromDouble(19.472),
-                                         Band.SloanI,
-                                         BrightnessValue.fromDouble(0.023)
+              BandBrightness[ABMagnitude](BrightnessValue.fromDouble(19.472),
+                                          Band.SloanI,
+                                          BrightnessValue.fromDouble(0.023)
               ).some
             )
             assertEquals(
               Target.integratedBandBrightnessIn(Band.SloanZ).headOption(t),
-              BandBrightness[Integrated](BrightnessValue.fromDouble(19.191),
-                                         Band.SloanZ,
-                                         BrightnessValue.fromDouble(0.068)
+              BandBrightness[ABMagnitude](BrightnessValue.fromDouble(19.191),
+                                          Band.SloanZ,
+                                          BrightnessValue.fromDouble(0.068)
               ).some
             )
           case Validated.Invalid(_) => fail(s"VOTable xml $xmlFile cannot be parsed")
@@ -402,7 +402,7 @@ class ParseSimbadFileSuite extends CatsEffectSuite with VoTableParser {
             assert(t.tracking.properMotion.isEmpty)
             assertEquals(
               Target.integratedBandBrightnessIn(Band.J).headOption(t),
-              BandBrightness[Integrated, VegaMagnitude](
+              BandBrightness[VegaMagnitude](
                 BrightnessValue.fromDouble(17.02),
                 Band.J,
                 BrightnessValue.fromDouble(0.15)
@@ -486,43 +486,43 @@ class ParseSimbadFileSuite extends CatsEffectSuite with VoTableParser {
             // band brightnesses
             assertEquals(
               Target.integratedBandBrightnessIn(Band.U).headOption(t),
-              BandBrightness[Integrated](BrightnessValue.fromDouble(0.03), Band.U).some
+              BandBrightness[VegaMagnitude](BrightnessValue.fromDouble(0.03), Band.U).some
             )
             assertEquals(
               Target.integratedBandBrightnessIn(Band.B).headOption(t),
-              BandBrightness[Integrated](BrightnessValue.fromDouble(0.03), Band.B).some
+              BandBrightness[VegaMagnitude](BrightnessValue.fromDouble(0.03), Band.B).some
             )
             assertEquals(
               Target.integratedBandBrightnessIn(Band.V).headOption(t),
-              BandBrightness[Integrated](BrightnessValue.fromDouble(0.03), Band.V).some
+              BandBrightness[VegaMagnitude](BrightnessValue.fromDouble(0.03), Band.V).some
             )
             assertEquals(
               Target.integratedBandBrightnessIn(Band.R).headOption(t),
-              BandBrightness[Integrated](BrightnessValue.fromDouble(0.07), Band.R).some
+              BandBrightness[VegaMagnitude](BrightnessValue.fromDouble(0.07), Band.R).some
             )
             assertEquals(
               Target.integratedBandBrightnessIn(Band.I).headOption(t),
-              BandBrightness[Integrated](BrightnessValue.fromDouble(0.10), Band.I).some
+              BandBrightness[VegaMagnitude](BrightnessValue.fromDouble(0.10), Band.I).some
             )
             assertEquals(
               Target.integratedBandBrightnessIn(Band.J).headOption(t),
-              BandBrightness[Integrated](BrightnessValue.fromDouble(-0.177),
-                                         Band.J,
-                                         BrightnessValue.fromDouble(0.206)
+              BandBrightness[VegaMagnitude](BrightnessValue.fromDouble(-0.177),
+                                            Band.J,
+                                            BrightnessValue.fromDouble(0.206)
               ).some
             )
             assertEquals(
               Target.integratedBandBrightnessIn(Band.H).headOption(t),
-              BandBrightness[Integrated](BrightnessValue.fromDouble(-0.029),
-                                         Band.H,
-                                         BrightnessValue.fromDouble(0.146)
+              BandBrightness[VegaMagnitude](BrightnessValue.fromDouble(-0.029),
+                                            Band.H,
+                                            BrightnessValue.fromDouble(0.146)
               ).some
             )
             assertEquals(
               Target.integratedBandBrightnessIn(Band.K).headOption(t),
-              BandBrightness[Integrated](BrightnessValue.fromDouble(0.129),
-                                         Band.K,
-                                         BrightnessValue.fromDouble(0.186)
+              BandBrightness[VegaMagnitude](BrightnessValue.fromDouble(0.129),
+                                            Band.K,
+                                            BrightnessValue.fromDouble(0.186)
               ).some
             )
             // parallax
