@@ -1,8 +1,13 @@
 name: Release
+
 on:
   push:
     branches: [master]
     tags: ["*"]
+
+env:
+  JABBA_INDEX: 'https://github.com/typelevel/jdk-index/raw/main/index.json'
+
 jobs:
   publish:
     runs-on: ubuntu-latest
