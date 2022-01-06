@@ -1,4 +1,4 @@
-// Copyright (c) 2016-2021 Association of Universities for Research in Astronomy, Inc. (AURA)
+// Copyright (c) 2016-2022 Association of Universities for Research in Astronomy, Inc. (AURA)
 // For license information see LICENSE or https://opensource.org/licenses/BSD-3-Clause
 
 package lucuma.catalog
@@ -19,8 +19,6 @@ import lucuma.core.math.RadialVelocity
 import lucuma.core.math.VelocityAxis
 import lucuma.core.math.dimensional._
 import lucuma.core.math.units._
-import lucuma.core.model.BandBrightness
-import lucuma.core.optics.state.all._
 
 // A CatalogAdapter improves parsing handling catalog-specific options like parsing brightnesses and selecting key fields
 sealed trait CatalogAdapter {
@@ -78,14 +76,14 @@ sealed trait CatalogAdapter {
 
   // filter brightnesses as a whole, removing invalid values and duplicates
   // (This is written to be overridden--see PPMXL adapter. By default nothing is done.)
-  def filterAndDeduplicateBrightnesss(
-    ms: Vector[(FieldId, BandBrightness[Integrated])]
-  ): Vector[BandBrightness[Integrated]] =
+  def filterAndDeduplicateBrightnesses(
+    ms: Vector[(FieldId, (Band, BrightnessValue))]
+  ): Vector[(Band, BrightnessValue)] =
     ms.unzip._2
 
   // Indicates if a parsed brightness is valid
-  def validBrightness(m: BandBrightness[Integrated]): Boolean =
-    !(m.quantity.value.toDoubleValue.isNaN || m.error.exists(_.toDoubleValue.isNaN))
+  def validBrightness(m: BrightnessMeasure[Integrated]): Boolean =
+    !(m.value.toDoubleValue.isNaN || m.error.exists(_.toDoubleValue.isNaN))
 
   // Attempts to extract the radial velocity of a field
   def parseRadialVelocity(ucd: Ucd, v: String): ValidatedNec[CatalogProblem, RadialVelocity] =
@@ -133,30 +131,25 @@ sealed trait CatalogAdapter {
     ).mapN((fieldId, _, _))
 
   private def combineWithErrorsSystemAndFilter(
-    m: Vector[(FieldId, Band, Double)],
+    v: Vector[(FieldId, Band, Double)],
     e: Vector[(FieldId, Band, Double)],
     u: Vector[(Band, Units Of Brightness[Integrated])]
-  ): Vector[BandBrightness[Integrated]] = {
-    val values = m.map { case (f, b, d) =>
-      import b._ // Make band's default units available
-
-      f -> BandBrightness.withDefaultUnits[Integrated](BrightnessValue.fromDouble(d), b)
+  ): Vector[(Band, BrightnessMeasure[Integrated])] = {
+    val values = v.map { case (f, b, d) =>
+      f -> (b -> BrightnessValue.fromDouble(d))
     }
 
     val errors = e.map { case (_, b, d) => b -> BrightnessValue.fromDouble(d) }.toMap
     val units  = u.toMap
 
     // Link band brightnesses with their errors
-    filterAndDeduplicateBrightnesss(values)
-      .map { m =>
-        (for {
-          _ <- BandBrightness.error[Integrated].assign(errors.get(m.band))
-          _ <- BandBrightness
-                 .units[Integrated]
-                 .assign(units.getOrElse(m.band, Measure.unitsTagged.get(m.quantity)))
-        } yield ()).run(m).value._1
+    filterAndDeduplicateBrightnesses(values)
+      .map { case (band, value) =>
+        band -> units
+          .getOrElse(band, band.defaultIntegrated.units)
+          .withValueTagged(value, errors.get(band))
       }
-      .filter(validBrightness)
+      .filter { case (_, brightness) => validBrightness(brightness) }
   }
 
   /**
@@ -169,7 +162,7 @@ sealed trait CatalogAdapter {
    */
   def parseBandBrightnesses(
     entries: Map[FieldId, String]
-  ): ValidatedNec[CatalogProblem, Vector[BandBrightness[Integrated]]] = {
+  ): ValidatedNec[CatalogProblem, Vector[(Band, BrightnessMeasure[Integrated])]] = {
     val values: ValidatedNec[CatalogProblem, Vector[(FieldId, Band, Double)]] =
       entries.toVector
         .filter(isBrightnessValueField)
@@ -185,7 +178,7 @@ sealed trait CatalogAdapter {
         .filter(isBrightnessUnitsField)
         .traverse(Function.tupled(parseBrightnessUnits))
 
-    (values, errors, units).mapN(combineWithErrorsSystemAndFilter).map(_.sortBy(_.band))
+    (values, errors, units).mapN(combineWithErrorsSystemAndFilter).map(_.sortBy(_._1))
   }
 
   // Indicates if the field has a brightness value field
