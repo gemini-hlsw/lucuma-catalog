@@ -1,4 +1,4 @@
-// Copyright (c) 2016-2021 Association of Universities for Research in Astronomy, Inc. (AURA)
+// Copyright (c) 2016-2022 Association of Universities for Research in Astronomy, Inc. (AURA)
 // For license information see LICENSE or https://opensource.org/licenses/BSD-3-Clause
 
 package lucuma.catalog
@@ -231,7 +231,7 @@ trait VoTableParser {
 
     def parseSiderealTarget: ValidatedNec[CatalogProblem, Target.Sidereal] =
       (parseName, parseSiderealTracking, parseBandBrightnesses, parseCatalogInfo, parseAngularSize)
-        .mapN { (name, pm, mags, info, angSize) =>
+        .mapN { (name, pm, brightnesses, info, angSize) =>
           Target.Sidereal(
             name,
             pm,
@@ -240,7 +240,7 @@ trait VoTableParser {
             SourceProfile.Point(
               SpectralDefinition.BandNormalized(
                 UnnormalizedSED.StellarLibrary(StellarLibrarySpectrum.O5V),
-                SortedMap(mags.fproductLeft(_.band): _*)
+                SortedMap.from(brightnesses)
               )
             ),
             info,
