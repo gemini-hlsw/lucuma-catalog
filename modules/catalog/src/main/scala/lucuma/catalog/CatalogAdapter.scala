@@ -83,7 +83,7 @@ sealed trait CatalogAdapter {
 
   // Indicates if a parsed brightness is valid
   def validBrightness(m: BrightnessMeasure[Integrated]): Boolean =
-    !(m.value.toDoubleValue.isNaN || m.error.exists(_.toDoubleValue.isNaN))
+    !(m.value.toDouble.isNaN || m.error.exists(_.toDouble.isNaN))
 
   // Attempts to extract the radial velocity of a field
   def parseRadialVelocity(ucd: Ucd, v: String): ValidatedNec[CatalogProblem, RadialVelocity] =
