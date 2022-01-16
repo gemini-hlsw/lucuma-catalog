@@ -8,7 +8,7 @@ lazy val catsEffectVersion       = "3.0.1"
 lazy val kindProjectorVersion    = "0.13.2"
 lazy val sttpVersion             = "3.3.18"
 lazy val pprintVersion           = "0.7.1"
-lazy val lucumaCoreVersion       = "0.23.2"
+lazy val lucumaCoreVersion       = "0.24.0"
 lazy val monocleVersion          = "3.1.0"
 lazy val munitVersion            = "0.7.29"
 lazy val munitDisciplineVersion  = "1.0.9"
@@ -61,9 +61,10 @@ lazy val testkit = crossProject(JVMPlatform, JSPlatform)
   .settings(
     name := "lucuma-catalog-testkit",
     libraryDependencies ++= Seq(
-      "org.typelevel"     %%% "cats-testkit"       % catsVersion,
-      "eu.timepit"        %%% "refined-scalacheck" % refinedVersion,
-      "io.chrisdavenport" %%% "cats-scalacheck"    % catsScalacheckVersion
+      "org.typelevel"     %%% "cats-testkit"        % catsVersion,
+      "edu.gemini"        %%% "lucuma-core-testkit" % lucumaCoreVersion,
+      "eu.timepit"        %%% "refined-scalacheck"  % refinedVersion,
+      "io.chrisdavenport" %%% "cats-scalacheck"     % catsScalacheckVersion
     )
   )
   .jvmConfigure(_.disablePlugins(AutomateHeaderPlugin))

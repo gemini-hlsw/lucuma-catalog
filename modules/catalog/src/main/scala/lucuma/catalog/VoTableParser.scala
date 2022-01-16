@@ -21,7 +21,6 @@ import lucuma.core.enum.CatalogName
 import lucuma.core.enum.StellarLibrarySpectrum
 import lucuma.core.math._
 import lucuma.core.math.units.KilometersPerSecond
-import lucuma.core.model.AngularSize
 import lucuma.core.model.CatalogInfo
 import lucuma.core.model.SiderealTracking
 import lucuma.core.model.SourceProfile
@@ -74,7 +73,7 @@ trait VoTableParser {
    */
   def targets[F[_]: RaiseThrowable: MonadError[*[_], Throwable]](
     catalog: CatalogName
-  ): Pipe[F, String, ValidatedNec[CatalogProblem, Target.Sidereal]] =
+  ): Pipe[F, String, ValidatedNec[CatalogProblem, CatalogTargetResult]] =
     in =>
       CatalogAdapter.forCatalog(catalog) match {
         case Some(a) =>
@@ -91,10 +90,10 @@ trait VoTableParser {
    */
   def xml2targets[F[_]](
     adapter: CatalogAdapter
-  ): Pipe[F, XmlEvent, ValidatedNec[CatalogProblem, Target.Sidereal]] = {
+  ): Pipe[F, XmlEvent, ValidatedNec[CatalogProblem, CatalogTargetResult]] = {
     def go(
       s: Stream[F, ValidatedNec[CatalogProblem, TableRow]]
-    ): Pull[F, ValidatedNec[CatalogProblem, Target.Sidereal], Unit] =
+    ): Pull[F, ValidatedNec[CatalogProblem, CatalogTargetResult], Unit] =
       s.pull.uncons1.flatMap {
         case Some((i @ Validated.Invalid(_), s))       => Pull.output1(i) >> go(s)
         case Some((Validated.Valid(row: TableRow), s)) =>
@@ -110,7 +109,7 @@ trait VoTableParser {
   protected def targetRow2Target(
     adapter: CatalogAdapter,
     row:     TableRow
-  ): ValidatedNec[CatalogProblem, Target.Sidereal] = {
+  ): ValidatedNec[CatalogProblem, CatalogTargetResult] = {
     val entries = row.itemsMap
 
     def parseId: ValidatedNec[CatalogProblem, NonEmptyString] =
@@ -229,21 +228,23 @@ trait VoTableParser {
       }
     }
 
-    def parseSiderealTarget: ValidatedNec[CatalogProblem, Target.Sidereal] =
+    def parseSiderealTarget: ValidatedNec[CatalogProblem, CatalogTargetResult] =
       (parseName, parseSiderealTracking, parseBandBrightnesses, parseCatalogInfo, parseAngularSize)
         .mapN { (name, pm, brightnesses, info, angSize) =>
-          Target.Sidereal(
-            name,
-            pm,
-            // We set arbitrary values for `sourceProfile`, `spectralDefinition`, `sed` and  `librarySpectrum`: the first in each ADT.
-            // In the future we will attempt to infer some or all of these from the catalog info.
-            SourceProfile.Point(
-              SpectralDefinition.BandNormalized(
-                UnnormalizedSED.StellarLibrary(StellarLibrarySpectrum.O5V),
-                SortedMap.from(brightnesses)
-              )
+          CatalogTargetResult(
+            Target.Sidereal(
+              name,
+              pm,
+              // We set arbitrary values for `sourceProfile`, `spectralDefinition`, `sed` and  `librarySpectrum`: the first in each ADT.
+              // In the future we will attempt to infer some or all of these from the catalog info.
+              SourceProfile.Point(
+                SpectralDefinition.BandNormalized(
+                  UnnormalizedSED.StellarLibrary(StellarLibrarySpectrum.O5V),
+                  SortedMap.from(brightnesses)
+                )
+              ),
+              info
             ),
-            info,
             angSize
           )
         }
