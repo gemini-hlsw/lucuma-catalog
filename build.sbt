@@ -15,10 +15,11 @@ lazy val refinedVersion          = "0.9.28"
 lazy val catsScalacheckVersion   = "0.3.1"
 lazy val scalaXmlVersion         = "2.0.1"
 
-Global / onChangedBuildSource := ReloadOnSourceChanges
+Global / onChangedBuildSource   := ReloadOnSourceChanges
 Global / scalacOptions += "-Ymacro-annotations"
 
-ThisBuild / tlBaseVersion     := "0.10"
+ThisBuild / tlBaseVersion       := "0.10"
+ThisBuild / tlCiReleaseBranches := Seq("master")
 
 lazy val root = tlCrossRootProject.aggregate(catalog, testkit, tests)
 
