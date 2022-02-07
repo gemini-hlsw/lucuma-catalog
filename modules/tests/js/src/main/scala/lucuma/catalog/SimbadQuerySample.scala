@@ -11,9 +11,11 @@ import lucuma.core.enum.CatalogName
 import sttp.client3._
 import sttp.client3.impl.cats.FetchCatsBackend
 
+import scala.annotation.nowarn
 import scala.scalajs.js
 import scala.scalajs.js.annotation._
 
+@nowarn
 @JSExportTopLevel("main")
 object SimbadQuerySample extends IOApp {
 
