@@ -77,11 +77,6 @@ lazy val tests = crossProject(JVMPlatform, JSPlatform)
   )
   .jsSettings(
     scalaJSUseMainModuleInitializer := true,
-    Compile / npmDependencies ++= Seq(
-      "node-fetch"               -> "2.6.1",
-      "abortcontroller-polyfill" -> "1.5.0",
-      "fetch-headers"            -> "2.0.0"
-    ),
     scalacOptions ~= (_.filterNot(Set("-Wdead-code"))),
     scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule))
   )
