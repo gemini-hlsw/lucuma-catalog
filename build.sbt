@@ -1,6 +1,3 @@
-import sbtcrossproject.crossProject
-import sbtcrossproject.CrossType
-
 lazy val fs2Version              = "3.2.4"
 lazy val fs2DataVersion          = "1.3.1"
 lazy val catsVersion             = "2.7.0"
@@ -18,20 +15,13 @@ lazy val refinedVersion          = "0.9.28"
 lazy val catsScalacheckVersion   = "0.3.1"
 lazy val scalaXmlVersion         = "2.0.1"
 
-Global / onChangedBuildSource := ReloadOnSourceChanges
+Global / onChangedBuildSource   := ReloadOnSourceChanges
+Global / scalacOptions += "-Ymacro-annotations"
 
-inThisBuild(
-  Seq(
-    homepage           := Some(url("https://github.com/gemini-hlsw/lucuma-catalog")),
-    addCompilerPlugin(
-      ("org.typelevel" %% "kind-projector" % kindProjectorVersion).cross(CrossVersion.full)
-    ),
-    addCompilerPlugin("com.olegpy" %% "better-monadic-for" % betterMonadicForVersion),
-    scalacOptions in Global += "-Ymacro-annotations"
-  ) ++ lucumaPublishSettings
-)
+ThisBuild / tlBaseVersion       := "0.10"
+ThisBuild / tlCiReleaseBranches := Seq("master")
 
-publish / skip := true
+lazy val root = tlCrossRootProject.aggregate(catalog, testkit, tests)
 
 lazy val catalog = crossProject(JVMPlatform, JSPlatform)
   .crossType(CrossType.Pure)
@@ -51,8 +41,6 @@ lazy val catalog = crossProject(JVMPlatform, JSPlatform)
     ),
     scalacOptions ~= (_.filterNot(Set("-Vtype-diffs")))
   )
-  .jvmConfigure(_.enablePlugins(AutomateHeaderPlugin))
-  .jsSettings(lucumaScalaJsSettings: _*)
 
 lazy val testkit = crossProject(JVMPlatform, JSPlatform)
   .crossType(CrossType.Pure)
@@ -67,16 +55,15 @@ lazy val testkit = crossProject(JVMPlatform, JSPlatform)
       "io.chrisdavenport" %%% "cats-scalacheck"     % catsScalacheckVersion
     )
   )
-  .jvmConfigure(_.disablePlugins(AutomateHeaderPlugin))
-  .jsSettings(lucumaScalaJsSettings: _*)
 
 lazy val tests = crossProject(JVMPlatform, JSPlatform)
   .crossType(CrossType.Full)
   .in(file("modules/tests"))
-  .jsConfigure(_.enablePlugins(ScalaJSBundlerPlugin))
+  .enablePlugins(NoPublishPlugin)
+  .jsEnablePlugins(ScalaJSBundlerPlugin)
   .dependsOn(catalog, testkit)
   .settings(
-    name           := "lucuma-catalog-tests",
+    name := "lucuma-catalog-tests",
     libraryDependencies ++= Seq(
       "org.typelevel"                 %%% "cats-effect"         % catsEffectVersion      % Test,
       "org.scalameta"                 %%% "munit"               % munitVersion           % Test,
@@ -86,19 +73,10 @@ lazy val tests = crossProject(JVMPlatform, JSPlatform)
       "com.softwaremill.sttp.client3" %%% "core"                % sttpVersion,
       "com.softwaremill.sttp.client3" %%% "cats"                % sttpVersion,
       "com.lihaoyi"                   %%% "pprint"              % pprintVersion
-    ),
-    testFrameworks += new TestFramework("munit.Framework"),
-    publish / skip := true
+    )
   )
-  .jvmConfigure(_.enablePlugins(AutomateHeaderPlugin))
-  .jsSettings(lucumaScalaJsSettings: _*)
   .jsSettings(
     scalaJSUseMainModuleInitializer := true,
-    Compile / npmDependencies ++= Seq(
-      "node-fetch"               -> "2.6.1",
-      "abortcontroller-polyfill" -> "1.5.0",
-      "fetch-headers"            -> "2.0.0"
-    ),
     scalacOptions ~= (_.filterNot(Set("-Wdead-code"))),
     scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule))
   )
