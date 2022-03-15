@@ -47,9 +47,6 @@ sealed trait CatalogAdapter {
   def parseName(entries: Map[FieldId, String]): Option[String] =
     entries.get(nameField)
 
-  // From a Field extract the band from either the field id or the UCD
-  protected def fieldToBand(field: FieldId): Option[Band]
-
   // Indicates if a field contianing a brightness value should be ignored, by default all fields are considered
   protected def ignoreBrightnessValueField(v: FieldId): Boolean
 
@@ -61,6 +58,9 @@ sealed trait CatalogAdapter {
 
   // Indicates if the field is a brightness units field
   protected def isBrightnessUnitsField(v: (FieldId, String)): Boolean
+
+  // Select the band for a given field id
+  protected def findBand(id: FieldId): Option[Band]
 
   // Indicates if the field is a brightness value
   def isBrightnessValueField(v: (FieldId, String)): Boolean =
@@ -186,50 +186,17 @@ sealed trait CatalogAdapter {
     v.ucd.includes(VoTableParser.UCD_MAG) &&
       v.ucd.matches(CatalogAdapter.magRegex) &&
       !ignoreBrightnessValueField(v)
-}
-
-// Common methods for UCAC4 and PPMXL
-trait StandardAdapter extends CatalogAdapter {
-
-  // Find what band the field descriptor should represent, in general prefer "upper case" bands over "lower case" Sloan bands.
-  // This will prefer U, R and I over u', r' and i' but will map "g" and "z" to the Sloan bands g' and z'.
-  def parseBand(fieldId: FieldId, band: String): Option[Band]
-
-  def defaultParseBand(band: String): Option[Band] =
-    Band.all
-      .find(_.shortName === band.toUpperCase)
-      .orElse(Band.all.find(_.shortName === band))
 
   // From a Field extract the band from either the field id or the UCD
-  protected def fieldToBand(field: FieldId): Option[Band] = {
-    // Parses a UCD token to extract the band for catalogs that include the band in the UCD (UCAC4/PPMXL)
-    def parseBandToken(token: String): Option[String] =
-      token match {
-        case CatalogAdapter.magRegex(_, null) => "UC".some
-        case CatalogAdapter.magRegex(_, b)    => b.replace(".", "").some
-        case _                                => none
-      }
-
-    (for {
-      t <- field.ucd.tokens.toList
-      b <- parseBandToken(t.value)
-    } yield parseBand(field, b)).headOption.flatten
-  }
-
-  // Indicates if a field contianing a brightness value should be ignored, by default all fields are considered
-  override def ignoreBrightnessValueField(v: FieldId): Boolean = false
-
-  override def isBrightnessUnitsField(v: (FieldId, String)): Boolean =
-    false
-  //
-  // Attempts to extract brightness units for a particular band
-  protected def parseBrightnessUnits(
-    f: FieldId,
-    v: String
-  ): ValidatedNec[CatalogProblem, (Band, Units Of Brightness[Integrated])] =
-    Validated.invalidNec(UnsupportedField(f))
+  def fieldToBand(field: FieldId): Option[Band] =
+    if ((field.ucd.includes(VoTableParser.UCD_MAG) && !ignoreBrightnessValueField(field)))
+      findBand(field)
+    else
+      none
 
 }
+
+trait StandardAdapter extends CatalogAdapter {}
 
 object CatalogAdapter {
 
@@ -290,12 +257,6 @@ object CatalogAdapter {
     protected def findBand(band: String): Option[Band] =
       Band.all.find(_.shortName === band)
 
-    override def fieldToBand(field: FieldId): Option[Band] =
-      if ((field.ucd.includes(VoTableParser.UCD_MAG) && !ignoreBrightnessValueField(field)))
-        findBand(field)
-      else
-        none
-
     private val integratedBrightnessUnits: Map[String, Units Of Brightness[Integrated]] =
       Map(
         "Vega" -> implicitly[TaggedUnit[VegaMagnitude, Brightness[Integrated]]],
@@ -324,9 +285,92 @@ object CatalogAdapter {
     }
   }
 
+  sealed trait GaiaAdapter extends StandardAdapter {
+    val catalog: CatalogName = CatalogName.Gaia
+
+    val idField: FieldId             = FieldId.unsafeFrom("DESIGNATION", VoTableParser.UCD_OBJID)
+    val nameField: FieldId           = idField
+    val raField: FieldId             = FieldId.unsafeFrom("ra", VoTableParser.UCD_RA)
+    val decField: FieldId            = FieldId.unsafeFrom("dec", VoTableParser.UCD_DEC)
+    override val pmRaField: FieldId  = FieldId.unsafeFrom("pmra", VoTableParser.UCD_PMRA)
+    override val pmDecField: FieldId = FieldId.unsafeFrom("pmdec", VoTableParser.UCD_PMDEC)
+    override val rvField: FieldId    = FieldId.unsafeFrom("radial_velocity", VoTableParser.UCD_RV)
+    override val plxField: FieldId   = FieldId.unsafeFrom("parallax", VoTableParser.UCD_PLX)
+
+    // Morphologyy is not read
+    override val oTypeField                   = FieldId.unsafeFrom("OTYPE_S", VoTableParser.UCD_OTYPE)
+    override val spTypeField                  = FieldId.unsafeFrom("SP_TYPE", VoTableParser.UCD_SPTYPE)
+    override val morphTypeField               = FieldId.unsafeFrom("MORPH_TYPE", VoTableParser.UCD_MORPHTYPE)
+    override val angSizeMajAxisField: FieldId =
+      FieldId.unsafeFrom("GALDIM_MAJAXIS", VoTableParser.UCD_ANGSIZE_MAJ)
+    override val angSizeMinAxisField: FieldId =
+      FieldId.unsafeFrom("GALDIM_MINAXIS", VoTableParser.UCD_ANGSIZE_MIN)
+
+    // These are used to derive all other magnitude values.
+    val gMagField: FieldId =
+      FieldId.unsafeFrom("phot_g_mean_mag", Ucd.unsafeFromString("phot.mag;stat.mean;em.opt"))
+    val bpRpField: FieldId = FieldId.unsafeFrom("bp_rp", Ucd.unsafeFromString("phot.color"))
+
+    /**
+     * List of all Gaia fields of interest. These are used in forming the ADQL query that produces
+     * the VO Table. See VoTableClient and the GaiaBackend.
+     */
+    val allFields: List[FieldId] =
+      List(
+        idField,
+        raField,
+        pmRaField,
+        decField,
+        pmDecField,
+        epochField,
+        plxField,
+        rvField,
+        gMagField,
+        bpRpField
+      )
+
+    override def ignoreBrightnessValueField(f: FieldId): Boolean =
+      false
+
+    override def isBrightnessUnitsField(v: (FieldId, String)): Boolean =
+      false
+
+    val vegaUnits: Units Of Brightness[Integrated] =
+      implicitly[TaggedUnit[VegaMagnitude, Brightness[Integrated]]].unit
+
+    // Attempts to find the brightness units for a band
+    override def parseBrightnessUnits(
+      f: FieldId,
+      v: String
+    ): ValidatedNec[CatalogProblem, (Band, Units Of Brightness[Integrated])] = {
+      val band: Option[Band] = findBand(f)
+
+      (Validated.fromOption(band, UnmatchedField(f.ucd)).toValidatedNec,
+       Validated.validNec(vegaUnits)
+      ).mapN((_, _))
+    }
+
+    // Simbad has a few special cases to map sloan band brightnesses
+    def findBand(id: FieldId): Option[Band] =
+      id.id match {
+        case gMagField.id => Band.GaiaG.some
+        case _            => none
+      }
+
+    override def fieldToBand(field: FieldId): Option[Band] =
+      if ((field.ucd.includes(VoTableParser.UCD_MAG) && !ignoreBrightnessValueField(field)))
+        findBand(field)
+      else
+        none
+
+  }
+
+  object GaiaAdapter extends GaiaAdapter
+
   def forCatalog(c: CatalogName): Option[CatalogAdapter] =
     c match {
       case CatalogName.Simbad => Simbad.some
+      case CatalogName.Gaia   => GaiaAdapter.some
       case _                  => none
     }
 }

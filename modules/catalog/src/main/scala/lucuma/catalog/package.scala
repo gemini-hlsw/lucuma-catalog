@@ -4,6 +4,7 @@
 package lucuma
 
 import cats.data._
+import cats.syntax.all._
 import lucuma.catalog.CatalogProblem.FieldValueProblem
 
 package object catalog {

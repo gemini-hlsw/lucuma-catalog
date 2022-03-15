@@ -3,7 +3,6 @@
 
 package lucuma.catalog
 
-import cats._
 import cats.data.Validated._
 import cats.data._
 import cats.implicits._
@@ -17,7 +16,6 @@ import fs2.data.xml.XmlEvent._
 import fs2.data.xml._
 import lucuma.catalog.CatalogProblem._
 import lucuma.catalog._
-import lucuma.core.enum.CatalogName
 import lucuma.core.enum.StellarLibrarySpectrum
 import lucuma.core.math._
 import lucuma.core.math.units.KilometersPerSecond
@@ -28,19 +26,23 @@ import lucuma.core.model.SpectralDefinition
 import lucuma.core.model.Target
 import lucuma.core.model.UnnormalizedSED
 import monocle.function.Index.listIndex
-import monocle.macros.Lenses
 
 import scala.collection.immutable.SortedMap
+import monocle.Lens
+import monocle.Focus
 
-@Lenses
-private[catalog] case class PartialTableRowItem(field: FieldDescriptor)
+final case class PartialTableRowItem(field: FieldDescriptor)
 
-@Lenses
-private[catalog] case class PartialTableRow(
+final case class PartialTableRow(
   items: List[Either[PartialTableRowItem, TableRowItem]]
 ) {
   def isComplete: Boolean  = items.forall(_.isRight)
   def toTableRow: TableRow = TableRow(items.collect { case Right(r) => r }.reverse)
+}
+
+object PartialTableRow {
+  val items: Lens[PartialTableRow, List[Either[PartialTableRowItem, TableRowItem]]] =
+    Focus[PartialTableRow](_.items)
 }
 
 object VoTableParser extends VoTableParser {
@@ -67,23 +69,6 @@ object VoTableParser extends VoTableParser {
 }
 
 trait VoTableParser {
-
-  /**
-   * FS2 pipe to convert a stream of String to targets
-   */
-  def targets[F[_]: RaiseThrowable: MonadError[*[_], Throwable]](
-    catalog: CatalogName
-  ): Pipe[F, String, ValidatedNec[CatalogProblem, CatalogTargetResult]] =
-    in =>
-      CatalogAdapter.forCatalog(catalog) match {
-        case Some(a) =>
-          in.flatMap(Stream.emits(_))
-            .through(events[F, Char])
-            .through(referenceResolver[F]())
-            .through(normalize[F])
-            .through(xml2targets[F](a))
-        case _       => Stream.emit(Validated.invalidNec(UnknownCatalog))
-      }
 
   /**
    * FS2 pipe to convert a stream of xml events to targets
@@ -162,18 +147,17 @@ trait VoTableParser {
 
     // Read readial velocity. if not found it will try to get it from redshift
     def parseRadialVelocity: ValidatedNec[CatalogProblem, Option[RadialVelocity]] = {
-      def rvFromZ(z: String) =
+      def rvFromZ(z: String): ValidatedNec[CatalogProblem, Option[RadialVelocity]] =
         parseDoubleValue(VoTableParser.UCD_Z, z).map(z => Redshift(z).toRadialVelocity)
 
-      def fromRV(rv: String) =
-        parseDoubleValue(VoTableParser.UCD_RV, rv).map(rv =>
-          RadialVelocity(rv.withUnit[KilometersPerSecond])
-        )
+      def fromRV(rv: String): ValidatedNec[CatalogProblem, Option[RadialVelocity]] =
+        parseDoubleValue(VoTableParser.UCD_RV, rv)
+          .map(rv => RadialVelocity(rv.withUnit[KilometersPerSecond]))
 
       (entries.get(adapter.rvField), entries.get(adapter.zField)) match {
-        case (Some(rv), Some(z)) => fromRV(rv).orElse(rvFromZ(z))
-        case (Some(rv), _)       => fromRV(rv)
-        case (_, Some(z))        => rvFromZ(z)
+        case (Some(rv), Some(z)) => fromRV(rv).orElse(rvFromZ(z)).orElse(Validated.validNec(none))
+        case (Some(rv), _)       => fromRV(rv).orElse(Validated.validNec(none))
+        case (_, Some(z))        => rvFromZ(z).orElse(Validated.validNec(none))
         case _                   => Validated.validNec(none)
       }
     }

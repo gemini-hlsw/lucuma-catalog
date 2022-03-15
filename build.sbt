@@ -1,19 +1,21 @@
-lazy val fs2Version              = "3.2.5"
-lazy val fs2DataVersion          = "1.3.1"
-lazy val catsVersion             = "2.7.0"
-lazy val catsEffectVersion       = "3.0.1"
-lazy val kindProjectorVersion    = "0.13.2"
-lazy val sttpVersion             = "3.5.1"
-lazy val pprintVersion           = "0.7.2"
-lazy val lucumaCoreVersion       = "0.26.0"
-lazy val monocleVersion          = "3.1.0"
-lazy val munitVersion            = "0.7.29"
-lazy val munitDisciplineVersion  = "1.0.9"
-lazy val munitCatsEffectVersion  = "1.0.7"
-lazy val betterMonadicForVersion = "0.3.1"
-lazy val refinedVersion          = "0.9.28"
-lazy val catsScalacheckVersion   = "0.3.1"
-lazy val scalaXmlVersion         = "2.0.1"
+lazy val fs2Version                 = "3.2.5"
+lazy val fs2DataVersion             = "1.3.1"
+lazy val catsVersion                = "2.7.0"
+lazy val catsEffectVersion          = "3.0.1"
+lazy val kindProjectorVersion       = "0.13.2"
+lazy val sttpVersion                = "3.5.1"
+lazy val pprintVersion              = "0.7.2"
+lazy val lucumaCoreVersion          = "0.26.0"
+lazy val monocleVersion             = "3.1.0"
+lazy val munitVersion               = "0.7.29"
+lazy val munitDisciplineVersion     = "1.0.9"
+lazy val munitCatsEffectVersion     = "1.0.7"
+lazy val betterMonadicForVersion    = "0.3.1"
+lazy val refinedVersion             = "0.9.28"
+lazy val catsScalacheckVersion      = "0.3.1"
+lazy val scalaXmlVersion            = "2.0.1"
+lazy val http4sVersion              = "0.23.10"
+lazy val http4sJdkHttpClientVersion = "0.6.0-M7"
 
 Global / onChangedBuildSource   := ReloadOnSourceChanges
 Global / scalacOptions += "-Ymacro-annotations"
@@ -37,7 +39,8 @@ lazy val catalog = crossProject(JVMPlatform, JSPlatform)
       "dev.optics"    %%% "monocle-macro" % monocleVersion,
       "dev.optics"    %%% "monocle-state" % monocleVersion,
       "eu.timepit"    %%% "refined"       % refinedVersion,
-      "eu.timepit"    %%% "refined-cats"  % refinedVersion
+      "eu.timepit"    %%% "refined-cats"  % refinedVersion,
+      "org.http4s"    %%% "http4s-core"   % http4sVersion
     ),
     scalacOptions ~= (_.filterNot(Set("-Vtype-diffs")))
   )
