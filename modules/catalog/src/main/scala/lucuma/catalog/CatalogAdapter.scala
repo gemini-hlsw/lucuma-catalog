@@ -196,8 +196,6 @@ sealed trait CatalogAdapter {
 
 }
 
-trait StandardAdapter extends CatalogAdapter {}
-
 object CatalogAdapter {
 
   val magRegex = """(?i)em.(opt|IR)(\.\w)?""".r
@@ -285,7 +283,7 @@ object CatalogAdapter {
     }
   }
 
-  sealed trait GaiaAdapter extends StandardAdapter {
+  sealed trait GaiaAdapter extends CatalogAdapter {
     val catalog: CatalogName = CatalogName.Gaia
 
     val idField: FieldId             = FieldId.unsafeFrom("DESIGNATION", VoTableParser.UCD_OBJID)
@@ -307,9 +305,12 @@ object CatalogAdapter {
       FieldId.unsafeFrom("GALDIM_MINAXIS", VoTableParser.UCD_ANGSIZE_MIN)
 
     // These are used to derive all other magnitude values.
-    val gMagField: FieldId =
+    val gMagField: FieldId  =
       FieldId.unsafeFrom("phot_g_mean_mag", Ucd.unsafeFromString("phot.mag;stat.mean;em.opt"))
-    val bpRpField: FieldId = FieldId.unsafeFrom("bp_rp", Ucd.unsafeFromString("phot.color"))
+    val bpMagField: FieldId =
+      FieldId.unsafeFrom("phot_bp_mean_mag", Ucd.unsafeFromString("phot.mag;stat.mean"))
+    val rpMagField: FieldId =
+      FieldId.unsafeFrom("phot_rp_mean_mag", Ucd.unsafeFromString("phot.mag;stat.mean"))
 
     /**
      * List of all Gaia fields of interest. These are used in forming the ADQL query that produces
@@ -326,7 +327,8 @@ object CatalogAdapter {
         plxField,
         rvField,
         gMagField,
-        bpRpField
+        bpMagField,
+        rpMagField
       )
 
     override def ignoreBrightnessValueField(f: FieldId): Boolean =
@@ -353,8 +355,10 @@ object CatalogAdapter {
     // Simbad has a few special cases to map sloan band brightnesses
     def findBand(id: FieldId): Option[Band] =
       id.id match {
-        case gMagField.id => Band.GaiaG.some
-        case _            => none
+        case gMagField.id  => Band.GaiaG.some
+        case bpMagField.id => Band.GaiaGbp.some
+        case rpMagField.id => Band.GaiaGrp.some
+        case _             => none
       }
 
     override def fieldToBand(field: FieldId): Option[Band] =
@@ -362,6 +366,11 @@ object CatalogAdapter {
         findBand(field)
       else
         none
+
+    // Indicates if the field has a brightness value field
+    override protected def containsBrightnessValue(v: FieldId): Boolean =
+      v.ucd.includes(VoTableParser.UCD_MAG) &&
+        !ignoreBrightnessValueField(v)
 
   }
 

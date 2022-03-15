@@ -54,7 +54,7 @@ object SimbadQuerySample extends IOApp {
           .traverse(
             Stream
               .emit[IO, String](_)
-              .through(VoTableParser.targets(CatalogName.Simbad))
+              .through(CatalogSearch.targets(CatalogName.Simbad))
               .compile
               .lastOrError
           )

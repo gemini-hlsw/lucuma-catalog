@@ -40,7 +40,7 @@ class ParseSimbadFileSuite extends CatsEffectSuite with VoTableParser {
       Files[IO]
         .readAll(Path(file.getPath()))
         .through(text.utf8.decode)
-        .through(targets(CatalogName.Simbad))
+        .through(CatalogSearch.targets(CatalogName.Simbad))
         .compile
         .lastOrError
         .map {
@@ -125,7 +125,7 @@ class ParseSimbadFileSuite extends CatsEffectSuite with VoTableParser {
       Files[IO]
         .readAll(Path(file.getPath()))
         .through(text.utf8.decode)
-        .through(targets(CatalogName.Simbad))
+        .through(CatalogSearch.targets(CatalogName.Simbad))
         .compile
         .lastOrError
         .map {
@@ -222,7 +222,7 @@ class ParseSimbadFileSuite extends CatsEffectSuite with VoTableParser {
       Files[IO]
         .readAll(Path(file.getPath()))
         .through(text.utf8.decode)
-        .through(targets(CatalogName.Simbad))
+        .through(CatalogSearch.targets(CatalogName.Simbad))
         .compile
         .lastOrError
         .map {
@@ -355,7 +355,7 @@ class ParseSimbadFileSuite extends CatsEffectSuite with VoTableParser {
       Files[IO]
         .readAll(Path(file.getPath()))
         .through(text.utf8.decode)
-        .through(targets(CatalogName.Simbad))
+        .through(CatalogSearch.targets(CatalogName.Simbad))
         .compile
         .lastOrError
         .map {
@@ -378,7 +378,7 @@ class ParseSimbadFileSuite extends CatsEffectSuite with VoTableParser {
       Files[IO]
         .readAll(Path(file.getPath()))
         .through(text.utf8.decode)
-        .through(targets(CatalogName.Simbad))
+        .through(CatalogSearch.targets(CatalogName.Simbad))
         .compile
         .last
         .map {
@@ -395,7 +395,7 @@ class ParseSimbadFileSuite extends CatsEffectSuite with VoTableParser {
       Files[IO]
         .readAll(Path(file.getPath()))
         .through(text.utf8.decode)
-        .through(targets(CatalogName.Simbad))
+        .through(CatalogSearch.targets(CatalogName.Simbad))
         .compile
         .last
         .map {
@@ -413,7 +413,7 @@ class ParseSimbadFileSuite extends CatsEffectSuite with VoTableParser {
       Files[IO]
         .readAll(Path(file.getPath()))
         .through(text.utf8.decode)
-        .through(targets(CatalogName.Simbad))
+        .through(CatalogSearch.targets(CatalogName.Simbad))
         .compile
         .lastOrError
         .map {
@@ -449,7 +449,7 @@ class ParseSimbadFileSuite extends CatsEffectSuite with VoTableParser {
       Files[IO]
         .readAll(Path(file.getPath()))
         .through(text.utf8.decode)
-        .through(targets(CatalogName.Simbad))
+        .through(CatalogSearch.targets(CatalogName.Simbad))
         .compile
         .lastOrError
         .map {
@@ -477,7 +477,7 @@ class ParseSimbadFileSuite extends CatsEffectSuite with VoTableParser {
       Files[IO]
         .readAll(Path(file.getPath()))
         .through(text.utf8.decode)
-        .through(targets(CatalogName.Simbad))
+        .through(CatalogSearch.targets(CatalogName.Simbad))
         .compile
         .lastOrError
         .map {
