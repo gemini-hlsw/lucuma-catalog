@@ -18,6 +18,7 @@ import lucuma.catalog.CatalogProblem._
 import lucuma.catalog._
 import lucuma.core.enum.StellarLibrarySpectrum
 import lucuma.core.math._
+import lucuma.core.syntax.string._
 import lucuma.core.math.units.KilometersPerSecond
 import lucuma.core.model.CatalogInfo
 import lucuma.core.model.SiderealTracking
@@ -132,7 +133,11 @@ trait VoTableParser {
 
     def parseEpoch: ValidatedNec[CatalogProblem, Epoch] =
       Validated.validNec(
-        entries.get(adapter.epochField).flatMap(Epoch.fromString.getOption).getOrElse(Epoch.J2000)
+        (for {
+          f <- entries.get(adapter.epochField)
+          d <- f.parseDoubleOption
+          e <- Epoch.Julian.fromEpochYears(d)
+        } yield e).getOrElse(Epoch.J2000)
       )
 
     def parsePlx: ValidatedNec[CatalogProblem, Option[Parallax]] =
