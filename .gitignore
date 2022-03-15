@@ -14,6 +14,7 @@ project/boot/
 project/plugins/project/
 project/hydra.sbt
 project/metals.sbt
+project/project/
 .bsp/
 
 # Scala-IDE specific
