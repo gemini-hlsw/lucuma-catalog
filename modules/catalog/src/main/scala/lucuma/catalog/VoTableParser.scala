@@ -150,7 +150,11 @@ trait VoTableParser {
 
     def parseEpoch: ValidatedNec[CatalogProblem, Epoch] =
       Validated.validNec(
-        entries.get(adapter.epochField).flatMap(Epoch.fromString.getOption).getOrElse(Epoch.J2000)
+        (for {
+          f <- entries.get(adapter.epochField)
+          d <- f.parseDoubleOption
+          e <- Epoch.Julian.fromEpochYears(d)
+        } yield e).getOrElse(Epoch.J2000)
       )
 
     def parsePlx: ValidatedNec[CatalogProblem, Option[Parallax]] =
