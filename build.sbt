@@ -18,7 +18,7 @@ lazy val scalaXmlVersion         = "2.0.1"
 Global / onChangedBuildSource   := ReloadOnSourceChanges
 Global / scalacOptions += "-Ymacro-annotations"
 
-ThisBuild / tlBaseVersion       := "0.10"
+ThisBuild / tlBaseVersion       := "0.11"
 ThisBuild / tlCiReleaseBranches := Seq("master")
 
 lazy val root = tlCrossRootProject.aggregate(catalog, testkit, tests)
