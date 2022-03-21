@@ -15,13 +15,15 @@ import monocle.macros.Lenses
 
 /** Describes a field */
 @Lenses
-case class FieldId(id: NonEmptyString, ucd: Ucd)
+case class FieldId(id: NonEmptyString, ucd: Option[Ucd])
 
 object FieldId {
   def apply(id: String, ucd: Ucd): ValidatedNec[CatalogProblem, FieldId] =
     NonEmptyString
       .validateNec(id)
-      .bimap(_ => NonEmptyChain.one(InvalidFieldId(id)).widen[CatalogProblem], FieldId(_, ucd))
+      .bimap(_ => NonEmptyChain.one(InvalidFieldId(id)).widen[CatalogProblem],
+             FieldId(_, Some(ucd))
+      )
 
   def unsafeFrom(id: String, ucd: Ucd): FieldId =
     apply(id, ucd).getOrElse(sys.error(s"Invalid field id $id"))

@@ -127,7 +127,7 @@ trait VoTableParser {
         .toValidatedNec
 
     def parseDoubleDegrees(ucd: Ucd, v: String): ValidatedNec[CatalogProblem, Angle] =
-      parseDoubleValue(ucd, v).map(Angle.fromDoubleDegrees)
+      parseDoubleValue(ucd.some, v).map(Angle.fromDoubleDegrees)
 
     def parseDec: ValidatedNec[CatalogProblem, Declination] =
       Validated
@@ -153,7 +153,7 @@ trait VoTableParser {
     def parsePlx: ValidatedNec[CatalogProblem, Option[Parallax]] =
       entries.get(adapter.plxField) match {
         case Some(p) =>
-          parseDoubleValue(VoTableParser.UCD_PLX, p).map(p =>
+          parseDoubleValue(VoTableParser.UCD_PLX.some, p).map(p =>
             Parallax.milliarcseconds.reverseGet(math.max(0.0, p)).some
           )
         case _       =>
@@ -162,13 +162,12 @@ trait VoTableParser {
 
     // Read readial velocity. if not found it will try to get it from redshift
     def parseRadialVelocity: ValidatedNec[CatalogProblem, Option[RadialVelocity]] = {
-      def rvFromZ(z: String) =
-        parseDoubleValue(VoTableParser.UCD_Z, z).map(z => Redshift(z).toRadialVelocity)
+      def rvFromZ(z: String): ValidatedNec[CatalogProblem, Option[RadialVelocity]] =
+        parseDoubleValue(VoTableParser.UCD_Z.some, z).map(z => Redshift(z).toRadialVelocity)
 
-      def fromRV(rv: String) =
-        parseDoubleValue(VoTableParser.UCD_RV, rv).map(rv =>
-          RadialVelocity(rv.withUnit[KilometersPerSecond])
-        )
+      def fromRV(rv: String): ValidatedNec[CatalogProblem, Option[RadialVelocity]] =
+        parseDoubleValue(VoTableParser.UCD_RV.some, rv)
+          .map(rv => RadialVelocity(rv.withUnit[KilometersPerSecond]))
 
       (entries.get(adapter.rvField), entries.get(adapter.zField)) match {
         case (Some(rv), Some(z)) => fromRV(rv).orElse(rvFromZ(z))
@@ -269,10 +268,11 @@ trait VoTableParser {
               .validateNec(attr.get("ID").orElse(name).orEmpty)
               .leftMap(_ => NonEmptyChain.one(MissingXmlAttribute("ID")))
 
-          val ucd: ValidatedNec[CatalogProblem, Ucd] = Validated
-            .fromOption(attr.get("ucd"), MissingXmlAttribute("ucd"))
-            .toValidatedNec
-            .andThen(Ucd.apply)
+          val ucd: ValidatedNec[CatalogProblem, Option[Ucd]] =
+            attr
+              .get("ucd")
+              .map(v => Ucd.parseUcd(v).map(_.some))
+              .getOrElse(none[Ucd].validNec)
 
           val nameV = Validated.fromOption(name, MissingXmlAttribute("name")).toValidatedNec
           ((id, ucd).mapN(FieldId.apply), nameV).mapN { (i, u) =>
@@ -366,7 +366,7 @@ trait VoTableParser {
 
           val nameV = Validated.fromOption(name, MissingXmlAttribute("name")).toValidatedNec
           go(s,
-             ((id, ucd).mapN(FieldId.apply), nameV).mapN { (f, n) =>
+             ((id, ucd).mapN((i, u) => FieldId(i, u.some)), nameV).mapN { (f, n) =>
                FieldDescriptor(f, n)
              }
           )
@@ -407,7 +407,7 @@ trait VoTableParser {
 
           val nameV = Validated.fromOption(name, MissingXmlAttribute("name")).toValidatedNec
           go(s,
-             ((id, ucd).mapN(FieldId.apply), nameV).mapN { (f, n) =>
+             ((id, ucd).mapN((i, u) => FieldId(i, u.some)), nameV).mapN { (f, n) =>
                FieldDescriptor(f, n)
              } :: l
           )

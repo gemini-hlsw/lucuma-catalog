@@ -47,9 +47,6 @@ sealed trait CatalogAdapter {
   def parseName(entries: Map[FieldId, String]): Option[String] =
     entries.get(nameField)
 
-  // From a Field extract the band from either the field id or the UCD
-  protected def fieldToBand(field: FieldId): Option[Band]
-
   // Indicates if a field contianing a brightness value should be ignored, by default all fields are considered
   protected def ignoreBrightnessValueField(v: FieldId): Boolean
 
@@ -62,16 +59,19 @@ sealed trait CatalogAdapter {
   // Indicates if the field is a brightness units field
   protected def isBrightnessUnitsField(v: (FieldId, String)): Boolean
 
+  // Select the band for a given field id
+  protected def findBand(id: FieldId): Option[Band]
+
   // Indicates if the field is a brightness value
   def isBrightnessValueField(v: (FieldId, String)): Boolean =
     containsBrightnessValue(v._1) &&
-      !v._1.ucd.includes(VoTableParser.STAT_ERR) &&
+      !v._1.ucd.exists(_.includes(VoTableParser.STAT_ERR)) &&
       v._2.nonEmpty
 
   // Indicates if the field is a brightness error
   def isBrightnessErrorField(v: (FieldId, String)): Boolean =
     containsBrightnessValue(v._1) &&
-      v._1.ucd.includes(VoTableParser.STAT_ERR) &&
+      v._1.ucd.exists(_.includes(VoTableParser.STAT_ERR)) &&
       v._2.nonEmpty
 
   // filter brightnesses as a whole, removing invalid values and duplicates
@@ -87,16 +87,16 @@ sealed trait CatalogAdapter {
 
   // Attempts to extract the radial velocity of a field
   def parseRadialVelocity(ucd: Ucd, v: String): ValidatedNec[CatalogProblem, RadialVelocity] =
-    parseDoubleValue(ucd, v)
+    parseDoubleValue(ucd.some, v)
       .map(v => RadialVelocity(v.withUnit[MetersPerSecond]))
-      .andThen(Validated.fromOption(_, NonEmptyChain.one(FieldValueProblem(ucd, v))))
+      .andThen(Validated.fromOption(_, NonEmptyChain.one(FieldValueProblem(ucd.some, v))))
 
   // Attempts to extract the angular velocity of a field
   protected def parseAngularVelocity[A](
     ucd: Ucd,
     v:   String
   ): ValidatedNec[CatalogProblem, AngularVelocityComponent[A]] =
-    parseDoubleValue(ucd, v)
+    parseDoubleValue(ucd.some, v)
       .map(v => AngularVelocityComponent[A](v.withUnit[MilliArcSecondPerYear]))
       .andThen(Validated.validNec(_))
 
@@ -104,7 +104,7 @@ sealed trait CatalogAdapter {
     pmra:  Option[String],
     pmdec: Option[String]
   ): ValidatedNec[CatalogProblem, Option[ProperMotion]] =
-    ((pmra.filter(_.nonEmpty), pmdec.filter(_.nonEmpty)) match {
+    ((pmra.filter(_.trim.nonEmpty), pmdec.filter(_.trim.nonEmpty)) match {
       case (a @ Some(_), None) => (a, Some("0"))
       case (None, a @ Some(_)) => (Some("0"), a)
       case a                   => a
@@ -165,6 +165,7 @@ sealed trait CatalogAdapter {
   ): ValidatedNec[CatalogProblem, Vector[(Band, BrightnessMeasure[Integrated])]] = {
     val values: ValidatedNec[CatalogProblem, Vector[(FieldId, Band, Double)]] =
       entries.toVector
+        .filter(_._2.trim.nonEmpty)
         .filter(isBrightnessValueField)
         .traverse(Function.tupled(parseBrightnessValue))
 
@@ -183,51 +184,16 @@ sealed trait CatalogAdapter {
 
   // Indicates if the field has a brightness value field
   protected def containsBrightnessValue(v: FieldId): Boolean =
-    v.ucd.includes(VoTableParser.UCD_MAG) &&
-      v.ucd.matches(CatalogAdapter.magRegex) &&
+    v.ucd.exists(_.includes(VoTableParser.UCD_MAG)) &&
+      v.ucd.exists(_.matches(CatalogAdapter.magRegex)) &&
       !ignoreBrightnessValueField(v)
-}
-
-// Common methods for UCAC4 and PPMXL
-trait StandardAdapter extends CatalogAdapter {
-
-  // Find what band the field descriptor should represent, in general prefer "upper case" bands over "lower case" Sloan bands.
-  // This will prefer U, R and I over u', r' and i' but will map "g" and "z" to the Sloan bands g' and z'.
-  def parseBand(fieldId: FieldId, band: String): Option[Band]
-
-  def defaultParseBand(band: String): Option[Band] =
-    Band.all
-      .find(_.shortName === band.toUpperCase)
-      .orElse(Band.all.find(_.shortName === band))
 
   // From a Field extract the band from either the field id or the UCD
-  protected def fieldToBand(field: FieldId): Option[Band] = {
-    // Parses a UCD token to extract the band for catalogs that include the band in the UCD (UCAC4/PPMXL)
-    def parseBandToken(token: String): Option[String] =
-      token match {
-        case CatalogAdapter.magRegex(_, null) => "UC".some
-        case CatalogAdapter.magRegex(_, b)    => b.replace(".", "").some
-        case _                                => none
-      }
-
-    (for {
-      t <- field.ucd.tokens.toList
-      b <- parseBandToken(t.value)
-    } yield parseBand(field, b)).headOption.flatten
-  }
-
-  // Indicates if a field contianing a brightness value should be ignored, by default all fields are considered
-  override def ignoreBrightnessValueField(v: FieldId): Boolean = false
-
-  override def isBrightnessUnitsField(v: (FieldId, String)): Boolean =
-    false
-  //
-  // Attempts to extract brightness units for a particular band
-  protected def parseBrightnessUnits(
-    f: FieldId,
-    v: String
-  ): ValidatedNec[CatalogProblem, (Band, Units Of Brightness[Integrated])] =
-    Validated.invalidNec(UnsupportedField(f))
+  def fieldToBand(field: FieldId): Option[Band] =
+    if ((field.ucd.exists(_.includes(VoTableParser.UCD_MAG)) && !ignoreBrightnessValueField(field)))
+      findBand(field)
+    else
+      none
 
 }
 
@@ -281,20 +247,14 @@ object CatalogAdapter {
 
     // Simbad doesn't put the band in the ucd for  brightnesses errors
     override def isBrightnessErrorField(v: (FieldId, String)): Boolean =
-      v._1.ucd.includes(VoTableParser.UCD_MAG) &&
-        v._1.ucd.includes(VoTableParser.STAT_ERR) &&
+      v._1.ucd.exists(_.includes(VoTableParser.UCD_MAG)) &&
+        v._1.ucd.exists(_.includes(VoTableParser.STAT_ERR)) &&
         errorFluxID.findFirstIn(v._1.id.value).isDefined &&
         !ignoreBrightnessValueField(v._1) &&
         v._2.nonEmpty
 
     protected def findBand(band: String): Option[Band] =
       Band.all.find(_.shortName === band)
-
-    override def fieldToBand(field: FieldId): Option[Band] =
-      if ((field.ucd.includes(VoTableParser.UCD_MAG) && !ignoreBrightnessValueField(field)))
-        findBand(field)
-      else
-        none
 
     private val integratedBrightnessUnits: Map[String, Units Of Brightness[Integrated]] =
       Map(
