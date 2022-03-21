@@ -34,7 +34,6 @@ lazy val catalog = crossProject(JVMPlatform, JSPlatform)
       "edu.gemini"    %%% "lucuma-core"   % lucumaCoreVersion,
       "org.typelevel" %%% "cats-core"     % catsVersion,
       "dev.optics"    %%% "monocle-core"  % monocleVersion,
-      "dev.optics"    %%% "monocle-macro" % monocleVersion,
       "dev.optics"    %%% "monocle-state" % monocleVersion,
       "eu.timepit"    %%% "refined"       % refinedVersion,
       "eu.timepit"    %%% "refined-cats"  % refinedVersion
