@@ -5,7 +5,8 @@ package lucuma.catalog
 
 import cats.data.Validated._
 import cats.data._
-import cats.implicits._
+import cats._
+import cats.syntax.all._
 import coulomb._
 import eu.timepit.refined._
 import eu.timepit.refined.cats.syntax._
@@ -16,6 +17,7 @@ import fs2.data.xml.XmlEvent._
 import fs2.data.xml._
 import lucuma.catalog.CatalogProblem._
 import lucuma.catalog._
+import lucuma.core.enum.CatalogName
 import lucuma.core.enum.StellarLibrarySpectrum
 import lucuma.core.math._
 import lucuma.core.syntax.string._
