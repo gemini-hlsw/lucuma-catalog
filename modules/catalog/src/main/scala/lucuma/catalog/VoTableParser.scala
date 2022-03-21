@@ -177,9 +177,9 @@ trait VoTableParser {
           .map(rv => RadialVelocity(rv.withUnit[KilometersPerSecond]))
 
       (entries.get(adapter.rvField), entries.get(adapter.zField)) match {
-        case (Some(rv), Some(z)) => fromRV(rv).orElse(rvFromZ(z))
-        case (Some(rv), _)       => fromRV(rv)
-        case (_, Some(z))        => rvFromZ(z)
+        case (Some(rv), Some(z)) => fromRV(rv).orElse(rvFromZ(z)).orElse(Validated.validNec(none))
+        case (Some(rv), _)       => fromRV(rv).orElse(Validated.validNec(none))
+        case (_, Some(z))        => rvFromZ(z).orElse(Validated.validNec(none))
         case _                   => Validated.validNec(none)
       }
     }
