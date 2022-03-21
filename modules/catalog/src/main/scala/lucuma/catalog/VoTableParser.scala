@@ -3,7 +3,6 @@
 
 package lucuma.catalog
 
-import cats._
 import cats.data.Validated._
 import cats.data._
 import cats.implicits._
@@ -17,9 +16,9 @@ import fs2.data.xml.XmlEvent._
 import fs2.data.xml._
 import lucuma.catalog.CatalogProblem._
 import lucuma.catalog._
-import lucuma.core.enum.CatalogName
 import lucuma.core.enum.StellarLibrarySpectrum
 import lucuma.core.math._
+import lucuma.core.syntax.string._
 import lucuma.core.math.units.KilometersPerSecond
 import lucuma.core.model.CatalogInfo
 import lucuma.core.model.SiderealTracking
@@ -28,19 +27,23 @@ import lucuma.core.model.SpectralDefinition
 import lucuma.core.model.Target
 import lucuma.core.model.UnnormalizedSED
 import monocle.function.Index.listIndex
-import monocle.macros.Lenses
 
 import scala.collection.immutable.SortedMap
+import monocle.Lens
+import monocle.Focus
 
-@Lenses
-private[catalog] case class PartialTableRowItem(field: FieldDescriptor)
+final case class PartialTableRowItem(field: FieldDescriptor)
 
-@Lenses
-private[catalog] case class PartialTableRow(
+final case class PartialTableRow(
   items: List[Either[PartialTableRowItem, TableRowItem]]
 ) {
   def isComplete: Boolean  = items.forall(_.isRight)
   def toTableRow: TableRow = TableRow(items.collect { case Right(r) => r }.reverse)
+}
+
+object PartialTableRow {
+  val items: Lens[PartialTableRow, List[Either[PartialTableRowItem, TableRowItem]]] =
+    Focus[PartialTableRow](_.items)
 }
 
 object VoTableParser extends VoTableParser {
