@@ -13,11 +13,9 @@ import eu.timepit.refined.cats._
 import eu.timepit.refined.collection.NonEmpty
 import eu.timepit.refined.types.string._
 import lucuma.catalog.CatalogProblem._
-import monocle.macros.Lenses
 
 import scala.util.matching.Regex
 
-@Lenses
 final case class Ucd(tokens: NonEmptyList[NonEmptyString]) {
   def includes(ucd: NonEmptyString): Boolean = tokens.exists(_ === ucd)
 

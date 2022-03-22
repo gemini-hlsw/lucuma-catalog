@@ -18,7 +18,7 @@ lazy val scalaXmlVersion         = "2.0.1"
 Global / onChangedBuildSource   := ReloadOnSourceChanges
 Global / scalacOptions += "-Ymacro-annotations"
 
-ThisBuild / tlBaseVersion       := "0.10"
+ThisBuild / tlBaseVersion       := "0.11"
 ThisBuild / tlCiReleaseBranches := Seq("master")
 
 lazy val root = tlCrossRootProject.aggregate(catalog, testkit, tests)
@@ -34,7 +34,6 @@ lazy val catalog = crossProject(JVMPlatform, JSPlatform)
       "edu.gemini"    %%% "lucuma-core"   % lucumaCoreVersion,
       "org.typelevel" %%% "cats-core"     % catsVersion,
       "dev.optics"    %%% "monocle-core"  % monocleVersion,
-      "dev.optics"    %%% "monocle-macro" % monocleVersion,
       "dev.optics"    %%% "monocle-state" % monocleVersion,
       "eu.timepit"    %%% "refined"       % refinedVersion,
       "eu.timepit"    %%% "refined-cats"  % refinedVersion

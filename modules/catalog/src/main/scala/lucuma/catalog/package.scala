@@ -9,7 +9,7 @@ import lucuma.catalog.CatalogProblem.FieldValueProblem
 package object catalog {
 
   def parseDoubleValue(
-    ucd: Ucd,
+    ucd: Option[Ucd],
     s:   String
   ): ValidatedNec[CatalogProblem, Double] =
     Validated

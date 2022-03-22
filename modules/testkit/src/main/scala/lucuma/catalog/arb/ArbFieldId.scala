@@ -17,12 +17,12 @@ trait ArbFieldId {
     Arbitrary {
       for {
         i <- arbitrary[NonEmptyString]
-        u <- arbitrary[Ucd]
+        u <- arbitrary[Option[Ucd]]
       } yield FieldId(i, u)
     }
 
   implicit val cogenFieldId: Cogen[FieldId] =
-    Cogen[(String, Ucd)].contramap(x => (x.id.value, x.ucd))
+    Cogen[(String, Option[Ucd])].contramap(x => (x.id.value, x.ucd))
 
 }
 

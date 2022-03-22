@@ -3,10 +3,10 @@
 
 package lucuma.catalog
 
-import cats._
 import cats.data.Validated._
 import cats.data._
-import cats.implicits._
+import cats._
+import cats.syntax.all._
 import coulomb._
 import eu.timepit.refined._
 import eu.timepit.refined.cats.syntax._
@@ -20,6 +20,7 @@ import lucuma.catalog._
 import lucuma.core.enum.CatalogName
 import lucuma.core.enum.StellarLibrarySpectrum
 import lucuma.core.math._
+import lucuma.core.syntax.string._
 import lucuma.core.math.units.KilometersPerSecond
 import lucuma.core.model.CatalogInfo
 import lucuma.core.model.SiderealTracking
@@ -28,19 +29,23 @@ import lucuma.core.model.SpectralDefinition
 import lucuma.core.model.Target
 import lucuma.core.model.UnnormalizedSED
 import monocle.function.Index.listIndex
-import monocle.macros.Lenses
 
 import scala.collection.immutable.SortedMap
+import monocle.Lens
+import monocle.Focus
 
-@Lenses
-private[catalog] case class PartialTableRowItem(field: FieldDescriptor)
+final case class PartialTableRowItem(field: FieldDescriptor)
 
-@Lenses
-private[catalog] case class PartialTableRow(
+final case class PartialTableRow(
   items: List[Either[PartialTableRowItem, TableRowItem]]
 ) {
   def isComplete: Boolean  = items.forall(_.isRight)
   def toTableRow: TableRow = TableRow(items.collect { case Right(r) => r }.reverse)
+}
+
+object PartialTableRow {
+  val items: Lens[PartialTableRow, List[Either[PartialTableRowItem, TableRowItem]]] =
+    Focus[PartialTableRow](_.items)
 }
 
 object VoTableParser extends VoTableParser {
@@ -127,7 +132,7 @@ trait VoTableParser {
         .toValidatedNec
 
     def parseDoubleDegrees(ucd: Ucd, v: String): ValidatedNec[CatalogProblem, Angle] =
-      parseDoubleValue(ucd, v).map(Angle.fromDoubleDegrees)
+      parseDoubleValue(ucd.some, v).map(Angle.fromDoubleDegrees)
 
     def parseDec: ValidatedNec[CatalogProblem, Declination] =
       Validated
@@ -147,13 +152,17 @@ trait VoTableParser {
 
     def parseEpoch: ValidatedNec[CatalogProblem, Epoch] =
       Validated.validNec(
-        entries.get(adapter.epochField).flatMap(Epoch.fromString.getOption).getOrElse(Epoch.J2000)
+        (for {
+          f <- entries.get(adapter.epochField)
+          d <- f.parseDoubleOption
+          e <- Epoch.Julian.fromEpochYears(d)
+        } yield e).getOrElse(Epoch.J2000)
       )
 
     def parsePlx: ValidatedNec[CatalogProblem, Option[Parallax]] =
       entries.get(adapter.plxField) match {
         case Some(p) =>
-          parseDoubleValue(VoTableParser.UCD_PLX, p).map(p =>
+          parseDoubleValue(VoTableParser.UCD_PLX.some, p).map(p =>
             Parallax.milliarcseconds.reverseGet(math.max(0.0, p)).some
           )
         case _       =>
@@ -162,18 +171,17 @@ trait VoTableParser {
 
     // Read readial velocity. if not found it will try to get it from redshift
     def parseRadialVelocity: ValidatedNec[CatalogProblem, Option[RadialVelocity]] = {
-      def rvFromZ(z: String) =
-        parseDoubleValue(VoTableParser.UCD_Z, z).map(z => Redshift(z).toRadialVelocity)
+      def rvFromZ(z: String): ValidatedNec[CatalogProblem, Option[RadialVelocity]] =
+        parseDoubleValue(VoTableParser.UCD_Z.some, z).map(z => Redshift(z).toRadialVelocity)
 
-      def fromRV(rv: String) =
-        parseDoubleValue(VoTableParser.UCD_RV, rv).map(rv =>
-          RadialVelocity(rv.withUnit[KilometersPerSecond])
-        )
+      def fromRV(rv: String): ValidatedNec[CatalogProblem, Option[RadialVelocity]] =
+        parseDoubleValue(VoTableParser.UCD_RV.some, rv)
+          .map(rv => RadialVelocity(rv.withUnit[KilometersPerSecond]))
 
       (entries.get(adapter.rvField), entries.get(adapter.zField)) match {
-        case (Some(rv), Some(z)) => fromRV(rv).orElse(rvFromZ(z))
-        case (Some(rv), _)       => fromRV(rv)
-        case (_, Some(z))        => rvFromZ(z)
+        case (Some(rv), Some(z)) => fromRV(rv).orElse(rvFromZ(z)).orElse(Validated.validNec(none))
+        case (Some(rv), _)       => fromRV(rv).orElse(Validated.validNec(none))
+        case (_, Some(z))        => rvFromZ(z).orElse(Validated.validNec(none))
         case _                   => Validated.validNec(none)
       }
     }
@@ -269,10 +277,11 @@ trait VoTableParser {
               .validateNec(attr.get("ID").orElse(name).orEmpty)
               .leftMap(_ => NonEmptyChain.one(MissingXmlAttribute("ID")))
 
-          val ucd: ValidatedNec[CatalogProblem, Ucd] = Validated
-            .fromOption(attr.get("ucd"), MissingXmlAttribute("ucd"))
-            .toValidatedNec
-            .andThen(Ucd.apply)
+          val ucd: ValidatedNec[CatalogProblem, Option[Ucd]] =
+            attr
+              .get("ucd")
+              .map(v => Ucd.parseUcd(v).map(_.some))
+              .getOrElse(none[Ucd].validNec)
 
           val nameV = Validated.fromOption(name, MissingXmlAttribute("name")).toValidatedNec
           ((id, ucd).mapN(FieldId.apply), nameV).mapN { (i, u) =>
@@ -366,7 +375,7 @@ trait VoTableParser {
 
           val nameV = Validated.fromOption(name, MissingXmlAttribute("name")).toValidatedNec
           go(s,
-             ((id, ucd).mapN(FieldId.apply), nameV).mapN { (f, n) =>
+             ((id, ucd).mapN((i, u) => FieldId(i, u.some)), nameV).mapN { (f, n) =>
                FieldDescriptor(f, n)
              }
           )
@@ -407,7 +416,7 @@ trait VoTableParser {
 
           val nameV = Validated.fromOption(name, MissingXmlAttribute("name")).toValidatedNec
           go(s,
-             ((id, ucd).mapN(FieldId.apply), nameV).mapN { (f, n) =>
+             ((id, ucd).mapN((i, u) => FieldId(i, u.some)), nameV).mapN { (f, n) =>
                FieldDescriptor(f, n)
              } :: l
           )
