@@ -3,13 +3,13 @@
 
 package lucuma.catalog.arb
 
+import lucuma.catalog.AngularSize
 import lucuma.catalog.CatalogTargetResult
+import lucuma.core.model.Target
 import lucuma.core.model.arb.ArbTarget
 import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.Cogen._
 import org.scalacheck._
-import lucuma.catalog.AngularSize
-import lucuma.core.model.Target
 
 trait ArbCatalogTargetResult {
   import ArbTarget._
