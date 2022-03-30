@@ -3,9 +3,9 @@
 
 package lucuma.catalog
 
+import cats._
 import cats.data.Validated._
 import cats.data._
-import cats._
 import cats.syntax.all._
 import coulomb._
 import eu.timepit.refined._
@@ -20,7 +20,6 @@ import lucuma.catalog._
 import lucuma.core.enum.CatalogName
 import lucuma.core.enum.StellarLibrarySpectrum
 import lucuma.core.math._
-import lucuma.core.syntax.string._
 import lucuma.core.math.units.KilometersPerSecond
 import lucuma.core.model.CatalogInfo
 import lucuma.core.model.SiderealTracking
@@ -28,11 +27,12 @@ import lucuma.core.model.SourceProfile
 import lucuma.core.model.SpectralDefinition
 import lucuma.core.model.Target
 import lucuma.core.model.UnnormalizedSED
+import lucuma.core.syntax.string._
+import monocle.Focus
+import monocle.Lens
 import monocle.function.Index.listIndex
 
 import scala.collection.immutable.SortedMap
-import monocle.Lens
-import monocle.Focus
 
 final case class PartialTableRowItem(field: FieldDescriptor)
 

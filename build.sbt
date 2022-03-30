@@ -1,19 +1,21 @@
-lazy val fs2Version              = "3.2.7"
-lazy val fs2DataVersion          = "1.3.1"
-lazy val catsVersion             = "2.7.0"
-lazy val catsEffectVersion       = "3.0.1"
-lazy val kindProjectorVersion    = "0.13.2"
-lazy val sttpVersion             = "3.5.1"
-lazy val pprintVersion           = "0.7.3"
-lazy val lucumaCoreVersion       = "0.28.0"
-lazy val monocleVersion          = "3.1.0"
-lazy val munitVersion            = "0.7.29"
-lazy val munitDisciplineVersion  = "1.0.9"
-lazy val munitCatsEffectVersion  = "1.0.7"
-lazy val betterMonadicForVersion = "0.3.1"
-lazy val refinedVersion          = "0.9.28"
-lazy val catsScalacheckVersion   = "0.3.1"
-lazy val scalaXmlVersion         = "2.0.1"
+lazy val fs2Version                 = "3.2.7"
+lazy val fs2DataVersion             = "1.3.1"
+lazy val catsVersion                = "2.7.0"
+lazy val catsEffectVersion          = "3.0.1"
+lazy val kindProjectorVersion       = "0.13.2"
+lazy val pprintVersion              = "0.7.2"
+lazy val lucumaCoreVersion          = "0.28.0"
+lazy val monocleVersion             = "3.1.0"
+lazy val munitVersion               = "0.7.29"
+lazy val munitDisciplineVersion     = "1.0.9"
+lazy val munitCatsEffectVersion     = "1.0.7"
+lazy val betterMonadicForVersion    = "0.3.1"
+lazy val refinedVersion             = "0.9.28"
+lazy val catsScalacheckVersion      = "0.3.1"
+lazy val scalaXmlVersion            = "2.0.1"
+lazy val http4sVersion              = "0.23.10"
+lazy val http4sJdkHttpClientVersion = "0.7.0"
+lazy val http4sDomVersion           = "0.2.1"
 
 Global / onChangedBuildSource   := ReloadOnSourceChanges
 Global / scalacOptions += "-Ymacro-annotations"
@@ -36,7 +38,8 @@ lazy val catalog = crossProject(JVMPlatform, JSPlatform)
       "dev.optics"    %%% "monocle-core"  % monocleVersion,
       "dev.optics"    %%% "monocle-state" % monocleVersion,
       "eu.timepit"    %%% "refined"       % refinedVersion,
-      "eu.timepit"    %%% "refined-cats"  % refinedVersion
+      "eu.timepit"    %%% "refined-cats"  % refinedVersion,
+      "org.http4s"    %%% "http4s-core"   % http4sVersion
     ),
     scalacOptions ~= (_.filterNot(Set("-Vtype-diffs")))
   )
@@ -64,24 +67,26 @@ lazy val tests = crossProject(JVMPlatform, JSPlatform)
   .settings(
     name := "lucuma-catalog-tests",
     libraryDependencies ++= Seq(
-      "org.typelevel"                 %%% "cats-effect"         % catsEffectVersion      % Test,
-      "org.scalameta"                 %%% "munit"               % munitVersion           % Test,
-      "org.typelevel"                 %%% "discipline-munit"    % munitDisciplineVersion % Test,
-      "org.typelevel"                 %%% "munit-cats-effect-3" % munitCatsEffectVersion % Test,
-      "org.scala-lang.modules"        %%% "scala-xml"           % scalaXmlVersion        % Test,
-      "com.softwaremill.sttp.client3" %%% "core"                % sttpVersion,
-      "com.softwaremill.sttp.client3" %%% "cats"                % sttpVersion,
-      "com.lihaoyi"                   %%% "pprint"              % pprintVersion
+      "org.typelevel"          %%% "cats-effect"         % catsEffectVersion      % Test,
+      "org.scalameta"          %%% "munit"               % munitVersion           % Test,
+      "org.typelevel"          %%% "discipline-munit"    % munitDisciplineVersion % Test,
+      "org.typelevel"          %%% "munit-cats-effect-3" % munitCatsEffectVersion % Test,
+      "org.scala-lang.modules" %%% "scala-xml"           % scalaXmlVersion        % Test,
+      "org.http4s"             %%% "http4s-core"         % http4sVersion,
+      "com.lihaoyi"            %%% "pprint"              % pprintVersion
     )
   )
   .jsSettings(
     scalaJSUseMainModuleInitializer := true,
     scalacOptions ~= (_.filterNot(Set("-Wdead-code"))),
-    scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule))
+    scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule)),
+    libraryDependencies ++= Seq(
+      "org.http4s" %%% "http4s-dom" % http4sDomVersion
+    )
   )
   .jvmSettings(
     libraryDependencies ++= Seq(
-      "com.softwaremill.sttp.client3" %% "async-http-client-backend-fs2" % sttpVersion,
-      "co.fs2"                        %% "fs2-io"                        % fs2Version
+      "co.fs2"     %% "fs2-io"                 % fs2Version,
+      "org.http4s" %% "http4s-jdk-http-client" % http4sJdkHttpClientVersion
     )
   )
