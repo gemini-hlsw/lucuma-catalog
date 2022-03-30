@@ -34,7 +34,7 @@ import monocle.function.Index.listIndex
 
 import scala.collection.immutable.SortedMap
 
-final case class PartialTableRowItem(field: FieldDescriptor)
+final case class PartialTableRowItem(field: FieldId)
 
 final case class PartialTableRow(
   items: List[Either[PartialTableRowItem, TableRowItem]]
@@ -260,21 +260,19 @@ trait VoTableParser {
     parseSiderealTarget
   }
 
-  protected def trsf[F[_]]: Pipe[F, XmlEvent, ValidatedNec[CatalogProblem, TableRow]]      = {
+  protected def trsf[F[_]]: Pipe[F, XmlEvent, ValidatedNec[CatalogProblem, TableRow]] = {
     def go(
       s:      Stream[F, XmlEvent],
       t:      PartialTableRow,
-      f:      List[FieldDescriptor],
-      fields: Option[NonEmptyList[FieldDescriptor]]
+      f:      List[FieldId],
+      fields: Option[NonEmptyList[FieldId]]
     ): Pull[F, ValidatedNec[CatalogProblem, TableRow], Unit] =
       s.pull.uncons1.flatMap {
         case Some((StartTag(QName(_, "FIELD"), xmlAttr, _), s)) =>
-          val attr = xmlAttr.map { case Attr(k, v) => (k.local, v.foldMap(_.render)) }.toMap
-          val name = attr.get("name")
-
+          val attr                                             = xmlAttr.map { case Attr(k, v) => (k.local, v.foldMap(_.render)) }.toMap
           val id: ValidatedNec[CatalogProblem, NonEmptyString] =
             NonEmptyString
-              .validateNec(attr.get("ID").orElse(name).orEmpty)
+              .validateNec(attr.get("ID").orEmpty)
               .leftMap(_ => NonEmptyChain.one(MissingXmlAttribute("ID")))
 
           val ucd: ValidatedNec[CatalogProblem, Option[Ucd]] =
@@ -283,9 +281,8 @@ trait VoTableParser {
               .map(v => Ucd.parseUcd(v).map(_.some))
               .getOrElse(none[Ucd].validNec)
 
-          val nameV = Validated.fromOption(name, MissingXmlAttribute("name")).toValidatedNec
-          ((id, ucd).mapN(FieldId.apply), nameV).mapN { (i, u) =>
-            FieldDescriptor(i, u) :: f
+          ((id, ucd).mapN(FieldId.apply)).map { i =>
+            i :: f
           } match {
             case Valid(f)       => go(s, t, f, fields)
             case i @ Invalid(_) => Pull.output1(i) >> Pull.done // fail fast on field parse failure
@@ -313,7 +310,7 @@ trait VoTableParser {
             case x :: l =>
               Pull.output1(
                 Validated.invalid(
-                  NonEmptyChain(MissingValue(x.id), l.map(x => MissingValue(x.id)): _*)
+                  NonEmptyChain(MissingValue(x), l.map(x => MissingValue(x)): _*)
                 )
               ) >> go(s, PartialTableRow(Nil), f, fields)
             case Nil
@@ -322,7 +319,7 @@ trait VoTableParser {
               Pull.output1(
                 Validated.invalid(
                   fields match {
-                    case Some(l) => NonEmptyChain.fromNonEmptyList(l.map(x => MissingValue(x.id)))
+                    case Some(l) => NonEmptyChain.fromNonEmptyList(l.map(x => MissingValue(x)))
                     case None    => NonEmptyChain.one(MissingRow)
                   }
                 )
@@ -353,11 +350,11 @@ trait VoTableParser {
     in => go(in, PartialTableRow(Nil), Nil, None).stream
   }
   // These functions are useful por partial testing but they are not really in use
-  protected def fd[F[_]]: Pipe[F, XmlEvent, ValidatedNec[CatalogProblem, FieldDescriptor]] = {
+  protected def fd[F[_]]: Pipe[F, XmlEvent, ValidatedNec[CatalogProblem, FieldId]]    = {
     def go(
       s:  Stream[F, XmlEvent],
-      fd: ValidatedNec[CatalogProblem, FieldDescriptor]
-    ): Pull[F, ValidatedNec[CatalogProblem, FieldDescriptor], Unit] =
+      fd: ValidatedNec[CatalogProblem, FieldId]
+    ): Pull[F, ValidatedNec[CatalogProblem, FieldId], Unit] =
       s.pull.uncons1.flatMap {
         case Some((StartTag(QName(_, "FIELD"), xmlAttr, _), s)) =>
           val attr = xmlAttr.map { case Attr(k, v) => (k.local, v.foldMap(_.render)) }.toMap
@@ -373,12 +370,7 @@ trait VoTableParser {
             .toValidatedNec
             .andThen(Ucd.apply)
 
-          val nameV = Validated.fromOption(name, MissingXmlAttribute("name")).toValidatedNec
-          go(s,
-             ((id, ucd).mapN((i, u) => FieldId(i, u.some)), nameV).mapN { (f, n) =>
-               FieldDescriptor(f, n)
-             }
-          )
+          go(s, (id, ucd).mapN((i, u) => FieldId(i, u.some)))
         case Some((StartTag(QName(_, t), _, _), _))             =>
           Pull.output1(Validated.invalidNec(UnknownXmlTag(t))) >> Pull.done
         case Some((EndTag(QName(_, "FIELD")), _))               =>
@@ -387,16 +379,14 @@ trait VoTableParser {
           Pull.output1(fd) >> Pull.done
         case None                                               => Pull.done
       }
-    in =>
-      go(in, Validated.invalidNec[CatalogProblem, FieldDescriptor](MissingXmlTag("FIELD"))).stream
+    in => go(in, Validated.invalidNec[CatalogProblem, FieldId](MissingXmlTag("FIELD"))).stream
   }
 
-  protected def fds[F[_]]
-    : Pipe[F, XmlEvent, List[ValidatedNec[CatalogProblem, FieldDescriptor]]] = {
+  protected def fds[F[_]]: Pipe[F, XmlEvent, List[ValidatedNec[CatalogProblem, FieldId]]] = {
     def go(
       s: Stream[F, XmlEvent],
-      l: List[ValidatedNec[CatalogProblem, FieldDescriptor]]
-    ): Pull[F, List[ValidatedNec[CatalogProblem, FieldDescriptor]], Unit] =
+      l: List[ValidatedNec[CatalogProblem, FieldId]]
+    ): Pull[F, List[ValidatedNec[CatalogProblem, FieldId]], Unit] =
       s.pull.uncons1.flatMap {
         case Some((StartTag(QName(_, "TABLE"), _, _), s))       =>
           go(s, l)
@@ -414,12 +404,7 @@ trait VoTableParser {
             .toValidatedNec
             .andThen(Ucd.apply)
 
-          val nameV = Validated.fromOption(name, MissingXmlAttribute("name")).toValidatedNec
-          go(s,
-             ((id, ucd).mapN((i, u) => FieldId(i, u.some)), nameV).mapN { (f, n) =>
-               FieldDescriptor(f, n)
-             } :: l
-          )
+          go(s, (id, ucd).mapN((i, u) => FieldId(i, u.some)) :: l)
         case Some((EndTag(QName(_, "TABLE")), _))               =>
           Pull.output1(l.reverse) >> Pull.done
         case Some((StartTag(QName(_, t), _, _), _))             =>
@@ -435,12 +420,12 @@ trait VoTableParser {
   }
 
   protected def tr[F[_]](
-    fields: List[FieldDescriptor]
+    fields: List[FieldId]
   ): Pipe[F, XmlEvent, ValidatedNec[CatalogProblem, TableRow]] = {
     def go(
       s: Stream[F, XmlEvent],
       t: PartialTableRow,
-      f: List[FieldDescriptor]
+      f: List[FieldId]
     ): Pull[F, ValidatedNec[CatalogProblem, TableRow], Unit] =
       s.pull.uncons1.flatMap {
         case Some((StartTag(QName(_, "TD"), _, _), s)) =>
@@ -456,7 +441,7 @@ trait VoTableParser {
                 if f =!= fields || t.items.length =!= fields.length => // this indicates we have a mismatch between fields and data
               Pull.output1(
                 Validated.invalid(
-                  NonEmptyChain(MissingValue(x.id), l.map(x => MissingValue(x.id)): _*)
+                  NonEmptyChain(MissingValue(x), l.map(x => MissingValue(x)): _*)
                 )
               ) >> Pull.done
             case Nil
@@ -464,7 +449,7 @@ trait VoTableParser {
               Pull.output1(
                 Validated.invalid(
                   NonEmptyChain
-                    .fromSeq(fields.map(x => MissingValue(x.id)))
+                    .fromSeq(fields.map(x => MissingValue(x)))
                     .getOrElse(NonEmptyChain.one(MissingRow))
                 )
               ) >> Pull.done
@@ -490,12 +475,12 @@ trait VoTableParser {
   }
 
   protected def trs[F[_]](
-    fields: List[FieldDescriptor]
+    fields: List[FieldId]
   ): Pipe[F, XmlEvent, ValidatedNec[CatalogProblem, TableRow]] = {
     def go(
       s: Stream[F, XmlEvent],
       t: PartialTableRow,
-      f: List[FieldDescriptor]
+      f: List[FieldId]
     ): Pull[F, ValidatedNec[CatalogProblem, TableRow], Unit] =
       s.pull.uncons1.flatMap {
         case Some((StartTag(QName(_, "TD"), _, _), s)) =>
@@ -510,7 +495,7 @@ trait VoTableParser {
             case x :: l =>
               Pull.output1(
                 Validated.invalid(
-                  NonEmptyChain(MissingValue(x.id), l.map(x => MissingValue(x.id)): _*)
+                  NonEmptyChain(MissingValue(x), l.map(x => MissingValue(x)): _*)
                 )
               ) >> go(s, PartialTableRow(Nil), fields)
             case Nil
@@ -518,7 +503,7 @@ trait VoTableParser {
               Pull.output1(
                 Validated.invalid(
                   NonEmptyChain
-                    .fromSeq(fields.map(x => MissingValue(x.id)))
+                    .fromSeq(fields.map(x => MissingValue(x)))
                     .getOrElse(NonEmptyChain.one(MissingRow))
                 )
               ) >> Pull.done

@@ -32,14 +32,8 @@ object FieldId {
   implicit val eqFieldId: Eq[FieldId] = Eq.by(x => (x.id, x.ucd))
 }
 
-case class FieldDescriptor(id: FieldId, name: String)
-
-object FieldDescriptor {
-  implicit val eqFieldDescriptor: Eq[FieldDescriptor] = Eq.by(x => (x.id, x.name))
-}
-
-case class TableRowItem(field: FieldDescriptor, data: String)
+case class TableRowItem(field: FieldId, data: String)
 
 case class TableRow(items: List[TableRowItem]) {
-  def itemsMap: Map[FieldId, String] = items.map(i => i.field.id -> i.data).toMap
+  def itemsMap: Map[FieldId, String] = items.map(i => i.field -> i.data).toMap
 }

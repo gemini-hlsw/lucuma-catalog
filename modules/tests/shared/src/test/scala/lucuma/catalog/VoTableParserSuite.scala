@@ -31,10 +31,7 @@ class VoTableParserSuite extends CatsEffectSuite with VoTableParser with VoTable
       assertEquals(
         r,
         Validated.validNec(
-          FieldDescriptor(
-            FieldId.unsafeFrom("gmag_err", Ucd.unsafeFromString("stat.error;phot.mag;em.opt.g")),
-            "gmag_err"
-          )
+          FieldId.unsafeFrom("gmag_err", Ucd.unsafeFromString("stat.error;phot.mag;em.opt.g"))
         )
       )
     }
@@ -46,13 +43,9 @@ class VoTableParserSuite extends CatsEffectSuite with VoTableParser with VoTable
       .compile
       .lastOrError
       .map(
-        assertEquals(_,
-                     Validated.invalid(
-                       NonEmptyChain(MissingXmlAttribute("ID"),
-                                     MissingXmlAttribute("ucd"),
-                                     MissingXmlAttribute("name")
-                       )
-                     )
+        assertEquals(
+          _,
+          Validated.invalid(NonEmptyChain(MissingXmlAttribute("ID"), MissingXmlAttribute("ucd")))
         )
       )
   }
@@ -71,11 +64,7 @@ class VoTableParserSuite extends CatsEffectSuite with VoTableParser with VoTable
       .compile
       .lastOrError
       .map(
-        assertEquals(_,
-                     Validated.invalid(
-                       NonEmptyChain(MissingXmlAttribute("ucd"), MissingXmlAttribute("name"))
-                     )
-        )
+        assertEquals(_, Validated.invalid(NonEmptyChain(MissingXmlAttribute("ucd"))))
       )
   }
   test("swap in name for ID if missing in a field definition") {
@@ -88,30 +77,19 @@ class VoTableParserSuite extends CatsEffectSuite with VoTableParser with VoTable
         assertEquals(
           _,
           Validated.validNec(
-            FieldDescriptor(
-              FieldId.unsafeFrom("ref_epoch", Ucd.unsafeFromString("meta.ref;time.epoch")),
-              "ref_epoch"
-            )
+            FieldId.unsafeFrom("ref_epoch", Ucd.unsafeFromString("meta.ref;time.epoch"))
           )
         )
       )
   }
   test("parse a list of fields") {
     val result =
-      FieldDescriptor(
+      List(
         FieldId.unsafeFrom("gmag_err", Ucd.unsafeFromString("stat.error;phot.mag;em.opt.g")),
-        "gmag_err"
-      ) ::
-        FieldDescriptor(
-          FieldId.unsafeFrom("rmag_err", Ucd.unsafeFromString("stat.error;phot.mag;em.opt.r")),
-          "rmag_err"
-        ) ::
-        FieldDescriptor(FieldId.unsafeFrom("flags1", Ucd.unsafeFromString("meta.code")),
-                        "flags1"
-        ) ::
-        FieldDescriptor(FieldId.unsafeFrom("ppmxl", Ucd.unsafeFromString("meta.id;meta.main")),
-                        "ppmxl"
-        ) :: Nil
+        FieldId.unsafeFrom("rmag_err", Ucd.unsafeFromString("stat.error;phot.mag;em.opt.r")),
+        FieldId.unsafeFrom("flags1", Ucd.unsafeFromString("meta.code")),
+        FieldId.unsafeFrom("ppmxl", Ucd.unsafeFromString("meta.id;meta.main"))
+      )
 
     toStream[IO](fieldsNode)
       .through(fds)
@@ -123,22 +101,12 @@ class VoTableParserSuite extends CatsEffectSuite with VoTableParser with VoTable
     val fields = toStream[IO](fieldsNode).through(fds)
 
     val result = TableRow(
-      TableRowItem(FieldDescriptor(FieldId.unsafeFrom("gmag_err", "stat.error;phot.mag;em.opt.g"),
-                                   "gmag_err"
-                   ),
-                   "0.0960165"
-      ) ::
-        TableRowItem(FieldDescriptor(FieldId.unsafeFrom("rmag_err", "stat.error;phot.mag;em.opt.r"),
-                                     "rmag_err"
-                     ),
-                     "0.0503736"
-        ) ::
-        TableRowItem(FieldDescriptor(FieldId.unsafeFrom("flags1", "meta.code"), "flags1"),
-                     "268435728"
-        ) ::
-        TableRowItem(FieldDescriptor(FieldId.unsafeFrom("ppmxl", "meta.id;meta.main"), "ppmxl"),
-                     "-2140405448"
-        ) :: Nil
+      List(
+        TableRowItem(FieldId.unsafeFrom("gmag_err", "stat.error;phot.mag;em.opt.g"), "0.0960165"),
+        TableRowItem(FieldId.unsafeFrom("rmag_err", "stat.error;phot.mag;em.opt.r"), "0.0503736"),
+        TableRowItem(FieldId.unsafeFrom("flags1", "meta.code"), "268435728"),
+        TableRowItem(FieldId.unsafeFrom("ppmxl", "meta.id;meta.main"), "-2140405448")
+      )
     )
     fields
       .flatMap { fields =>
@@ -184,44 +152,20 @@ class VoTableParserSuite extends CatsEffectSuite with VoTableParser with VoTable
 
     val result = List(
       TableRow(
-        TableRowItem(FieldDescriptor(FieldId.unsafeFrom("gmag_err", "stat.error;phot.mag;em.opt.g"),
-                                     "gmag_err"
-                     ),
-                     "0.0960165"
-        ) ::
-          TableRowItem(FieldDescriptor(FieldId.unsafeFrom("rmag_err",
-                                                          "stat.error;phot.mag;em.opt.r"
-                                       ),
-                                       "rmag_err"
-                       ),
-                       "0.0503736"
-          ) ::
-          TableRowItem(FieldDescriptor(FieldId.unsafeFrom("flags1", "meta.code"), "flags1"),
-                       "268435728"
-          ) ::
-          TableRowItem(FieldDescriptor(FieldId.unsafeFrom("ppmxl", "meta.id;meta.main"), "ppmxl"),
-                       "-2140405448"
-          ) :: Nil
+        List(
+          TableRowItem(FieldId.unsafeFrom("gmag_err", "stat.error;phot.mag;em.opt.g"), "0.0960165"),
+          TableRowItem(FieldId.unsafeFrom("rmag_err", "stat.error;phot.mag;em.opt.r"), "0.0503736"),
+          TableRowItem(FieldId.unsafeFrom("flags1", "meta.code"), "268435728"),
+          TableRowItem(FieldId.unsafeFrom("ppmxl", "meta.id;meta.main"), "-2140405448")
+        )
       ),
       TableRow(
-        TableRowItem(FieldDescriptor(FieldId.unsafeFrom("gmag_err", "stat.error;phot.mag;em.opt.g"),
-                                     "gmag_err"
-                     ),
-                     "0.51784"
-        ) ::
-          TableRowItem(FieldDescriptor(FieldId.unsafeFrom("rmag_err",
-                                                          "stat.error;phot.mag;em.opt.r"
-                                       ),
-                                       "rmag_err"
-                       ),
-                       "0.252201"
-          ) ::
-          TableRowItem(FieldDescriptor(FieldId.unsafeFrom("flags1", "meta.code"), "flags1"),
-                       "536871168"
-          ) ::
-          TableRowItem(FieldDescriptor(FieldId.unsafeFrom("ppmxl", "meta.id;meta.main"), "ppmxl"),
-                       "-2140404569"
-          ) :: Nil
+        List(
+          TableRowItem(FieldId.unsafeFrom("gmag_err", "stat.error;phot.mag;em.opt.g"), "0.51784"),
+          TableRowItem(FieldId.unsafeFrom("rmag_err", "stat.error;phot.mag;em.opt.r"), "0.252201"),
+          TableRowItem(FieldId.unsafeFrom("flags1", "meta.code"), "536871168"),
+          TableRowItem(FieldId.unsafeFrom("ppmxl", "meta.id;meta.main"), "-2140404569")
+        )
       )
     )
 
@@ -241,26 +185,12 @@ class VoTableParserSuite extends CatsEffectSuite with VoTableParser with VoTable
       Validated.invalidNec(MissingValue((FieldId.unsafeFrom("ppmxl", "meta.id;meta.main")))),
       Validated.validNec(
         TableRow(
-          TableRowItem(FieldDescriptor(FieldId.unsafeFrom("gmag_err",
-                                                          "stat.error;phot.mag;em.opt.g"
-                                       ),
-                                       "gmag_err"
-                       ),
-                       "0.51784"
-          ) ::
-            TableRowItem(FieldDescriptor(FieldId.unsafeFrom("rmag_err",
-                                                            "stat.error;phot.mag;em.opt.r"
-                                         ),
-                                         "rmag_err"
-                         ),
+          TableRowItem(FieldId.unsafeFrom("gmag_err", "stat.error;phot.mag;em.opt.g"), "0.51784") ::
+            TableRowItem(FieldId.unsafeFrom("rmag_err", "stat.error;phot.mag;em.opt.r"),
                          "0.252201"
             ) ::
-            TableRowItem(FieldDescriptor(FieldId.unsafeFrom("flags1", "meta.code"), "flags1"),
-                         "536871168"
-            ) ::
-            TableRowItem(FieldDescriptor(FieldId.unsafeFrom("ppmxl", "meta.id;meta.main"), "ppmxl"),
-                         "-2140404569"
-            ) :: Nil
+            TableRowItem(FieldId.unsafeFrom("flags1", "meta.code"), "536871168") ::
+            TableRowItem(FieldId.unsafeFrom("ppmxl", "meta.id;meta.main"), "-2140404569") :: Nil
         )
       )
     )
@@ -279,45 +209,18 @@ class VoTableParserSuite extends CatsEffectSuite with VoTableParser with VoTable
       Validated.validNec(
         TableRow(
           List(
-            TableRowItem(FieldDescriptor(FieldId.unsafeFrom("flags1", "meta.code"), "flags1"),
-                         "268435728"
-            ),
-            TableRowItem(FieldDescriptor(FieldId.unsafeFrom("umag", "phot.mag;em.opt.u"), "umag"),
-                         "23.0888"
-            ),
-            TableRowItem(
-              FieldDescriptor(FieldId.unsafeFrom("flags2", "meta.code"), "flags2"),
-              "8208"
-            ),
-            TableRowItem(FieldDescriptor(FieldId.unsafeFrom("imag", "phot.mag;em.opt.i"), "imag"),
-                         "20.3051"
-            ),
-            TableRowItem(FieldDescriptor(FieldId.unsafeFrom("decj2000", "pos.eq.dec;meta.main"),
-                                         "dej2000"
-                         ),
-                         "0.209323681906"
-            ),
-            TableRowItem(FieldDescriptor(FieldId.unsafeFrom("raj2000", "pos.eq.ra;meta.main"),
-                                         "raj2000"
-                         ),
-                         "359.745951955"
-            ),
-            TableRowItem(FieldDescriptor(FieldId.unsafeFrom("rmag", "phot.mag;em.opt.r"), "rmag"),
-                         "20.88"
-            ),
-            TableRowItem(FieldDescriptor(FieldId.unsafeFrom("objid", "meta.id;meta.main"), "objid"),
-                         "-2140405448"
-            ),
-            TableRowItem(FieldDescriptor(FieldId.unsafeFrom("gmag", "phot.mag;em.opt.g"), "gmag"),
-                         "22.082"
-            ),
-            TableRowItem(FieldDescriptor(FieldId.unsafeFrom("zmag", "phot.mag;em.opt.z"), "zmag"),
-                         "19.8812"
-            ),
-            TableRowItem(FieldDescriptor(FieldId.unsafeFrom("type", "meta.code"), "type"), "3"),
-            TableRowItem(FieldDescriptor(FieldId.unsafeFrom("ppmxl", "meta.id;meta.main"), "ppmxl"),
-                         "-2140405448"
-            )
+            TableRowItem(FieldId.unsafeFrom("flags1", "meta.code"), "268435728"),
+            TableRowItem(FieldId.unsafeFrom("umag", "phot.mag;em.opt.u"), "23.0888"),
+            TableRowItem(FieldId.unsafeFrom("flags2", "meta.code"), "8208"),
+            TableRowItem(FieldId.unsafeFrom("imag", "phot.mag;em.opt.i"), "20.3051"),
+            TableRowItem(FieldId.unsafeFrom("decj2000", "pos.eq.dec;meta.main"), "0.209323681906"),
+            TableRowItem(FieldId.unsafeFrom("raj2000", "pos.eq.ra;meta.main"), "359.745951955"),
+            TableRowItem(FieldId.unsafeFrom("rmag", "phot.mag;em.opt.r"), "20.88"),
+            TableRowItem(FieldId.unsafeFrom("objid", "meta.id;meta.main"), "-2140405448"),
+            TableRowItem(FieldId.unsafeFrom("gmag", "phot.mag;em.opt.g"), "22.082"),
+            TableRowItem(FieldId.unsafeFrom("zmag", "phot.mag;em.opt.z"), "19.8812"),
+            TableRowItem(FieldId.unsafeFrom("type", "meta.code"), "3"),
+            TableRowItem(FieldId.unsafeFrom("ppmxl", "meta.id;meta.main"), "-2140405448")
           )
         )
       )
