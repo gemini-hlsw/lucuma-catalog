@@ -12,7 +12,6 @@ import lucuma.catalog._
 import lucuma.core.enum.Band
 import lucuma.core.enum.CatalogName
 import lucuma.core.math.BrightnessUnits._
-import lucuma.core.math.BrightnessValue
 import lucuma.core.math.ProperMotion
 import lucuma.core.math.ProperMotion.AngularVelocityComponent
 import lucuma.core.math.RadialVelocity
@@ -77,8 +76,8 @@ sealed trait CatalogAdapter {
   // filter brightnesses as a whole, removing invalid values and duplicates
   // (This is written to be overridden--see PPMXL adapter. By default nothing is done.)
   def filterAndDeduplicateBrightnesses(
-    ms: Vector[(FieldId, (Band, BrightnessValue))]
-  ): Vector[(Band, BrightnessValue)] =
+    ms: Vector[(FieldId, (Band, BigDecimal))]
+  ): Vector[(Band, BigDecimal)] =
     ms.unzip._2
 
   // Indicates if a parsed brightness is valid
@@ -136,10 +135,10 @@ sealed trait CatalogAdapter {
     u: Vector[(Band, Units Of Brightness[Integrated])]
   ): Vector[(Band, BrightnessMeasure[Integrated])] = {
     val values = v.map { case (f, b, d) =>
-      f -> (b -> BrightnessValue.fromDouble(d))
+      f -> (b -> BigDecimal(d))
     }
 
-    val errors = e.map { case (_, b, d) => b -> BrightnessValue.fromDouble(d) }.toMap
+    val errors = e.map { case (_, b, d) => b -> BigDecimal(d) }.toMap
     val units  = u.toMap
 
     // Link band brightnesses with their errors
