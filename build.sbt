@@ -4,7 +4,7 @@ lazy val catsVersion                = "2.7.0"
 lazy val catsEffectVersion          = "3.0.1"
 lazy val kindProjectorVersion       = "0.13.2"
 lazy val pprintVersion              = "0.7.2"
-lazy val lucumaCoreVersion          = "0.28.0"
+lazy val lucumaCoreVersion          = "0.31.0"
 lazy val monocleVersion             = "3.1.0"
 lazy val munitVersion               = "0.7.29"
 lazy val munitDisciplineVersion     = "1.0.9"
@@ -20,7 +20,7 @@ lazy val http4sDomVersion           = "0.2.1"
 Global / onChangedBuildSource   := ReloadOnSourceChanges
 Global / scalacOptions += "-Ymacro-annotations"
 
-ThisBuild / tlBaseVersion       := "0.12"
+ThisBuild / tlBaseVersion       := "0.13"
 ThisBuild / tlCiReleaseBranches := Seq("master")
 
 lazy val root = tlCrossRootProject.aggregate(catalog, testkit, tests)
