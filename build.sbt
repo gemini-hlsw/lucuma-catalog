@@ -90,3 +90,9 @@ lazy val tests = crossProject(JVMPlatform, JSPlatform)
       "org.http4s" %% "http4s-jdk-http-client" % http4sJdkHttpClientVersion
     )
   )
+
+lazy val benchmarks = project
+  .in(file("benchmarks"))
+  .dependsOn(catalog.jvm, tests.jvm % "compile->compile;test->test")
+  .settings(name := "lucuma-benchmarks")
+  .enablePlugins(NoPublishPlugin, JmhPlugin)
