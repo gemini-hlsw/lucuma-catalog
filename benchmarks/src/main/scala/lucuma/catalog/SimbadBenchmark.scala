@@ -6,7 +6,6 @@ package lucuma.catalog
 import cats.effect._
 import fs2._
 
-import lucuma.core.enum.CatalogName
 import java.util.concurrent.TimeUnit
 import org.openjdk.jmh.annotations._
 import cats.effect.unsafe.implicits.global
@@ -15,7 +14,7 @@ import cats.effect.unsafe.implicits.global
 @Fork(1)
 @BenchmarkMode(Array(Mode.Throughput))
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
-@Warmup(iterations = 3, time = 1)
+@Warmup(iterations = 4, time = 1)
 @Measurement(iterations = 40, time = 1)
 class SimbadBenchmark {
 
@@ -80,13 +79,13 @@ class SimbadBenchmark {
     </TABLE>
 
   @Benchmark
-  def simpleRun: Unit = {
-    Stream.emit(targets.toString)
-      .through(VoTableParser.targets[IO](CatalogName.Simbad))
+  def simpleRun: Unit =
+    Stream
+      .emit(targets.toString)
+      .through(CatalogSearch.siderealTargets[IO](CatalogAdapter.Simbad))
       // .evalMap(IO.println)
       .compile
       .drain
       .unsafeRunSync()
 
-  }
 }

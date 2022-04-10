@@ -185,12 +185,14 @@ class VoTableParserSuite extends CatsEffectSuite with VoTableParser with VoTable
       Validated.invalidNec(MissingValue((FieldId.unsafeFrom("ppmxl", "meta.id;meta.main")))),
       Validated.validNec(
         TableRow(
-          TableRowItem(FieldId.unsafeFrom("gmag_err", "stat.error;phot.mag;em.opt.g"), "0.51784") ::
+          List(
+            TableRowItem(FieldId.unsafeFrom("gmag_err", "stat.error;phot.mag;em.opt.g"), "0.51784"),
             TableRowItem(FieldId.unsafeFrom("rmag_err", "stat.error;phot.mag;em.opt.r"),
                          "0.252201"
-            ) ::
-            TableRowItem(FieldId.unsafeFrom("flags1", "meta.code"), "536871168") ::
-            TableRowItem(FieldId.unsafeFrom("ppmxl", "meta.id;meta.main"), "-2140404569") :: Nil
+            ),
+            TableRowItem(FieldId.unsafeFrom("flags1", "meta.code"), "536871168"),
+            TableRowItem(FieldId.unsafeFrom("ppmxl", "meta.id;meta.main"), "-2140404569")
+          )
         )
       )
     )
