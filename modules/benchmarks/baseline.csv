@@ -1,3 +1,3 @@
 "Benchmark","Mode","Threads","Samples","Score","Score Error (99.9%)","Unit"
-"lucuma.catalog.GaiaBenchmark.simpleRun","thrpt",1,40,1.238988,0.009479,"ops/ms"
-"lucuma.catalog.SimbadBenchmark.simpleRun","thrpt",1,40,2.314759,0.107745,"ops/ms"
+"lucuma.catalog.GaiaBenchmark.simpleRun","thrpt",1,40,1.684590,0.022750,"ops/ms"
+"lucuma.catalog.SimbadBenchmark.simpleRun","thrpt",1,40,3.622240,0.029311,"ops/ms"
