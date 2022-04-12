@@ -12,9 +12,10 @@ import eu.timepit.refined.collection.NonEmpty
 import fs2._
 import fs2.io.file.Files
 import fs2.io.file.Path
-import lucuma.core.enum.CatalogName
 import lucuma.core.enum.Band
+import lucuma.core.enum.CatalogName
 import lucuma.core.math.Angle
+import lucuma.core.math.BrightnessUnits._
 import lucuma.core.math.Declination
 import lucuma.core.math.HourAngle
 import lucuma.core.math.Parallax
@@ -26,7 +27,6 @@ import lucuma.core.math.units._
 import lucuma.core.model.CatalogInfo
 import lucuma.core.model.Target
 import munit.CatsEffectSuite
-import lucuma.core.math.BrightnessUnits._
 
 class ParseSimbadFileSuite extends CatsEffectSuite with VoTableParser {
 
