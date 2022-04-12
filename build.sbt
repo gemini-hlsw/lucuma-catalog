@@ -20,7 +20,7 @@ lazy val http4sDomVersion           = "0.2.1"
 Global / onChangedBuildSource   := ReloadOnSourceChanges
 Global / scalacOptions += "-Ymacro-annotations"
 
-ThisBuild / tlBaseVersion       := "0.13"
+ThisBuild / tlBaseVersion       := "0.14"
 ThisBuild / tlCiReleaseBranches := Seq("master")
 
 lazy val root = tlCrossRootProject.aggregate(catalog, testkit, tests)
