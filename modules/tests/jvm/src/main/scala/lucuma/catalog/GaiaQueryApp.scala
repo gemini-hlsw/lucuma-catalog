@@ -41,7 +41,7 @@ trait GaiaQuerySample {
       .flatMap(
         _.body
           .through(text.utf8.decode)
-          .through(CatalogSearch.siderealTargets[F](CatalogAdapter.GaiaAdapter))
+          .through(CatalogSearch.siderealTargets[F](CatalogAdapter.Gaia))
       )
       .compile
       .toList

@@ -7,7 +7,7 @@ import cats.syntax.all._
 
 sealed trait ADQLGaiaQuery {
 
-  val gaia = CatalogAdapter.GaiaAdapter
+  val gaia = CatalogAdapter.Gaia
 
   /**
    * Builds an adql query for gaia taking input from the adapter and the query itself

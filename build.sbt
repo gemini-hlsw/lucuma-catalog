@@ -92,7 +92,7 @@ lazy val tests = crossProject(JVMPlatform, JSPlatform)
   )
 
 lazy val benchmarks = project
-  .in(file("benchmarks"))
+  .in(file("modules/benchmarks"))
   .dependsOn(catalog.jvm, tests.jvm % "compile->compile;test->test")
   .settings(name := "lucuma-benchmarks")
   .enablePlugins(NoPublishPlugin, JmhPlugin)

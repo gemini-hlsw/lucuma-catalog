@@ -285,7 +285,7 @@ object CatalogAdapter {
     }
   }
 
-  sealed trait GaiaAdapter extends CatalogAdapter {
+  sealed trait Gaia extends CatalogAdapter {
     val catalog: CatalogName = CatalogName.Gaia
 
     val idField: FieldId             = FieldId.unsafeFrom("DESIGNATION", VoTableParser.UCD_OBJID)
@@ -378,12 +378,12 @@ object CatalogAdapter {
 
   }
 
-  object GaiaAdapter extends GaiaAdapter
+  object Gaia extends Gaia
 
   def forCatalog(c: CatalogName): Option[CatalogAdapter] =
     c match {
       case CatalogName.Simbad => Simbad.some
-      case CatalogName.Gaia   => GaiaAdapter.some
+      case CatalogName.Gaia   => Gaia.some
       case _                  => none
     }
 }
