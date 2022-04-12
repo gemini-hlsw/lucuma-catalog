@@ -325,7 +325,7 @@ trait VoTableSamples {
 
   val gaia =
     <TABLE>
-        <FIELD arraysize="*" datatype="char" name="designation" ucd="meta.id;meta.main">
+        <FIELD ID="DESIGNATION" arraysize="*" datatype="char" name="designation" ucd="meta.id;meta.main">
           <DESCRIPTION>Unique source designation (unique across all Data Releases)</DESCRIPTION>
         </FIELD>
         <FIELD datatype="double" name="ra" ref="GAIADR2" ucd="pos.eq.ra;meta.main" unit="deg" utype="Char.SpatialAxis.Coverage.Location.Coord.Position2D.Value2.C1">

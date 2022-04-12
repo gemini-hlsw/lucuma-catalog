@@ -295,7 +295,8 @@ object CatalogAdapter {
     override val pmRaField: FieldId  = FieldId.unsafeFrom("pmra", VoTableParser.UCD_PMRA)
     override val pmDecField: FieldId = FieldId.unsafeFrom("pmdec", VoTableParser.UCD_PMDEC)
     override val rvField: FieldId    = FieldId.unsafeFrom("radial_velocity", VoTableParser.UCD_RV)
-    override val plxField: FieldId   = FieldId.unsafeFrom("parallax", VoTableParser.UCD_PLX)
+    override val plxField: FieldId   =
+      FieldId.unsafeFrom("parallax", Ucd.unsafeFromString("pos.parallax"))
 
     // Morphologyy is not read
     override val oTypeField                   = FieldId.unsafeFrom("OTYPE_S", VoTableParser.UCD_OTYPE)
