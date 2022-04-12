@@ -65,6 +65,7 @@ object VoTableParser extends VoTableParser {
 }
 
 trait VoTableParser {
+  private val NoneRightNec = none.rightNec
 
   /**
    * FS2 pipe to convert a stream of xml events to targets
@@ -85,7 +86,77 @@ trait VoTableParser {
     in => go(in.through(trsf[F])).stream
   }
 
-  private val NoneRightNec = none.rightNec
+  def xml2guidestars[F[_]](
+    adapter: CatalogAdapter
+  ): Pipe[F, XmlEvent, EitherNec[CatalogProblem, Target.Sidereal]] = {
+    def go(
+      s: Stream[F, EitherNec[CatalogProblem, TableRow]]
+    ): Pull[F, EitherNec[CatalogProblem, Target.Sidereal], Unit] =
+      s.pull.uncons1.flatMap {
+        case Some((q @ Left(_), s))          =>
+          Pull.output1(q.rightCast[Target.Sidereal]) >> go(s)
+        case Some((Right(row: TableRow), s)) =>
+          Pull.output1(targetRow2GuideStar(adapter, row)) >> go(s)
+        case _                               => Pull.done
+      }
+    in => go(in.through(trsf[F])).stream
+  }
+
+  def parseId(
+    adapter: CatalogAdapter,
+    entries: Map[FieldId, String]
+  ): EitherNec[CatalogProblem, NonEmptyString] =
+    entries
+      .get(adapter.idField)
+      .flatMap(refineV[NonEmpty](_).toOption)
+      .toRightNec(MissingValue(adapter.idField))
+
+  def parseName(
+    adapter: CatalogAdapter,
+    entries: Map[FieldId, String]
+  ): EitherNec[CatalogProblem, NonEmptyString] =
+    adapter
+      .parseName(entries)
+      .flatMap(refineV[NonEmpty](_).toOption)
+      .toRightNec(MissingValue(adapter.nameField))
+
+  def parseEpoch(
+    adapter: CatalogAdapter,
+    entries: Map[FieldId, String]
+  ): EitherNec[CatalogProblem, Epoch] =
+    (for {
+      f <- entries.get(adapter.epochField)
+      d <- f.parseDoubleOption
+      e <- Epoch.Julian.fromEpochYears(d)
+    } yield e).getOrElse(Epoch.J2000).rightNec
+
+  def parseDec(
+    adapter: CatalogAdapter,
+    entries: Map[NonEmptyString, String]
+  ): EitherNec[CatalogProblem, Declination] =
+    entries
+      .get(adapter.decField.id)
+      .toRightNec(MissingValue(adapter.decField))
+      .flatMap(v =>
+        parseDoubleValue(VoTableParser.UCD_DEC.some, v)
+          .flatMap(a =>
+            Declination
+              .fromDoubleDegrees(a)
+              .toRightNec[CatalogProblem](FieldValueProblem(adapter.decField.ucd, v))
+          )
+      )
+
+  def parseRA(
+    adapter: CatalogAdapter,
+    entries: Map[NonEmptyString, String]
+  ): EitherNec[CatalogProblem, RightAscension] =
+    entries
+      .get(adapter.raField.id)
+      .toRightNec(MissingValue(adapter.raField))
+      .flatMap(v =>
+        parseDoubleValue(VoTableParser.UCD_RA.some, v)
+          .map(a => RightAscension.fromDoubleDegrees(a))
+      )
 
   /**
    * Function to convert a TableRow to a target using a given adapter
@@ -94,50 +165,10 @@ trait VoTableParser {
     adapter: CatalogAdapter,
     row:     TableRow
   ): EitherNec[CatalogProblem, CatalogTargetResult] = {
-    val entries = row.itemsMap
-
-    def parseId: EitherNec[CatalogProblem, NonEmptyString] =
-      entries
-        .get(adapter.idField)
-        .flatMap(refineV[NonEmpty](_).toOption)
-        .toRightNec(MissingValue(adapter.idField))
-
-    def parseName: EitherNec[CatalogProblem, NonEmptyString] =
-      adapter
-        .parseName(entries)
-        .flatMap(refineV[NonEmpty](_).toOption)
-        .toRightNec(MissingValue(adapter.nameField))
-
-    def parseDec: EitherNec[CatalogProblem, Declination] =
-      entries
-        .get(adapter.decField)
-        .toRightNec(MissingValue(adapter.decField))
-        .flatMap(v =>
-          parseDoubleValue(VoTableParser.UCD_DEC.some, v)
-            .flatMap(a =>
-              Declination
-                .fromDoubleDegrees(a)
-                .toRightNec[CatalogProblem](FieldValueProblem(adapter.decField.ucd, v))
-            )
-        )
-
-    def parseRA: EitherNec[CatalogProblem, RightAscension] =
-      entries
-        .get(adapter.raField)
-        .toRightNec(MissingValue(adapter.raField))
-        .flatMap(v =>
-          parseDoubleValue(VoTableParser.UCD_RA.some, v)
-            .map(a => RightAscension.fromDoubleDegrees(a))
-        )
+    val entries     = row.itemsMap
+    val entriesById = entries.map { case (k, v) => (k.id, v) }
 
     def parsePV = adapter.parseProperMotion(entries)
-
-    def parseEpoch: EitherNec[CatalogProblem, Epoch] =
-      (for {
-        f <- entries.get(adapter.epochField)
-        d <- f.parseDoubleOption
-        e <- Epoch.Julian.fromEpochYears(d)
-      } yield e).getOrElse(Epoch.J2000).rightNec
 
     def parsePlx: EitherNec[CatalogProblem, Option[Parallax]] =
       entries.get(adapter.plxField) match {
@@ -167,15 +198,20 @@ trait VoTableParser {
     }
 
     def parseSiderealTracking: EitherNec[CatalogProblem, SiderealTracking] =
-      (parseRA, parseDec, parseEpoch, parsePV, parseRadialVelocity, parsePlx).parMapN {
-        (ra, dec, epoch, pv, rv, plx) =>
-          SiderealTracking(
-            Coordinates(ra, dec),
-            epoch,
-            pv,
-            rv,
-            plx
-          )
+      (parseRA(adapter, entriesById),
+       parseDec(adapter, entriesById),
+       parseEpoch(adapter, entries),
+       parsePV,
+       parseRadialVelocity,
+       parsePlx
+      ).parMapN { (ra, dec, epoch, pv, rv, plx) =>
+        SiderealTracking(
+          Coordinates(ra, dec),
+          epoch,
+          pv,
+          rv,
+          plx
+        )
       }
 
     def parseBandBrightnesses = adapter.parseBandBrightnesses(entries)
@@ -189,7 +225,7 @@ trait VoTableParser {
       ).toOption
 
     def parseCatalogInfo: EitherNec[CatalogProblem, Option[CatalogInfo]] =
-      parseId.map(id => CatalogInfo(adapter.catalog, id, parseObjType).some)
+      parseId(adapter, entries).map(id => CatalogInfo(adapter.catalog, id, parseObjType).some)
 
     def parseAngularSize: EitherNec[CatalogProblem, Option[AngularSize]] = {
 
@@ -217,7 +253,12 @@ trait VoTableParser {
     }
 
     def parseSiderealTarget: EitherNec[CatalogProblem, CatalogTargetResult] =
-      (parseName, parseSiderealTracking, parseBandBrightnesses, parseCatalogInfo, parseAngularSize)
+      (parseName(adapter, entries),
+       parseSiderealTracking,
+       parseBandBrightnesses,
+       parseCatalogInfo,
+       parseAngularSize
+      )
         .parMapN { (name, pm, brightnesses, info, angSize) =>
           CatalogTargetResult(
             Target.Sidereal(
@@ -234,6 +275,44 @@ trait VoTableParser {
               info
             ),
             angSize
+          )
+        }
+
+    parseSiderealTarget
+  }
+
+  /**
+   * Function to convert a TableRow to a guide star
+   */
+  protected def targetRow2GuideStar(
+    adapter: CatalogAdapter,
+    row:     TableRow
+  ): EitherNec[CatalogProblem, Target.Sidereal] = {
+    val entries     = row.itemsMap
+    val entriesById = entries.map { case (k, v) => (k.id, v) }
+
+    def parseBandBrightnesses = adapter.parseBandBrightnesses(entries)
+
+    def parseSiderealTarget: EitherNec[CatalogProblem, Target.Sidereal] =
+      (parseName(adapter, entries),
+       parseEpoch(adapter, entries),
+       parseRA(adapter, entriesById),
+       parseDec(adapter, entriesById),
+       parseBandBrightnesses
+      )
+        .parMapN { (name, epoch, ra, dec, brightnesses) =>
+          Target.Sidereal(
+            name,
+            SiderealTracking(Coordinates(ra, dec), epoch, none, none, none),
+            // We set arbitrary values for `sourceProfile`, `spectralDefinition`, `sed` and  `librarySpectrum`: the first in each ADT.
+            // In the future we will attempt to infer some or all of these from the catalog info.
+            SourceProfile.Point(
+              SpectralDefinition.BandNormalized(
+                UnnormalizedSED.StellarLibrary(StellarLibrarySpectrum.O5V),
+                SortedMap.from(brightnesses)
+              )
+            ),
+            none
           )
         }
 

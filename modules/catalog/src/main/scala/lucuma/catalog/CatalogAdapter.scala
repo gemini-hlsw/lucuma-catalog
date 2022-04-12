@@ -19,6 +19,7 @@ import lucuma.core.math.dimensional._
 import lucuma.core.math.units._
 
 import scala.math.BigDecimal
+import eu.timepit.refined.auto._
 
 // A CatalogAdapter improves parsing handling catalog-specific options like parsing brightnesses and selecting key fields
 sealed trait CatalogAdapter {
@@ -286,8 +287,8 @@ object CatalogAdapter {
 
     val idField: FieldId             = FieldId.unsafeFrom("DESIGNATION", VoTableParser.UCD_OBJID)
     val nameField: FieldId           = idField
-    val raField: FieldId             = FieldId.unsafeFrom("ra", VoTableParser.UCD_RA)
-    val decField: FieldId            = FieldId.unsafeFrom("dec", VoTableParser.UCD_DEC)
+    val raField: FieldId             = FieldId("ra", none)
+    val decField: FieldId            = FieldId("dec", none)
     override val pmRaField: FieldId  = FieldId.unsafeFrom("pmra", VoTableParser.UCD_PMRA)
     override val pmDecField: FieldId = FieldId.unsafeFrom("pmdec", VoTableParser.UCD_PMDEC)
     override val rvField: FieldId    = FieldId.unsafeFrom("radial_velocity", VoTableParser.UCD_RV)

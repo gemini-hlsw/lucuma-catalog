@@ -3,7 +3,7 @@
 
 package lucuma.catalog
 
-import cats.effect.Concurrent
+import cats.effect.Sync
 import cats.effect.IO
 import cats.effect.IOApp
 import cats.syntax.all._
@@ -27,13 +27,13 @@ trait GaiaQuerySample {
                                     (4.9 * 60 * 1000 * 2).toInt.mas
     )
 
-  implicit val ci = ADQLInterpreter.baseOnly
+  implicit val ci = ADQLInterpreter.pmCorrected(1)
 
   val m81Coords = (RightAscension.fromStringHMS.getOption("16:17:2.410"),
                    Declination.fromStringSignedDMS.getOption("-22:58:33.90")
   ).mapN(Coordinates.apply).getOrElse(Coordinates.Zero)
 
-  def gaiaQuery[F[_]: Concurrent](client: Client[F]) = {
+  def gaiaQuery[F[_]: Sync](client: Client[F]) = {
     val query   = CatalogSearch.gaiaSearchUri(QueryByADQL(m81Coords, gmosAgsField))
     val request = Request[F](GET, query)
     client
@@ -41,7 +41,8 @@ trait GaiaQuerySample {
       .flatMap(
         _.body
           .through(text.utf8.decode)
-          .through(CatalogSearch.siderealTargets[F](CatalogAdapter.Gaia))
+          .evalTap(a => Sync[F].delay(println(a)))
+          .through(CatalogSearch.guideStars[F](CatalogAdapter.Gaia))
       )
       .compile
       .toList

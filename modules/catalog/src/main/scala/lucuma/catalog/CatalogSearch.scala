@@ -7,6 +7,7 @@ import cats.data._
 import fs2._
 import fs2.data.xml._
 import lucuma.catalog._
+import lucuma.core.model.Target
 import org.http4s.Uri
 import org.http4s.syntax.all._
 
@@ -58,4 +59,16 @@ object CatalogSearch {
         .through(events[F, Char])
         .through(normalize[F])
         .through(VoTableParser.xml2targets[F](adapter))
+
+  /**
+   * FS2 pipe to convert a stream of String to guide stars
+   */
+  def guideStars[F[_]: RaiseThrowable](
+    adapter: CatalogAdapter
+  ): Pipe[F, String, EitherNec[CatalogProblem, Target.Sidereal]] =
+    in =>
+      in.flatMap(Stream.emits(_))
+        .through(events[F, Char])
+        .through(normalize[F])
+        .through(VoTableParser.xml2guidestars[F](adapter))
 }
