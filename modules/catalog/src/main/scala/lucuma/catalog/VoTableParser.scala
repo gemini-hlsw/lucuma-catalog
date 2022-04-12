@@ -3,7 +3,6 @@
 
 package lucuma.catalog
 
-import cats._
 import cats.data.Validated._
 import cats.data._
 import cats.syntax.all._
@@ -17,7 +16,6 @@ import fs2.data.xml.XmlEvent._
 import fs2.data.xml._
 import lucuma.catalog.CatalogProblem._
 import lucuma.catalog._
-import lucuma.core.enum.CatalogName
 import lucuma.core.enum.StellarLibrarySpectrum
 import lucuma.core.math._
 import lucuma.core.math.units.KilometersPerSecond
@@ -72,23 +70,6 @@ object VoTableParser extends VoTableParser {
 }
 
 trait VoTableParser {
-
-  /**
-   * FS2 pipe to convert a stream of String to targets
-   */
-  def targets[F[_]: RaiseThrowable: MonadError[*[_], Throwable]](
-    catalog: CatalogName
-  ): Pipe[F, String, ValidatedNec[CatalogProblem, CatalogTargetResult]] =
-    in =>
-      CatalogAdapter.forCatalog(catalog) match {
-        case Some(a) =>
-          in.flatMap(Stream.emits(_))
-            .through(events[F, Char])
-            .through(referenceResolver[F]())
-            .through(normalize[F])
-            .through(xml2targets[F](a))
-        case _       => Stream.emit(Validated.invalidNec(UnknownCatalog))
-      }
 
   /**
    * FS2 pipe to convert a stream of xml events to targets
@@ -269,10 +250,12 @@ trait VoTableParser {
     ): Pull[F, ValidatedNec[CatalogProblem, TableRow], Unit] =
       s.pull.uncons1.flatMap {
         case Some((StartTag(QName(_, "FIELD"), xmlAttr, _), s)) =>
-          val attr                                             = xmlAttr.map { case Attr(k, v) => (k.local, v.foldMap(_.render)) }.toMap
+          val attr = xmlAttr.map { case Attr(k, v) => (k.local, v.foldMap(_.render)) }.toMap
+          val name = attr.get("name")
+
           val id: ValidatedNec[CatalogProblem, NonEmptyString] =
             NonEmptyString
-              .validateNec(attr.get("ID").orEmpty)
+              .validateNec(attr.get("ID").orElse(name).orEmpty)
               .leftMap(_ => NonEmptyChain.one(MissingXmlAttribute("ID")))
 
           val ucd: ValidatedNec[CatalogProblem, Option[Ucd]] =

@@ -19,6 +19,8 @@ import lucuma.core.math.VelocityAxis
 import lucuma.core.math.dimensional._
 import lucuma.core.math.units._
 
+import scala.math.BigDecimal
+
 // A CatalogAdapter improves parsing handling catalog-specific options like parsing brightnesses and selecting key fields
 sealed trait CatalogAdapter {
 
@@ -283,9 +285,105 @@ object CatalogAdapter {
     }
   }
 
+  sealed trait Gaia extends CatalogAdapter {
+    val catalog: CatalogName = CatalogName.Gaia
+
+    val idField: FieldId             = FieldId.unsafeFrom("DESIGNATION", VoTableParser.UCD_OBJID)
+    val nameField: FieldId           = idField
+    val raField: FieldId             = FieldId.unsafeFrom("ra", VoTableParser.UCD_RA)
+    val decField: FieldId            = FieldId.unsafeFrom("dec", VoTableParser.UCD_DEC)
+    override val pmRaField: FieldId  = FieldId.unsafeFrom("pmra", VoTableParser.UCD_PMRA)
+    override val pmDecField: FieldId = FieldId.unsafeFrom("pmdec", VoTableParser.UCD_PMDEC)
+    override val rvField: FieldId    = FieldId.unsafeFrom("radial_velocity", VoTableParser.UCD_RV)
+    override val plxField: FieldId   = FieldId.unsafeFrom("parallax", VoTableParser.UCD_PLX)
+
+    // Morphologyy is not read
+    override val oTypeField                   = FieldId.unsafeFrom("OTYPE_S", VoTableParser.UCD_OTYPE)
+    override val spTypeField                  = FieldId.unsafeFrom("SP_TYPE", VoTableParser.UCD_SPTYPE)
+    override val morphTypeField               = FieldId.unsafeFrom("MORPH_TYPE", VoTableParser.UCD_MORPHTYPE)
+    override val angSizeMajAxisField: FieldId =
+      FieldId.unsafeFrom("GALDIM_MAJAXIS", VoTableParser.UCD_ANGSIZE_MAJ)
+    override val angSizeMinAxisField: FieldId =
+      FieldId.unsafeFrom("GALDIM_MINAXIS", VoTableParser.UCD_ANGSIZE_MIN)
+
+    // These are used to derive all other magnitude values.
+    val gMagField: FieldId  =
+      FieldId.unsafeFrom("phot_g_mean_mag", Ucd.unsafeFromString("phot.mag;stat.mean;em.opt"))
+    val bpMagField: FieldId =
+      FieldId.unsafeFrom("phot_bp_mean_mag", Ucd.unsafeFromString("phot.mag;stat.mean"))
+    val rpMagField: FieldId =
+      FieldId.unsafeFrom("phot_rp_mean_mag", Ucd.unsafeFromString("phot.mag;stat.mean"))
+
+    /**
+     * List of all Gaia fields of interest. These are used in forming the ADQL query that produces
+     * the VO Table. See VoTableClient and the GaiaBackend.
+     */
+    val allFields: List[FieldId] =
+      List(
+        idField,
+        raField,
+        pmRaField,
+        decField,
+        pmDecField,
+        epochField,
+        plxField,
+        rvField,
+        gMagField,
+        bpMagField,
+        rpMagField
+      )
+
+    override def ignoreBrightnessValueField(f: FieldId): Boolean =
+      false
+
+    override def isBrightnessUnitsField(v: (FieldId, String)): Boolean =
+      false
+
+    val vegaUnits: Units Of Brightness[Integrated] =
+      implicitly[TaggedUnit[VegaMagnitude, Brightness[Integrated]]].unit
+
+    // Attempts to find the brightness units for a band
+    override def parseBrightnessUnits(
+      f: FieldId,
+      v: String
+    ): ValidatedNec[CatalogProblem, (Band, Units Of Brightness[Integrated])] = {
+      val band: Option[Band] = findBand(f)
+
+      (Validated.fromOption(band, UnmatchedField(f.ucd)).toValidatedNec,
+       Validated.validNec(vegaUnits)
+      ).mapN((_, _))
+    }
+
+    // Simbad has a few special cases to map sloan band brightnesses
+    def findBand(id: FieldId): Option[Band] =
+      id.id match {
+        case gMagField.id  => Band.Gaia.some
+        case bpMagField.id => Band.GaiaBP.some
+        case rpMagField.id => Band.GaiaRP.some
+        case _             => none
+      }
+
+    override def fieldToBand(field: FieldId): Option[Band] =
+      if (
+        (field.ucd.exists(_.includes(VoTableParser.UCD_MAG)) && !ignoreBrightnessValueField(field))
+      )
+        findBand(field)
+      else
+        none
+
+    // Indicates if the field has a brightness value field
+    override protected def containsBrightnessValue(v: FieldId): Boolean =
+      v.ucd.exists(_.includes(VoTableParser.UCD_MAG)) &&
+        !ignoreBrightnessValueField(v)
+
+  }
+
+  object Gaia extends Gaia
+
   def forCatalog(c: CatalogName): Option[CatalogAdapter] =
     c match {
       case CatalogName.Simbad => Simbad.some
+      case CatalogName.Gaia   => Gaia.some
       case _                  => none
     }
 }
