@@ -3,7 +3,6 @@
 
 package lucuma.catalog
 
-import cats._
 import cats.data._
 import fs2._
 import fs2.data.xml._
@@ -51,13 +50,12 @@ object CatalogSearch {
   /**
    * FS2 pipe to convert a stream of String to targets
    */
-  def siderealTargets[F[_]: RaiseThrowable: MonadError[*[_], Throwable]](
+  def siderealTargets[F[_]: RaiseThrowable](
     adapter: CatalogAdapter
   ): Pipe[F, String, ValidatedNec[CatalogProblem, CatalogTargetResult]] =
     in =>
       in.flatMap(Stream.emits(_))
         .through(events[F, Char])
-        .through(referenceResolver[F]())
         .through(normalize[F])
         .through(VoTableParser.xml2targets[F](adapter))
 }

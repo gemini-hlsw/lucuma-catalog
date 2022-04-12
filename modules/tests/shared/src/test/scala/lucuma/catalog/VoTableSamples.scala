@@ -340,7 +340,7 @@ trait VoTableSamples {
         <FIELD datatype="double" name="dec_error" ucd="stat.error;pos.eq.dec" unit="mas">
           <DESCRIPTION>Standard error of declination</DESCRIPTION>
         </FIELD>
-        <FIELD datatype="double" name="parallax" ucd="pos.parallax" unit="mas">
+        <FIELD datatype="double" name="parallax" ucd="pos.parallax.trig" unit="mas">
           <DESCRIPTION>Parallax</DESCRIPTION>
         </FIELD>
         <FIELD datatype="double" name="pmra" ucd="pos.pm;pos.eq.ra" unit="mas.yr**-1">

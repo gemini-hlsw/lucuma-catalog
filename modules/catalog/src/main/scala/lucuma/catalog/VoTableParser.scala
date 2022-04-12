@@ -32,17 +32,14 @@ import monocle.function.Index.listIndex
 
 import scala.collection.immutable.SortedMap
 
-final case class PartialTableRowItem(field: FieldId)
-
 final case class PartialTableRow(
-  items: List[Either[PartialTableRowItem, TableRowItem]]
+  items: List[Either[FieldId, TableRowItem]]
 ) {
-  def isComplete: Boolean  = items.forall(_.isRight)
   def toTableRow: TableRow = TableRow(items.collect { case Right(r) => r }.reverse)
 }
 
 object PartialTableRow {
-  val items: Lens[PartialTableRow, List[Either[PartialTableRowItem, TableRowItem]]] =
+  val items: Lens[PartialTableRow, List[Either[FieldId, TableRowItem]]] =
     Focus[PartialTableRow](_.items)
 }
 
@@ -129,7 +126,7 @@ trait VoTableParser {
         .andThen(parseDoubleDegrees(VoTableParser.UCD_RA, _))
         .map(a => RightAscension.fromDoubleDegrees(a.toDoubleDegrees))
 
-    val parsePV = adapter.parseProperMotion(entries)
+    def parsePV = adapter.parseProperMotion(entries)
 
     def parseEpoch: ValidatedNec[CatalogProblem, Epoch] =
       Validated.validNec(
@@ -179,7 +176,7 @@ trait VoTableParser {
           )
       }
 
-    val parseBandBrightnesses = adapter.parseBandBrightnesses(entries)
+    def parseBandBrightnesses = adapter.parseBandBrightnesses(entries)
 
     def parseObjType: Option[NonEmptyString] =
       refineV[NonEmpty](
@@ -241,14 +238,17 @@ trait VoTableParser {
     parseSiderealTarget
   }
 
+  val tableHeadLens = PartialTableRow.items
+    .andThen(listIndex[Either[FieldId, TableRowItem]].index(0))
+
   protected def trsf[F[_]]: Pipe[F, XmlEvent, ValidatedNec[CatalogProblem, TableRow]] = {
     def go(
-      s:      Stream[F, XmlEvent],
-      t:      PartialTableRow,
-      f:      List[FieldId],
-      fields: Option[NonEmptyList[FieldId]]
+      stream:        Stream[F, XmlEvent],
+      partialTable:  PartialTableRow,
+      partialFields: List[FieldId],
+      fields:        Option[NonEmptyList[FieldId]]
     ): Pull[F, ValidatedNec[CatalogProblem, TableRow], Unit] =
-      s.pull.uncons1.flatMap {
+      stream.pull.uncons1.flatMap {
         case Some((StartTag(QName(_, "FIELD"), xmlAttr, _), s)) =>
           val attr = xmlAttr.map { case Attr(k, v) => (k.local, v.foldMap(_.render)) }.toMap
           val name = attr.get("name")
@@ -265,40 +265,36 @@ trait VoTableParser {
               .getOrElse(none[Ucd].validNec)
 
           ((id, ucd).mapN(FieldId.apply)).map { i =>
-            i :: f
+            i :: partialFields
           } match {
-            case Valid(f)       => go(s, t, f, fields)
+            case Valid(f)       => go(s, partialTable, f, fields)
             case i @ Invalid(_) => Pull.output1(i) >> Pull.done // fail fast on field parse failure
           }
         case Some((StartTag(QName(_, "DATA"), _, _), s))        =>
-          f match {
+          partialFields match {
             case h :: tail =>
-              go(s, t, f.reverse, NonEmptyList(h, tail).reverse.some)
+              go(s, partialTable, partialFields.reverse, NonEmptyList(h, tail).reverse.some)
             case _         =>
               Pull.output1(Validated.invalidNec(NoFieldsFound)) >> Pull.done
           }
         case Some((StartTag(QName(_, "TD"), _, _), s))          =>
-          f match {
+          partialFields match {
             case head :: tail =>
-              go(s,
-                 PartialTableRow.items.modify(PartialTableRowItem(head).asLeft :: _)(t),
-                 tail,
-                 fields
-              )
+              go(s, PartialTableRow.items.modify(head.asLeft :: _)(partialTable), tail, fields)
             case Nil          =>
               Pull.output1(Validated.invalidNec(ExtraRow)) >> Pull.done
           }
         case Some((EndTag(QName(_, "TR")), s))                  =>
-          f match {
+          partialFields match {
             case x :: l =>
               Pull.output1(
                 Validated.invalid(
                   NonEmptyChain(MissingValue(x), l.map(x => MissingValue(x)): _*)
                 )
-              ) >> go(s, PartialTableRow(Nil), f, fields)
+              ) >> go(s, PartialTableRow(Nil), partialFields, fields)
             case Nil
                 // this indicates we have a mismatch between fields and data
-                if t.items.length =!= fields.foldMap(_.length) =>
+                if partialTable.items.length =!= fields.foldMap(_.length) =>
               Pull.output1(
                 Validated.invalid(
                   fields match {
@@ -308,32 +304,33 @@ trait VoTableParser {
                 )
               ) >> Pull.done
             case _      =>
-              Pull.output1(Validated.validNec(t.toTableRow)) >> go(s,
-                                                                   PartialTableRow(Nil),
-                                                                   fields.foldMap(_.toList),
-                                                                   fields
+              Pull.output1(Validated.validNec(partialTable.toTableRow)) >> go(
+                s,
+                PartialTableRow(Nil),
+                fields.foldMap(_.toList),
+                fields
               )
           }
-        case Some((XmlString(v, _), s))                         =>
+        case Some((XmlString(v, _), s)) if v.nonEmpty           =>
           go(
             s,
-            PartialTableRow.items
-              .andThen(listIndex[Either[PartialTableRowItem, TableRowItem]].index(0))
+            tableHeadLens
               .modify {
                 case ti @ Right(_) => ti
-                case Left(pti)     => TableRowItem(pti.field, v).asRight
-              }(t),
-            f,
+                case Left(pti)     => TableRowItem(pti, v).asRight
+              }(partialTable),
+            partialFields,
             fields
           )
         case Some((_, s))                                       =>
-          go(s, t, f, fields)
+          go(s, partialTable, partialFields, fields)
         case None                                               => Pull.done
       }
     in => go(in, PartialTableRow(Nil), Nil, None).stream
   }
+
   // These functions are useful por partial testing but they are not really in use
-  protected def fd[F[_]]: Pipe[F, XmlEvent, ValidatedNec[CatalogProblem, FieldId]]    = {
+  protected def fd[F[_]]: Pipe[F, XmlEvent, ValidatedNec[CatalogProblem, FieldId]] = {
     def go(
       s:  Stream[F, XmlEvent],
       fd: ValidatedNec[CatalogProblem, FieldId]
@@ -414,7 +411,7 @@ trait VoTableParser {
         case Some((StartTag(QName(_, "TD"), _, _), s)) =>
           f match {
             case head :: tail =>
-              go(s, PartialTableRow.items.modify(PartialTableRowItem(head).asLeft :: _)(t), tail)
+              go(s, PartialTableRow.items.modify(head.asLeft :: _)(t), tail)
             case Nil          =>
               Pull.output1(Validated.invalidNec(ExtraRow)) >> Pull.done
           }
@@ -443,10 +440,10 @@ trait VoTableParser {
           go(
             s,
             PartialTableRow.items
-              .andThen(listIndex[Either[PartialTableRowItem, TableRowItem]].index(0))
+              .andThen(listIndex[Either[FieldId, TableRowItem]].index(0))
               .modify {
                 case ti @ Right(_) => ti
-                case Left(pti)     => TableRowItem(pti.field, v).asRight
+                case Left(pti)     => TableRowItem(pti, v).asRight
               }(t),
             f
           )
@@ -469,7 +466,7 @@ trait VoTableParser {
         case Some((StartTag(QName(_, "TD"), _, _), s)) =>
           f match {
             case head :: tail =>
-              go(s, PartialTableRow.items.modify(PartialTableRowItem(head).asLeft :: _)(t), tail)
+              go(s, PartialTableRow.items.modify(head.asLeft :: _)(t), tail)
             case Nil          =>
               Pull.output1(Validated.invalidNec(ExtraRow)) >> Pull.done
           }
@@ -497,10 +494,10 @@ trait VoTableParser {
           go(
             s,
             PartialTableRow.items
-              .andThen(listIndex[Either[PartialTableRowItem, TableRowItem]].index(0))
+              .andThen(listIndex[Either[FieldId, TableRowItem]].index(0))
               .modify {
                 case ti @ Right(_) => ti
-                case Left(pti)     => TableRowItem(pti.field, v).asRight
+                case Left(pti)     => TableRowItem(pti, v).asRight
               }(t),
             f
           )
