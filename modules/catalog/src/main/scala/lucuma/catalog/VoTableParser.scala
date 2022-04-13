@@ -122,10 +122,10 @@ trait VoTableParser {
 
   def parseEpoch(
     adapter: CatalogAdapter,
-    entries: Map[FieldId, String]
+    entries: Map[NonEmptyString, String]
   ): EitherNec[CatalogProblem, Epoch] =
     (for {
-      f <- entries.get(adapter.epochField)
+      f <- entries.get(adapter.epochField.id)
       d <- f.parseDoubleOption
       e <- Epoch.Julian.fromEpochYears(d)
     } yield e).getOrElse(Epoch.J2000).rightNec
@@ -200,7 +200,7 @@ trait VoTableParser {
     def parseSiderealTracking: EitherNec[CatalogProblem, SiderealTracking] =
       (parseRA(adapter, entriesById),
        parseDec(adapter, entriesById),
-       parseEpoch(adapter, entries),
+       parseEpoch(adapter, entriesById),
        parsePV,
        parseRadialVelocity,
        parsePlx
@@ -295,7 +295,7 @@ trait VoTableParser {
 
     def parseSiderealTarget: EitherNec[CatalogProblem, Target.Sidereal] =
       (parseName(adapter, entries),
-       parseEpoch(adapter, entries),
+       parseEpoch(adapter, entriesById),
        parseRA(adapter, entriesById),
        parseDec(adapter, entriesById),
        parseBandBrightnesses

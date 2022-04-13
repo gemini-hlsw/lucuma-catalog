@@ -3,8 +3,10 @@
 
 package lucuma.catalog
 
+import cats.syntax.all._
 import lucuma.core.geom.ShapeInterpreter
 import lucuma.core.math.Coordinates
+import lucuma.core.math.Epoch
 
 /**
  * ADQL queries are quite open thus multiple ways to construct them are possible. The interpreter
@@ -58,7 +60,7 @@ object ADQLInterpreter {
     }
 
   // Find n targets around the base
-  def pmCorrected(count: Int)(implicit si: ShapeInterpreter): ADQLInterpreter =
+  def pmCorrected(count: Int, epoch: Epoch)(implicit si: ShapeInterpreter): ADQLInterpreter =
     new ADQLInterpreter {
       val MaxCount                 = count
       val shapeInterpreter         = si
@@ -66,12 +68,16 @@ object ADQLInterpreter {
         case gaia.raField | gaia.decField | gaia.pmDecField | gaia.pmRaField | gaia.plxField |
             gaia.rvField =>
           false
-        case _ => true
+        case f if f === gaia.epochField => false
+        case _                          => true
       }
 
-      def extraFields(c: Coordinates): List[String] = List( // "array_element(pm,1) as ra_prop",
-        "COORD1(EPOCH_PROP_POS(ra, dec, parallax, pmra, pmdec, radial_velocity, 2015.5, 2000)) as ra",
-        "COORD2(EPOCH_PROP_POS(ra, dec, parallax, pmra, pmdec, radial_velocity, 2015.5, 2000)) as dec"
+      def extraFields(c: Coordinates): List[String] = List(
+        // Gaia can do pm correction for a given epoch
+        // https://www.cosmos.esa.int/web/gaia-users/archive/writing-queries/#epoch_prop_pos
+        s"COORD1(EPOCH_PROP_POS(ra, dec, parallax, pmra, pmdec, radial_velocity, ref_epoch, ${epoch.epochYear})) as ra",
+        s"COORD2(EPOCH_PROP_POS(ra, dec, parallax, pmra, pmdec, radial_velocity, ref_epoch, ${epoch.epochYear})) as dec",
+        s"${epoch.epochYear} as ref_epoch"
       )
     }
 }

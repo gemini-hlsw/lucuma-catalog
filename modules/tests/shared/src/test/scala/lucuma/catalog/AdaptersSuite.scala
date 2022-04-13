@@ -79,8 +79,7 @@ class AdaptersSuite extends CatsEffectSuite with VoTableParser with VoTableSampl
             Target.radialVelocity.getOption(t).flatten,
             RadialVelocity(20.30.withUnit[KilometersPerSecond])
           )
-        case Left(q)                          =>
-          println(q)
+        case Left(_)                          =>
           fail("Gaia response could not be parsed")
       }
   }
@@ -114,6 +113,10 @@ class AdaptersSuite extends CatsEffectSuite with VoTableParser with VoTableSampl
           assertEquals(
             Target.integratedBrightnessIn(Band.Gaia).headOption(t),
             BigDecimal(20.755217).withUnit[VegaMagnitude].toMeasureTagged.some
+          )
+          assertEquals(
+            Target.epoch.getOption(t),
+            Epoch.fromString.getOption("J2015.500")
           )
         case Left(_)  => fail("Gaia response could not be parsed")
       }

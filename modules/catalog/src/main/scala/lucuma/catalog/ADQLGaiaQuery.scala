@@ -26,7 +26,6 @@ sealed trait ADQLGaiaQuery {
         |     WHERE CONTAINS(POINT('ICRS',${gaia.raField.id},${gaia.decField.id}),$shapeAdql)=1
         |     $orderBy
       """.stripMargin
-    println(query)
     query
   }
 
