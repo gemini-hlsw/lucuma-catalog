@@ -3,7 +3,7 @@
 
 package lucuma.catalog
 
-import cats.data.Validated
+import cats.syntax.all._
 import lucuma.core.enum.Band
 import munit.FunSuite
 
@@ -16,9 +16,7 @@ class SimbadAdapterSuite extends FunSuite {
     assertEquals(
       CatalogAdapter.Simbad
         .parseBrightnessValue(FieldId.unsafeFrom("FLUX_ERROR_r", magErrorUcd), "20.3051"),
-      Validated.validNec(
-        (FieldId.unsafeFrom("FLUX_ERROR_r", magErrorUcd), Band.SloanR, 20.3051)
-      )
+      (FieldId.unsafeFrom("FLUX_ERROR_r", magErrorUcd), Band.SloanR, 20.3051).rightNec
     )
 
     // FLUX_R maps to R
@@ -26,9 +24,7 @@ class SimbadAdapterSuite extends FunSuite {
       CatalogAdapter.Simbad.parseBrightnessValue(FieldId.unsafeFrom("FLUX_ERROR_R", magErrorUcd),
                                                  "20.3051"
       ),
-      Validated.validNec(
-        (FieldId.unsafeFrom("FLUX_ERROR_R", magErrorUcd), Band.R, 20.3051)
-      )
+      (FieldId.unsafeFrom("FLUX_ERROR_R", magErrorUcd), Band.R, 20.3051).rightNec
     )
   }
 }

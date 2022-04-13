@@ -3,7 +3,7 @@
 
 package lucuma.catalog
 
-import cats.data.ValidatedNec
+import cats.data._
 import cats.effect.Concurrent
 import fs2._
 import org.http4s.Method._
@@ -14,7 +14,7 @@ trait SimbadQuerySample {
 
   def simbadQuery[F[_]: Concurrent](
     client: Client[F]
-  ): F[List[ValidatedNec[CatalogProblem, CatalogTargetResult]]] = {
+  ): F[List[EitherNec[CatalogProblem, CatalogTargetResult]]] = {
     val request = Request[F](GET, CatalogSearch.simbadSearchQuery(QueryByName("Vega")))
     client
       .stream(request)

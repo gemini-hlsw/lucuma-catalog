@@ -3,8 +3,8 @@
 
 package lucuma.catalog
 
-import _root_.cats.data.Validated
-import cats.data.NonEmptyList
+import cats.data._
+import cats.syntax.all._
 import cats.kernel.laws.discipline.EqTests
 import eu.timepit.refined._
 import eu.timepit.refined.collection._
@@ -23,21 +23,17 @@ class UcdSuite extends munit.FunSuite with DisciplineSuite {
     assert(Ucd.unsafeFromString("stat.error;phot.mag;em.opt.i").matches("em.opt.(\\w)".r))
   }
   test("parse single token ucds") {
-    assertEquals(Ucd.parseUcd("meta.code"),
-                 Validated.validNec(Ucd(refineMV[NonEmpty]("meta.code")))
-    )
+    assertEquals(Ucd.parseUcd("meta.code"), Ucd(refineMV[NonEmpty]("meta.code")).rightNec)
   }
   test("parse multi token ucds and preserve order") {
     assertEquals(
       Ucd.parseUcd("stat.error;phot.mag;em.opt.g"),
-      Validated.validNec(
-        Ucd(
-          NonEmptyList.of(refineMV[NonEmpty]("stat.error"),
-                          refineMV[NonEmpty]("phot.mag"),
-                          refineMV[NonEmpty]("em.opt.g")
-          )
+      Ucd(
+        NonEmptyList.of(refineMV[NonEmpty]("stat.error"),
+                        refineMV[NonEmpty]("phot.mag"),
+                        refineMV[NonEmpty]("em.opt.g")
         )
-      )
+      ).rightNec
     )
   }
   test("parse be case-insensitive, converting to lower case") {

@@ -52,7 +52,7 @@ object CatalogSearch {
    */
   def siderealTargets[F[_]: RaiseThrowable](
     adapter: CatalogAdapter
-  ): Pipe[F, String, ValidatedNec[CatalogProblem, CatalogTargetResult]] =
+  ): Pipe[F, String, EitherNec[CatalogProblem, CatalogTargetResult]] =
     in =>
       in.flatMap(Stream.emits(_))
         .through(events[F, Char])

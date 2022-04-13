@@ -3,6 +3,7 @@
 
 package lucuma
 
+import cats.syntax.all._
 import cats.data._
 import lucuma.catalog.CatalogProblem.FieldValueProblem
 
@@ -11,10 +12,10 @@ package object catalog {
   def parseDoubleValue(
     ucd: Option[Ucd],
     s:   String
-  ): ValidatedNec[CatalogProblem, Double] =
-    Validated
+  ): EitherNec[CatalogProblem, Double] =
+    Either
       .catchNonFatal(s.toDouble)
       .leftMap(_ => FieldValueProblem(ucd, s))
-      .toValidatedNec
+      .toEitherNec
 
 }

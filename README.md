@@ -17,11 +17,11 @@ data in a table format
 `lucuma-catalog` is centered around a single function.
 
 ```scala
-  def targets(catalog: CatalogName): Pipe[F, String, ValidatedNec[CatalogProblem, SiderealTarget]]
+  def siderealTargets(catalog: CatalogName): Pipe[F, String, EitherNec[CatalogProblem, Target.Sidereal]]
 ```
 
 The function is an `fs2` `Pipe` that will take a `Stream[F, String]`, attempt to first parse its
-xml content and then produce a stream of `SiderealTarget`s. This means we don't need to wait for the whole
+xml content and then produce a stream of `Target.Sidereal`s. This means we don't need to wait for the whole
 document to be parsed to start getting results.
 
 Note that we fail at the level of targets, this would allow to keep getting results even if one particular
@@ -41,7 +41,7 @@ Blocker[IO].use { blocker =>
   io.file
     .readAll[IO](Paths.get(file.toURI), blocker, 1024)
     .through(text.utf8Decode)
-    .through(targets(CatalogName.Simbad))
+    .through(siderealTargets(CatalogName.Simbad))
     .compile
     .lastOrError
     .unsafeRunSync()
@@ -56,6 +56,3 @@ Each example will query [Simbad](http://simbad.u-strasbg.fr/simbad/) using [sttp
 To stream parse xml we are using [fs2-data-xml](https://github.com/satabin/fs2-data), however
 the project is not yet available for both JVM/JS.
 
-This is temporarily solved internalizing the code for the specific module and cross compile it here.
-
-This won't not needed once https://github.com/satabin/fs2-data/issues/58 is solved
