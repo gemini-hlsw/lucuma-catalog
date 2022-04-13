@@ -78,7 +78,6 @@ trait VoTableParser {
       s.pull.uncons1.flatMap {
         case Some((q @ Left(_), s))          =>
           Pull.output1(q.rightCast[CatalogTargetResult]) >> go(s)
-        // Pull.output1(i.asLeft[CatalogTargetResult]) >> go(s)
         case Some((Right(row: TableRow), s)) =>
           Pull.output1(targetRow2Target(adapter, row)) >> go(s)
         case _                               => Pull.done
@@ -212,7 +211,7 @@ trait VoTableParser {
       def parseAngSizeMinAxis: EitherNec[CatalogProblem, Option[Angle]] =
         parseDoubleMinutesOpt(adapter.angSizeMinAxisField)
 
-      (parseAngSizeMajAxis, parseAngSizeMinAxis).mapN { (majOpt, minOpt) =>
+      (parseAngSizeMajAxis, parseAngSizeMinAxis).parMapN { (majOpt, minOpt) =>
         (majOpt, minOpt).mapN((maj, min) => AngularSize(maj, min))
       }
     }
@@ -271,7 +270,7 @@ trait VoTableParser {
               .map(v => Ucd.parseUcd(v).map(_.some))
               .getOrElse(NoneRightNec)
 
-          ((id, ucd).mapN(FieldId.apply)).map { i =>
+          ((id, ucd).parMapN(FieldId.apply)).map { i =>
             i :: partialFields
           } match {
             case Right(f) => go(s, partialTable, f, fields)
