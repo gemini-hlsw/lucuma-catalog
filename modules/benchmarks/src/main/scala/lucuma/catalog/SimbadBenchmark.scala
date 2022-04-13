@@ -4,11 +4,11 @@
 package lucuma.catalog
 
 import cats.effect._
+import cats.effect.unsafe.implicits.global
 import fs2._
+import org.openjdk.jmh.annotations._
 
 import java.util.concurrent.TimeUnit
-import org.openjdk.jmh.annotations._
-import cats.effect.unsafe.implicits.global
 
 @State(Scope.Thread)
 @Fork(1)

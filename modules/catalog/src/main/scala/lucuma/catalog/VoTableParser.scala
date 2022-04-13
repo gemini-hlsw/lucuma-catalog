@@ -3,12 +3,10 @@
 
 package lucuma.catalog
 
-import cats.data.Validated._
 import cats.data._
 import cats.syntax.all._
 import coulomb._
 import eu.timepit.refined._
-import eu.timepit.refined.cats.syntax._
 import eu.timepit.refined.collection.NonEmpty
 import eu.timepit.refined.types.string.NonEmptyString
 import fs2._
@@ -73,18 +71,22 @@ trait VoTableParser {
    */
   def xml2targets[F[_]](
     adapter: CatalogAdapter
-  ): Pipe[F, XmlEvent, ValidatedNec[CatalogProblem, CatalogTargetResult]] = {
+  ): Pipe[F, XmlEvent, EitherNec[CatalogProblem, CatalogTargetResult]] = {
     def go(
-      s: Stream[F, ValidatedNec[CatalogProblem, TableRow]]
-    ): Pull[F, ValidatedNec[CatalogProblem, CatalogTargetResult], Unit] =
+      s: Stream[F, EitherNec[CatalogProblem, TableRow]]
+    ): Pull[F, EitherNec[CatalogProblem, CatalogTargetResult], Unit] =
       s.pull.uncons1.flatMap {
-        case Some((i @ Validated.Invalid(_), s))       => Pull.output1(i) >> go(s)
-        case Some((Validated.Valid(row: TableRow), s)) =>
+        case Some((q @ Left(_), s))          =>
+          Pull.output1(q.rightCast[CatalogTargetResult]) >> go(s)
+        // Pull.output1(i.asLeft[CatalogTargetResult]) >> go(s)
+        case Some((Right(row: TableRow), s)) =>
           Pull.output1(targetRow2Target(adapter, row)) >> go(s)
-        case _                                         => Pull.done
+        case _                               => Pull.done
       }
     in => go(in.through(trsf[F])).stream
   }
+
+  private val NoneRightNec = none.rightNec
 
   /**
    * Function to convert a TableRow to a target using a given adapter
@@ -92,80 +94,81 @@ trait VoTableParser {
   protected def targetRow2Target(
     adapter: CatalogAdapter,
     row:     TableRow
-  ): ValidatedNec[CatalogProblem, CatalogTargetResult] = {
+  ): EitherNec[CatalogProblem, CatalogTargetResult] = {
     val entries = row.itemsMap
 
-    def parseId: ValidatedNec[CatalogProblem, NonEmptyString] =
-      Validated
-        .fromOption(entries.get(adapter.idField).flatMap(refineV[NonEmpty](_).toOption),
-                    MissingValue(adapter.idField)
+    def parseId: EitherNec[CatalogProblem, NonEmptyString] =
+      entries
+        .get(adapter.idField)
+        .flatMap(refineV[NonEmpty](_).toOption)
+        .toRightNec(MissingValue(adapter.idField))
+
+    def parseName: EitherNec[CatalogProblem, NonEmptyString] =
+      adapter
+        .parseName(entries)
+        .flatMap(refineV[NonEmpty](_).toOption)
+        .toRightNec(MissingValue(adapter.nameField))
+
+    def parseDec: EitherNec[CatalogProblem, Declination] =
+      entries
+        .get(adapter.decField)
+        .toRightNec(MissingValue(adapter.decField))
+        .flatMap(v =>
+          parseDoubleValue(VoTableParser.UCD_DEC.some, v)
+            .flatMap(a =>
+              Declination
+                .fromDoubleDegrees(a)
+                .toRightNec[CatalogProblem](FieldValueProblem(adapter.decField.ucd, v))
+            )
         )
-        .toValidatedNec
 
-    def parseName: ValidatedNec[CatalogProblem, NonEmptyString] =
-      Validated
-        .fromOption(adapter.parseName(entries).flatMap(refineV[NonEmpty](_).toOption),
-                    MissingValue(adapter.nameField)
+    def parseRA: EitherNec[CatalogProblem, RightAscension] =
+      entries
+        .get(adapter.raField)
+        .toRightNec(MissingValue(adapter.raField))
+        .flatMap(v =>
+          parseDoubleValue(VoTableParser.UCD_RA.some, v)
+            .map(a => RightAscension.fromDoubleDegrees(a))
         )
-        .toValidatedNec
-
-    def parseDoubleDegrees(ucd: Ucd, v: String): ValidatedNec[CatalogProblem, Angle] =
-      parseDoubleValue(ucd.some, v).map(Angle.fromDoubleDegrees)
-
-    def parseDec: ValidatedNec[CatalogProblem, Declination] =
-      Validated
-        .fromOption(entries.get(adapter.decField), MissingValue(adapter.decField))
-        .toValidatedNec
-        .andThen(parseDoubleDegrees(VoTableParser.UCD_DEC, _))
-        .map(Declination.fromAngleWithCarry(_)._1)
-
-    def parseRA: ValidatedNec[CatalogProblem, RightAscension] =
-      Validated
-        .fromOption(entries.get(adapter.raField), MissingValue(adapter.raField))
-        .toValidatedNec
-        .andThen(parseDoubleDegrees(VoTableParser.UCD_RA, _))
-        .map(a => RightAscension.fromDoubleDegrees(a.toDoubleDegrees))
 
     def parsePV = adapter.parseProperMotion(entries)
 
-    def parseEpoch: ValidatedNec[CatalogProblem, Epoch] =
-      Validated.validNec(
-        (for {
-          f <- entries.get(adapter.epochField)
-          d <- f.parseDoubleOption
-          e <- Epoch.Julian.fromEpochYears(d)
-        } yield e).getOrElse(Epoch.J2000)
-      )
+    def parseEpoch: EitherNec[CatalogProblem, Epoch] =
+      (for {
+        f <- entries.get(adapter.epochField)
+        d <- f.parseDoubleOption
+        e <- Epoch.Julian.fromEpochYears(d)
+      } yield e).getOrElse(Epoch.J2000).rightNec
 
-    def parsePlx: ValidatedNec[CatalogProblem, Option[Parallax]] =
+    def parsePlx: EitherNec[CatalogProblem, Option[Parallax]] =
       entries.get(adapter.plxField) match {
         case Some(p) =>
           parseDoubleValue(VoTableParser.UCD_PLX.some, p).map(p =>
             Parallax.milliarcseconds.reverseGet(math.max(0.0, p)).some
           )
         case _       =>
-          Validated.validNec(none)
+          NoneRightNec
       }
 
     // Read readial velocity. if not found it will try to get it from redshift
-    def parseRadialVelocity: ValidatedNec[CatalogProblem, Option[RadialVelocity]] = {
-      def rvFromZ(z: String): ValidatedNec[CatalogProblem, Option[RadialVelocity]] =
+    def parseRadialVelocity: EitherNec[CatalogProblem, Option[RadialVelocity]] = {
+      def rvFromZ(z: String): EitherNec[CatalogProblem, Option[RadialVelocity]] =
         parseDoubleValue(VoTableParser.UCD_Z.some, z).map(z => Redshift(z).toRadialVelocity)
 
-      def fromRV(rv: String): ValidatedNec[CatalogProblem, Option[RadialVelocity]] =
+      def fromRV(rv: String): EitherNec[CatalogProblem, Option[RadialVelocity]] =
         parseDoubleValue(VoTableParser.UCD_RV.some, rv)
           .map(rv => RadialVelocity(rv.withUnit[KilometersPerSecond]))
 
       (entries.get(adapter.rvField), entries.get(adapter.zField)) match {
-        case (Some(rv), Some(z)) => fromRV(rv).orElse(rvFromZ(z)).orElse(Validated.validNec(none))
-        case (Some(rv), _)       => fromRV(rv).orElse(Validated.validNec(none))
-        case (_, Some(z))        => rvFromZ(z).orElse(Validated.validNec(none))
-        case _                   => Validated.validNec(none)
+        case (Some(rv), Some(z)) => fromRV(rv).orElse(rvFromZ(z)).orElse(NoneRightNec)
+        case (Some(rv), _)       => fromRV(rv).orElse(NoneRightNec)
+        case (_, Some(z))        => rvFromZ(z).orElse(NoneRightNec)
+        case _                   => NoneRightNec
       }
     }
 
-    def parseSiderealTracking: ValidatedNec[CatalogProblem, SiderealTracking] =
-      (parseRA, parseDec, parseEpoch, parsePV, parseRadialVelocity, parsePlx).mapN {
+    def parseSiderealTracking: EitherNec[CatalogProblem, SiderealTracking] =
+      (parseRA, parseDec, parseEpoch, parsePV, parseRadialVelocity, parsePlx).parMapN {
         (ra, dec, epoch, pv, rv, plx) =>
           SiderealTracking(
             Coordinates(ra, dec),
@@ -186,12 +189,12 @@ trait VoTableParser {
         ).flatten.mkString("; ")
       ).toOption
 
-    def parseCatalogInfo: ValidatedNec[CatalogProblem, Option[CatalogInfo]] =
+    def parseCatalogInfo: EitherNec[CatalogProblem, Option[CatalogInfo]] =
       parseId.map(id => CatalogInfo(adapter.catalog, id, parseObjType).some)
 
-    def parseAngularSize: ValidatedNec[CatalogProblem, Option[AngularSize]] = {
+    def parseAngularSize: EitherNec[CatalogProblem, Option[AngularSize]] = {
 
-      def parseDoubleMinutesOpt(field: FieldId): ValidatedNec[CatalogProblem, Option[Angle]] =
+      def parseDoubleMinutesOpt(field: FieldId): EitherNec[CatalogProblem, Option[Angle]] =
         entries.get(field) match {
           case Some(v) =>
             parseDoubleValue(field.ucd, v)
@@ -200,13 +203,13 @@ trait VoTableParser {
               .map(Angle.fromMicroarcseconds)
               .map(_.some)
           case _       =>
-            Validated.validNec(none)
+            NoneRightNec
         }
 
-      def parseAngSizeMajAxis: ValidatedNec[CatalogProblem, Option[Angle]] =
+      def parseAngSizeMajAxis: EitherNec[CatalogProblem, Option[Angle]] =
         parseDoubleMinutesOpt(adapter.angSizeMajAxisField)
 
-      def parseAngSizeMinAxis: ValidatedNec[CatalogProblem, Option[Angle]] =
+      def parseAngSizeMinAxis: EitherNec[CatalogProblem, Option[Angle]] =
         parseDoubleMinutesOpt(adapter.angSizeMinAxisField)
 
       (parseAngSizeMajAxis, parseAngSizeMinAxis).mapN { (majOpt, minOpt) =>
@@ -214,9 +217,9 @@ trait VoTableParser {
       }
     }
 
-    def parseSiderealTarget: ValidatedNec[CatalogProblem, CatalogTargetResult] =
+    def parseSiderealTarget: EitherNec[CatalogProblem, CatalogTargetResult] =
       (parseName, parseSiderealTracking, parseBandBrightnesses, parseCatalogInfo, parseAngularSize)
-        .mapN { (name, pm, brightnesses, info, angSize) =>
+        .parMapN { (name, pm, brightnesses, info, angSize) =>
           CatalogTargetResult(
             Target.Sidereal(
               name,
@@ -241,70 +244,73 @@ trait VoTableParser {
   val tableHeadLens = PartialTableRow.items
     .andThen(listIndex[Either[FieldId, TableRowItem]].index(0))
 
-  protected def trsf[F[_]]: Pipe[F, XmlEvent, ValidatedNec[CatalogProblem, TableRow]] = {
+  protected def trsf[F[_]]: Pipe[F, XmlEvent, EitherNec[CatalogProblem, TableRow]] = {
     def go(
       stream:        Stream[F, XmlEvent],
       partialTable:  PartialTableRow,
       partialFields: List[FieldId],
       fields:        Option[NonEmptyList[FieldId]]
-    ): Pull[F, ValidatedNec[CatalogProblem, TableRow], Unit] =
+    ): Pull[F, EitherNec[CatalogProblem, TableRow], Unit] =
       stream.pull.uncons1.flatMap {
         case Some((StartTag(QName(_, "FIELD"), xmlAttr, _), s)) =>
-          val attr = xmlAttr.map { case Attr(k, v) => (k.local, v.foldMap(_.render)) }.toMap
-          val name = attr.get("name")
+          val attr                 = xmlAttr.map { case Attr(k, v) => (k.local, v.foldMap(_.render)) }.toMap
+          val name: Option[String] = attr.get("name")
 
-          val id: ValidatedNec[CatalogProblem, NonEmptyString] =
-            NonEmptyString
-              .validateNec(attr.get("ID").orElse(name).orEmpty)
+          val id: EitherNec[CatalogProblem, NonEmptyString] =
+            refineV[NonEmpty](
+              attr
+                .get("ID")
+                .orElse(name)
+                .orEmpty
+            )
               .leftMap(_ => NonEmptyChain.one(MissingXmlAttribute("ID")))
 
-          val ucd: ValidatedNec[CatalogProblem, Option[Ucd]] =
+          val ucd: EitherNec[CatalogProblem, Option[Ucd]] =
             attr
               .get("ucd")
               .map(v => Ucd.parseUcd(v).map(_.some))
-              .getOrElse(none[Ucd].validNec)
+              .getOrElse(NoneRightNec)
 
           ((id, ucd).mapN(FieldId.apply)).map { i =>
             i :: partialFields
           } match {
-            case Valid(f)       => go(s, partialTable, f, fields)
-            case i @ Invalid(_) => Pull.output1(i) >> Pull.done // fail fast on field parse failure
+            case Right(f) => go(s, partialTable, f, fields)
+            case Left(i)  =>
+              Pull.output1(
+                i.asLeft[TableRow]
+              ) >> Pull.done // fail fast on field parse failure
           }
         case Some((StartTag(QName(_, "DATA"), _, _), s))        =>
           partialFields match {
             case h :: tail =>
               go(s, partialTable, partialFields.reverse, NonEmptyList(h, tail).reverse.some)
             case _         =>
-              Pull.output1(Validated.invalidNec(NoFieldsFound)) >> Pull.done
+              Pull.output1(NoFieldsFound.leftNec) >> Pull.done
           }
         case Some((StartTag(QName(_, "TD"), _, _), s))          =>
           partialFields match {
             case head :: tail =>
               go(s, PartialTableRow.items.modify(head.asLeft :: _)(partialTable), tail, fields)
             case Nil          =>
-              Pull.output1(Validated.invalidNec(ExtraRow)) >> Pull.done
+              Pull.output1(ExtraRow.leftNec) >> Pull.done
           }
         case Some((EndTag(QName(_, "TR")), s))                  =>
           partialFields match {
             case x :: l =>
               Pull.output1(
-                Validated.invalid(
-                  NonEmptyChain(MissingValue(x), l.map(x => MissingValue(x)): _*)
-                )
+                NonEmptyChain(MissingValue(x), l.map(x => MissingValue(x)): _*).asLeft
               ) >> go(s, PartialTableRow(Nil), partialFields, fields)
             case Nil
                 // this indicates we have a mismatch between fields and data
                 if partialTable.items.length =!= fields.foldMap(_.length) =>
               Pull.output1(
-                Validated.invalid(
-                  fields match {
-                    case Some(l) => NonEmptyChain.fromNonEmptyList(l.map(x => MissingValue(x)))
-                    case None    => NonEmptyChain.one(MissingRow)
-                  }
-                )
+                (fields match {
+                  case Some(l) => NonEmptyChain.fromNonEmptyList(l.map(x => MissingValue(x)))
+                  case None    => NonEmptyChain.one(MissingRow)
+                }).asLeft
               ) >> Pull.done
             case _      =>
-              Pull.output1(Validated.validNec(partialTable.toTableRow)) >> go(
+              Pull.output1(partialTable.toTableRow.asRight) >> go(
                 s,
                 PartialTableRow(Nil),
                 fields.foldMap(_.toList),
@@ -327,185 +333,6 @@ trait VoTableParser {
         case None                                               => Pull.done
       }
     in => go(in, PartialTableRow(Nil), Nil, None).stream
-  }
-
-  // These functions are useful por partial testing but they are not really in use
-  protected def fd[F[_]]: Pipe[F, XmlEvent, ValidatedNec[CatalogProblem, FieldId]] = {
-    def go(
-      s:  Stream[F, XmlEvent],
-      fd: ValidatedNec[CatalogProblem, FieldId]
-    ): Pull[F, ValidatedNec[CatalogProblem, FieldId], Unit] =
-      s.pull.uncons1.flatMap {
-        case Some((StartTag(QName(_, "FIELD"), xmlAttr, _), s)) =>
-          val attr = xmlAttr.map { case Attr(k, v) => (k.local, v.foldMap(_.render)) }.toMap
-          val name = attr.get("name")
-
-          val id: ValidatedNec[CatalogProblem, NonEmptyString] =
-            NonEmptyString
-              .validateNec(attr.get("ID").orElse(name).orEmpty)
-              .leftMap(_ => NonEmptyChain.one(MissingXmlAttribute("ID")))
-
-          val ucd: ValidatedNec[CatalogProblem, Ucd] = Validated
-            .fromOption(attr.get("ucd"), MissingXmlAttribute("ucd"))
-            .toValidatedNec
-            .andThen(Ucd.apply)
-
-          go(s, (id, ucd).mapN((i, u) => FieldId(i, u.some)))
-        case Some((StartTag(QName(_, t), _, _), _))             =>
-          Pull.output1(Validated.invalidNec(UnknownXmlTag(t))) >> Pull.done
-        case Some((EndTag(QName(_, "FIELD")), _))               =>
-          Pull.output1(fd)
-        case Some((_, _))                                       =>
-          Pull.output1(fd) >> Pull.done
-        case None                                               => Pull.done
-      }
-    in => go(in, Validated.invalidNec[CatalogProblem, FieldId](MissingXmlTag("FIELD"))).stream
-  }
-
-  protected def fds[F[_]]: Pipe[F, XmlEvent, List[ValidatedNec[CatalogProblem, FieldId]]] = {
-    def go(
-      s: Stream[F, XmlEvent],
-      l: List[ValidatedNec[CatalogProblem, FieldId]]
-    ): Pull[F, List[ValidatedNec[CatalogProblem, FieldId]], Unit] =
-      s.pull.uncons1.flatMap {
-        case Some((StartTag(QName(_, "TABLE"), _, _), s))       =>
-          go(s, l)
-        case Some((StartTag(QName(_, "FIELD"), xmlAttr, _), s)) =>
-          val attr = xmlAttr.map { case Attr(k, v) => (k.local, v.foldMap(_.render)) }.toMap
-          val name = attr.get("name")
-
-          val id: ValidatedNec[CatalogProblem, NonEmptyString] =
-            NonEmptyString
-              .validateNec(attr.get("ID").orElse(name).orEmpty)
-              .leftMap(_ => NonEmptyChain.one(MissingXmlAttribute("ID")))
-
-          val ucd: ValidatedNec[CatalogProblem, Ucd] = Validated
-            .fromOption(attr.get("ucd"), MissingXmlAttribute("ucd"))
-            .toValidatedNec
-            .andThen(Ucd.apply)
-
-          go(s, (id, ucd).mapN((i, u) => FieldId(i, u.some)) :: l)
-        case Some((EndTag(QName(_, "TABLE")), _))               =>
-          Pull.output1(l.reverse) >> Pull.done
-        case Some((StartTag(QName(_, t), _, _), _))             =>
-          Pull.output1(List(Validated.invalidNec(UnknownXmlTag(t)))) >> Pull.done
-        case Some((EndTag(QName(_, "FIELD")), s))               =>
-          go(s, l)
-        case Some((_, s))                                       =>
-          go(s, l)
-        case None                                               => Pull.done
-      }
-
-    in => go(in, Nil).stream
-  }
-
-  protected def tr[F[_]](
-    fields: List[FieldId]
-  ): Pipe[F, XmlEvent, ValidatedNec[CatalogProblem, TableRow]] = {
-    def go(
-      s: Stream[F, XmlEvent],
-      t: PartialTableRow,
-      f: List[FieldId]
-    ): Pull[F, ValidatedNec[CatalogProblem, TableRow], Unit] =
-      s.pull.uncons1.flatMap {
-        case Some((StartTag(QName(_, "TD"), _, _), s)) =>
-          f match {
-            case head :: tail =>
-              go(s, PartialTableRow.items.modify(head.asLeft :: _)(t), tail)
-            case Nil          =>
-              Pull.output1(Validated.invalidNec(ExtraRow)) >> Pull.done
-          }
-        case Some((EndTag(QName(_, "TR")), _))         =>
-          f match {
-            case x :: l
-                if f =!= fields || t.items.length =!= fields.length => // this indicates we have a mismatch between fields and data
-              Pull.output1(
-                Validated.invalid(
-                  NonEmptyChain(MissingValue(x), l.map(x => MissingValue(x)): _*)
-                )
-              ) >> Pull.done
-            case Nil
-                if t.items.length =!= fields.length => // this indicates we have a mismatch between fields and data
-              Pull.output1(
-                Validated.invalid(
-                  NonEmptyChain
-                    .fromSeq(fields.map(x => MissingValue(x)))
-                    .getOrElse(NonEmptyChain.one(MissingRow))
-                )
-              ) >> Pull.done
-            case _ =>
-              Pull.output1(Validated.validNec(t.toTableRow)) >> Pull.done
-          }
-        case Some((XmlString(v, _), s))                =>
-          go(
-            s,
-            PartialTableRow.items
-              .andThen(listIndex[Either[FieldId, TableRowItem]].index(0))
-              .modify {
-                case ti @ Right(_) => ti
-                case Left(pti)     => TableRowItem(pti, v).asRight
-              }(t),
-            f
-          )
-        case Some((_, s))                              =>
-          go(s, t, f)
-        case None                                      => Pull.done
-      }
-    in => go(in, PartialTableRow(Nil), fields).stream
-  }
-
-  protected def trs[F[_]](
-    fields: List[FieldId]
-  ): Pipe[F, XmlEvent, ValidatedNec[CatalogProblem, TableRow]] = {
-    def go(
-      s: Stream[F, XmlEvent],
-      t: PartialTableRow,
-      f: List[FieldId]
-    ): Pull[F, ValidatedNec[CatalogProblem, TableRow], Unit] =
-      s.pull.uncons1.flatMap {
-        case Some((StartTag(QName(_, "TD"), _, _), s)) =>
-          f match {
-            case head :: tail =>
-              go(s, PartialTableRow.items.modify(head.asLeft :: _)(t), tail)
-            case Nil          =>
-              Pull.output1(Validated.invalidNec(ExtraRow)) >> Pull.done
-          }
-        case Some((EndTag(QName(_, "TR")), s))         =>
-          f match {
-            case x :: l =>
-              Pull.output1(
-                Validated.invalid(
-                  NonEmptyChain(MissingValue(x), l.map(x => MissingValue(x)): _*)
-                )
-              ) >> go(s, PartialTableRow(Nil), fields)
-            case Nil
-                if t.items.length =!= fields.length => // this indicates we have a mismatch between fields and data
-              Pull.output1(
-                Validated.invalid(
-                  NonEmptyChain
-                    .fromSeq(fields.map(x => MissingValue(x)))
-                    .getOrElse(NonEmptyChain.one(MissingRow))
-                )
-              ) >> Pull.done
-            case _      =>
-              Pull.output1(Validated.validNec(t.toTableRow)) >> go(s, PartialTableRow(Nil), fields)
-          }
-        case Some((XmlString(v, _), s))                =>
-          go(
-            s,
-            PartialTableRow.items
-              .andThen(listIndex[Either[FieldId, TableRowItem]].index(0))
-              .modify {
-                case ti @ Right(_) => ti
-                case Left(pti)     => TableRowItem(pti, v).asRight
-              }(t),
-            f
-          )
-        case Some((_, s))                              =>
-          go(s, t, f)
-        case None                                      => Pull.done
-      }
-    in => go(in, PartialTableRow(Nil), fields).stream
   }
 
 }

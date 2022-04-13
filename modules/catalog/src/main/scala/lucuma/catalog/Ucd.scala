@@ -4,9 +4,7 @@
 package lucuma.catalog
 
 import cats._
-import cats.data.NonEmptyList
-import cats.data.Validated
-import cats.data.ValidatedNec
+import cats.data._
 import cats.implicits._
 import eu.timepit.refined._
 import eu.timepit.refined.cats._
@@ -25,18 +23,18 @@ final case class Ucd(tokens: NonEmptyList[NonEmptyString]) {
 }
 
 object Ucd {
-  def parseUcd(v: String): ValidatedNec[CatalogProblem, Ucd] =
+  def parseUcd(v: String): EitherNec[CatalogProblem, Ucd] =
     v.split(";").filter(_.nonEmpty).map(_.toLowerCase).toList match {
       case h :: tail =>
         (refineV[NonEmpty](h), tail.traverse(refineV[NonEmpty](_))) match {
           case (Right(h), Right(t)) =>
-            Ucd(NonEmptyList.of(h, t: _*)).validNec
-          case _                    => Validated.invalidNec(InvalidUcd(v))
+            Ucd(NonEmptyList.of(h, t: _*)).rightNec
+          case _                    => InvalidUcd(v).leftNec
         }
-      case _         => Validated.invalidNec(InvalidUcd(v))
+      case _         => InvalidUcd(v).leftNec
     }
 
-  def apply(ucd: String): ValidatedNec[CatalogProblem, Ucd] = parseUcd(ucd)
+  def apply(ucd: String): EitherNec[CatalogProblem, Ucd] = parseUcd(ucd)
 
   def apply(ucd: NonEmptyString): Ucd = Ucd(NonEmptyList.of(ucd))
 

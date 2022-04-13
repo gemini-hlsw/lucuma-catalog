@@ -3,9 +3,8 @@
 
 package lucuma.catalog
 
-import cats.data.Validated._
 import cats.data._
-import cats.implicits._
+import cats.syntax.all._
 import coulomb._
 import lucuma.catalog.CatalogProblem._
 import lucuma.catalog._
@@ -55,7 +54,7 @@ sealed trait CatalogAdapter {
   protected def parseBrightnessUnits(
     f: FieldId,
     v: String
-  ): ValidatedNec[CatalogProblem, (Band, Units Of Brightness[Integrated])]
+  ): EitherNec[CatalogProblem, (Band, Units Of Brightness[Integrated])]
 
   // Indicates if the field is a brightness units field
   protected def isBrightnessUnitsField(v: (FieldId, String)): Boolean
@@ -87,24 +86,23 @@ sealed trait CatalogAdapter {
     !(m.value.toDouble.isNaN || m.error.exists(_.toDouble.isNaN))
 
   // Attempts to extract the radial velocity of a field
-  def parseRadialVelocity(ucd: Ucd, v: String): ValidatedNec[CatalogProblem, RadialVelocity] =
+  def parseRadialVelocity(ucd: Ucd, v: String): EitherNec[CatalogProblem, RadialVelocity] =
     parseDoubleValue(ucd.some, v)
       .map(v => RadialVelocity(v.withUnit[MetersPerSecond]))
-      .andThen(Validated.fromOption(_, NonEmptyChain.one(FieldValueProblem(ucd.some, v))))
+      .flatMap(Either.fromOption(_, NonEmptyChain.one(FieldValueProblem(ucd.some, v))))
 
   // Attempts to extract the angular velocity of a field
   protected def parseAngularVelocity[A](
     ucd: Ucd,
     v:   String
-  ): ValidatedNec[CatalogProblem, AngularVelocityComponent[A]] =
+  ): EitherNec[CatalogProblem, AngularVelocityComponent[A]] =
     parseDoubleValue(ucd.some, v)
       .map(v => AngularVelocityComponent[A](v.withUnit[MilliArcSecondPerYear]))
-      .andThen(Validated.validNec(_))
 
   protected def parseProperMotion(
     pmra:  Option[String],
     pmdec: Option[String]
-  ): ValidatedNec[CatalogProblem, Option[ProperMotion]] =
+  ): EitherNec[CatalogProblem, Option[ProperMotion]] =
     ((pmra.filter(_.trim.nonEmpty), pmdec.filter(_.trim.nonEmpty)) match {
       case (a @ Some(_), None) => (a, Some("0"))
       case (None, a @ Some(_)) => (Some("0"), a)
@@ -117,7 +115,7 @@ sealed trait CatalogAdapter {
 
   def parseProperMotion(
     entries: Map[FieldId, String]
-  ): ValidatedNec[CatalogProblem, Option[ProperMotion]] = {
+  ): EitherNec[CatalogProblem, Option[ProperMotion]] = {
     val pmRa  = entries.get(pmRaField)
     val pmDec = entries.get(pmDecField)
     parseProperMotion(pmRa, pmDec)
@@ -126,8 +124,8 @@ sealed trait CatalogAdapter {
   protected[catalog] def parseBrightnessValue(
     fieldId: FieldId,
     value:   String
-  ): ValidatedNec[CatalogProblem, (FieldId, Band, Double)] =
-    (Validated.fromOption(fieldToBand(fieldId), UnmatchedField(fieldId.ucd)).toValidatedNec,
+  ): EitherNec[CatalogProblem, (FieldId, Band, Double)] =
+    (Either.fromOption(fieldToBand(fieldId), UnmatchedField(fieldId.ucd)).toEitherNec,
      parseDoubleValue(fieldId.ucd, value)
     ).mapN((fieldId, _, _))
 
@@ -163,19 +161,19 @@ sealed trait CatalogAdapter {
    */
   def parseBandBrightnesses(
     entries: Map[FieldId, String]
-  ): ValidatedNec[CatalogProblem, Vector[(Band, BrightnessMeasure[Integrated])]] = {
-    val values: ValidatedNec[CatalogProblem, Vector[(FieldId, Band, Double)]] =
+  ): EitherNec[CatalogProblem, Vector[(Band, BrightnessMeasure[Integrated])]] = {
+    val values: EitherNec[CatalogProblem, Vector[(FieldId, Band, Double)]] =
       entries.toVector
         .filter(_._2.trim.nonEmpty)
         .filter(isBrightnessValueField)
         .traverse(Function.tupled(parseBrightnessValue))
 
-    val errors: ValidatedNec[CatalogProblem, Vector[(FieldId, Band, Double)]] =
+    val errors: EitherNec[CatalogProblem, Vector[(FieldId, Band, Double)]] =
       entries.toVector
         .filter(isBrightnessErrorField)
         .traverse(Function.tupled(parseBrightnessValue))
 
-    val units: ValidatedNec[CatalogProblem, Vector[(Band, Units Of Brightness[Integrated])]] =
+    val units: EitherNec[CatalogProblem, Vector[(Band, Units Of Brightness[Integrated])]] =
       entries.toVector
         .filter(isBrightnessUnitsField)
         .traverse(Function.tupled(parseBrightnessUnits))
@@ -267,7 +265,7 @@ object CatalogAdapter {
     override def parseBrightnessUnits(
       f: FieldId,
       v: String
-    ): ValidatedNec[CatalogProblem, (Band, Units Of Brightness[Integrated])] = {
+    ): EitherNec[CatalogProblem, (Band, Units Of Brightness[Integrated])] = {
       val band: Option[Band] =
         if (v.nonEmpty)
           f.id.value match {
@@ -277,11 +275,9 @@ object CatalogAdapter {
         else
           None
 
-      (Validated.fromOption(band, UnmatchedField(f.ucd)).toValidatedNec,
-       Validated
-         .fromOption(integratedBrightnessUnits.get(v), UnmatchedField(f.ucd))
-         .toValidatedNec
-      ).mapN((_, _))
+      (band, integratedBrightnessUnits.get(v))
+        .mapN((_, _))
+        .toRightNec(UnmatchedField(f.ucd))
     }
   }
 
@@ -346,12 +342,10 @@ object CatalogAdapter {
     override def parseBrightnessUnits(
       f: FieldId,
       v: String
-    ): ValidatedNec[CatalogProblem, (Band, Units Of Brightness[Integrated])] = {
+    ): EitherNec[CatalogProblem, (Band, Units Of Brightness[Integrated])] = {
       val band: Option[Band] = findBand(f)
 
-      (Validated.fromOption(band, UnmatchedField(f.ucd)).toValidatedNec,
-       Validated.validNec(vegaUnits)
-      ).mapN((_, _))
+      band.map((_, vegaUnits)).toRightNec(UnmatchedField(f.ucd))
     }
 
     // Simbad has a few special cases to map sloan band brightnesses

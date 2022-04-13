@@ -3,7 +3,6 @@
 
 package lucuma.catalog
 
-import cats.data.Validated
 import cats.effect._
 import cats.syntax.all._
 import coulomb._
@@ -41,7 +40,7 @@ class AdaptersSuite extends CatsEffectSuite with VoTableParser with VoTableSampl
       .compile
       .lastOrError
       .map {
-        case Validated.Valid(CatalogTargetResult(t, _)) =>
+        case Right(CatalogTargetResult(t, _)) =>
           assertEquals(t.name, refineMV[NonEmpty]("Gaia DR2 5500810326779190016"))
           assertEquals(t.tracking.epoch.some, Epoch.Julian.fromEpochYears(2015.5))
           assertEquals(
@@ -80,7 +79,7 @@ class AdaptersSuite extends CatsEffectSuite with VoTableParser with VoTableSampl
             Target.radialVelocity.getOption(t).flatten,
             RadialVelocity(20.30.withUnit[KilometersPerSecond])
           )
-        case Validated.Invalid(_)                       => fail("Gaia response could not be parsed")
+        case Left(_)                          => fail("Gaia response could not be parsed")
       }
   }
 }
