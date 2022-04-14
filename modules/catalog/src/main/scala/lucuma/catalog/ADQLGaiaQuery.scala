@@ -6,7 +6,6 @@ package lucuma.catalog
 import cats.syntax.all._
 
 sealed trait ADQLGaiaQuery {
-
   val gaia = CatalogAdapter.Gaia
 
   /**
@@ -14,7 +13,7 @@ sealed trait ADQLGaiaQuery {
    */
   def adql(cs: QueryByADQL)(implicit ci: ADQLInterpreter): String = {
     //
-    val fields         = gaia.allFields.map(_.id.value.toLowerCase).mkString(",")
+    val fields         = ci.allFields.map(_.id.value.toLowerCase).mkString(",")
     val extraFields    = ci.extraFields(cs.base)
     val extraFieldsStr =
       if (extraFields.isEmpty) "" else extraFields.mkString(",", ",", "")

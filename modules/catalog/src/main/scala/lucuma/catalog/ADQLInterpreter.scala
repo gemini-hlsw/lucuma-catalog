@@ -3,8 +3,10 @@
 
 package lucuma.catalog
 
+import cats.syntax.all._
 import lucuma.core.geom.ShapeInterpreter
 import lucuma.core.math.Coordinates
+import lucuma.core.math.Epoch
 
 /**
  * ADQL queries are quite open thus multiple ways to construct them are possible. The interpreter
@@ -12,6 +14,8 @@ import lucuma.core.math.Coordinates
  */
 trait ADQLInterpreter {
   def MaxCount: Int
+
+  def allFields: List[FieldId]
 
   def extraFields(c: Coordinates): List[String]
 
@@ -21,11 +25,17 @@ trait ADQLInterpreter {
 }
 
 object ADQLInterpreter {
+  val gaia = CatalogAdapter.Gaia
+
+  val allBaseFields = gaia.allFields
+
   // Find the target closest to the base. Useful for debugging
   def baseOnly(implicit si: ShapeInterpreter): ADQLInterpreter =
     new ADQLInterpreter {
       val MaxCount         = 1
       val shapeInterpreter = si
+
+      def allFields: List[FieldId] = allBaseFields
 
       override def extraFields(c: Coordinates) =
         List(
@@ -45,6 +55,29 @@ object ADQLInterpreter {
     new ADQLInterpreter {
       val MaxCount                                  = count
       val shapeInterpreter                          = si
+      def allFields: List[FieldId]                  = allBaseFields
       def extraFields(c: Coordinates): List[String] = Nil
+    }
+
+  // Find n targets around the base
+  def pmCorrected(count: Int, epoch: Epoch)(implicit si: ShapeInterpreter): ADQLInterpreter =
+    new ADQLInterpreter {
+      val MaxCount                 = count
+      val shapeInterpreter         = si
+      def allFields: List[FieldId] = allBaseFields.filter {
+        case gaia.raField | gaia.decField | gaia.pmDecField | gaia.pmRaField | gaia.plxField |
+            gaia.rvField =>
+          false
+        case f if f === gaia.epochField => false
+        case _                          => true
+      }
+
+      def extraFields(c: Coordinates): List[String] = List(
+        // Gaia can do pm correction for a given epoch
+        // https://www.cosmos.esa.int/web/gaia-users/archive/writing-queries/#epoch_prop_pos
+        s"COORD1(EPOCH_PROP_POS(ra, dec, parallax, pmra, pmdec, radial_velocity, ref_epoch, ${epoch.epochYear})) as ra",
+        s"COORD2(EPOCH_PROP_POS(ra, dec, parallax, pmra, pmdec, radial_velocity, ref_epoch, ${epoch.epochYear})) as dec",
+        s"${epoch.epochYear} as ref_epoch"
+      )
     }
 }

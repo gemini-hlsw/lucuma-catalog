@@ -79,7 +79,46 @@ class AdaptersSuite extends CatsEffectSuite with VoTableParser with VoTableSampl
             Target.radialVelocity.getOption(t).flatten,
             RadialVelocity(20.30.withUnit[KilometersPerSecond])
           )
-        case Left(_)                          => fail("Gaia response could not be parsed")
+        case Left(_)                          =>
+          fail("Gaia response could not be parsed")
+      }
+  }
+
+  test("parse pm corrected fields") {
+    Stream
+      .emits(Utility.trim(voTableGaiaPMCorrected).toString)
+      .through(events[IO, Char])
+      .through(referenceResolver[IO]())
+      .through(normalize[IO])
+      .through(VoTableParser.xml2guidestars[IO](CatalogAdapter.Gaia))
+      .compile
+      .lastOrError
+      .map {
+        case Right(t) =>
+          assertEquals(t.name, refineMV[NonEmpty]("Gaia DR2 6050423032358097664"))
+          assertEquals(t.tracking.epoch.some, Epoch.Julian.fromEpochYears(2015.5))
+          assertEquals(
+            t.catalogInfo,
+            none
+          )
+          // base coordinates
+          assertEquals(
+            Target.baseRA.getOption(t),
+            RightAscension.fromDoubleDegrees(244.26317318202356).some
+          )
+          assertEquals(
+            Target.baseDec.getOption(t),
+            Declination.fromDoubleDegrees(-22.954945101383874)
+          )
+          assertEquals(
+            Target.integratedBrightnessIn(Band.Gaia).headOption(t),
+            BigDecimal(20.755217).withUnit[VegaMagnitude].toMeasureTagged.some
+          )
+          assertEquals(
+            Target.epoch.getOption(t),
+            Epoch.fromString.getOption("J2015.500")
+          )
+        case Left(_)  => fail("Gaia response could not be parsed")
       }
   }
 }
