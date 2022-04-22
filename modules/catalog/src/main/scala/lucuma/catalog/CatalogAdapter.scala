@@ -6,6 +6,7 @@ package lucuma.catalog
 import cats.data._
 import cats.syntax.all._
 import coulomb._
+import eu.timepit.refined.auto._
 import lucuma.catalog.CatalogProblem._
 import lucuma.catalog._
 import lucuma.core.enum.Band
@@ -19,7 +20,6 @@ import lucuma.core.math.dimensional._
 import lucuma.core.math.units._
 
 import scala.math.BigDecimal
-import eu.timepit.refined.auto._
 
 // A CatalogAdapter improves parsing handling catalog-specific options like parsing brightnesses and selecting key fields
 sealed trait CatalogAdapter {

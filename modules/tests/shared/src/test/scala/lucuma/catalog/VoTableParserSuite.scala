@@ -4,8 +4,8 @@
 package lucuma.catalog
 
 import cats.MonadError
-import cats.syntax.all._
 import cats.effect._
+import cats.syntax.all._
 import fs2._
 import fs2.data.xml._
 import lucuma.catalog._
