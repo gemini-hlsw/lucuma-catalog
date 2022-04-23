@@ -4,8 +4,8 @@
 package lucuma.catalog
 
 import cats.data._
-import cats.syntax.all._
 import cats.kernel.laws.discipline.EqTests
+import cats.syntax.all._
 import eu.timepit.refined._
 import eu.timepit.refined.collection._
 import lucuma.catalog._

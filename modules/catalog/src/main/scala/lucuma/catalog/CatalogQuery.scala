@@ -3,6 +3,8 @@
 
 package lucuma.catalog
 
+import cats.syntax.all._
+import lucuma.core.enum.Band
 import lucuma.core.enum.CatalogName
 import lucuma.core.geom.ShapeExpression
 import lucuma.core.geom.syntax.all._
@@ -36,11 +38,31 @@ case class QueryByName(id: String, proxy: Option[Uri] = None) extends CatalogQue
  * Query based on ADQL with a given geometry around base coordinates
  */
 final case class QueryByADQL(
-  base:            Coordinates,
-  shapeConstraint: ShapeExpression,
-  proxy:           Option[Uri] = None
+  base:                  Coordinates,
+  shapeConstraint:       ShapeExpression,
+  brightnessConstraints: Option[BrightnessConstraints],
+  proxy:                 Option[Uri] = None
 ) extends CatalogQuery {
   override val catalog = CatalogName.Gaia
+
+  def adqlBrightness: List[String] = brightnessConstraints.foldMap {
+    case BrightnessConstraints(bands, faintness, None)             =>
+      bands.bands
+        .collect {
+          case Band.Gaia   => CatalogAdapter.Gaia.gMagField.id
+          case Band.GaiaBP => CatalogAdapter.Gaia.bpMagField.id
+          case Band.GaiaRP => CatalogAdapter.Gaia.rpMagField.id
+        }
+        .map(bid => s"($bid > ${faintness.brightness})")
+    case BrightnessConstraints(bands, faintness, Some(saturation)) =>
+      bands.bands
+        .collect {
+          case Band.Gaia   => CatalogAdapter.Gaia.gMagField.id
+          case Band.GaiaBP => CatalogAdapter.Gaia.bpMagField.id
+          case Band.GaiaRP => CatalogAdapter.Gaia.rpMagField.id
+        }
+        .map(bid => s"($bid between ${saturation.brightness} and ${faintness.brightness})")
+  }
 
   def adqlGeom(implicit ev: ADQLInterpreter): String = {
     implicit val si = ev.shapeInterpreter

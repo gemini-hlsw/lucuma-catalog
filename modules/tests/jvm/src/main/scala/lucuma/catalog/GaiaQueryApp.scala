@@ -3,9 +3,9 @@
 
 package lucuma.catalog
 
-import cats.effect.Sync
 import cats.effect.IO
 import cats.effect.IOApp
+import cats.effect.Sync
 import cats.syntax.all._
 import fs2.text
 import lucuma.core.geom.ShapeExpression
@@ -13,13 +13,13 @@ import lucuma.core.geom.jts.interpreter._
 import lucuma.core.geom.syntax.all._
 import lucuma.core.math.Coordinates
 import lucuma.core.math.Declination
+import lucuma.core.math.Epoch
 import lucuma.core.math.RightAscension
 import lucuma.core.math.syntax.int._
 import org.http4s.Method._
 import org.http4s.Request
 import org.http4s.client.Client
 import org.http4s.jdkhttpclient.JdkHttpClient
-import lucuma.core.math.Epoch
 
 trait GaiaQuerySample {
   def gmosAgsField =
@@ -38,7 +38,11 @@ trait GaiaQuerySample {
   ).mapN(Coordinates.apply).getOrElse(Coordinates.Zero)
 
   def gaiaQuery[F[_]: Sync](client: Client[F]) = {
-    val query   = CatalogSearch.gaiaSearchUri(QueryByADQL(m81Coords, gmosAgsField))
+    val bc      = BrightnessConstraints(BandsList.GaiaBandsList,
+                                   FaintnessConstraint(0.1),
+                                   SaturationConstraint(0.3).some
+    )
+    val query   = CatalogSearch.gaiaSearchUri(QueryByADQL(m81Coords, gmosAgsField, bc.some))
     val request = Request[F](GET, query)
     client
       .stream(request)
