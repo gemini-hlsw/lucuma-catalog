@@ -3,7 +3,9 @@
 
 package lucuma.catalog
 
+import cats.Eq
 import cats.Order
+import lucuma.core.enum.Band
 
 /**
  * Constrain a target if a brightness is fainter than a threshold
@@ -36,4 +38,16 @@ case class BrightnessConstraints(
   searchBands:          BandsList,
   faintnessConstraint:  FaintnessConstraint,
   saturationConstraint: Option[SaturationConstraint]
-)
+) {
+  def contains(band: Band, brightness: BigDecimal): Boolean =
+    searchBands.bands.contains(band) &&
+      faintnessConstraint.brightness >= brightness &&
+      saturationConstraint.forall(_.brightness <= brightness)
+}
+
+object BrightnessConstraints {
+
+  /** @group Typeclass Instances */
+  implicit val eqBrightnessConstraints: Eq[BrightnessConstraints] =
+    Eq.by(c => (c.searchBands, c.faintnessConstraint, c.saturationConstraint))
+}
