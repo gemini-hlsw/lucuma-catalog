@@ -30,7 +30,7 @@ object BandsList {
   case object GaiaBandsList extends BandsList {
     val instance = this
 
-    val bands = List(Band.GaiaBP, Band.Gaia)
+    val bands = List(Band.GaiaRP, Band.Gaia, Band.GaiaBP) // Order is important
   }
 
 }
