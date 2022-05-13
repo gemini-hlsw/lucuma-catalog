@@ -13,28 +13,47 @@ import lucuma.core.geom.gmos.all.candidatesArea
 import lucuma.core.math.Coordinates
 import lucuma.core.math.Declination
 import lucuma.core.math.Epoch
+import lucuma.core.math.ProperMotion
 import lucuma.core.math.RightAscension
+import lucuma.core.model.SiderealTracking
 import org.http4s.Method._
 import org.http4s.Request
 import org.http4s.client.Client
 import org.http4s.jdkhttpclient.JdkHttpClient
+import spire.math.Bounded
 
-trait GaiaQuerySample {
+import java.time.Instant
+
+trait GaiaQueryPMSample {
   val epoch = Epoch.fromString.getOption("J2022.000").getOrElse(Epoch.J2000)
 
   implicit val ci =
-    ADQLInterpreter.pmCorrected(1, epoch)
+    ADQLInterpreter.nTarget(10)
 
   val m81Coords = (RightAscension.fromStringHMS.getOption("16:17:2.410"),
                    Declination.fromStringSignedDMS.getOption("-22:58:33.90")
   ).mapN(Coordinates.apply).getOrElse(Coordinates.Zero)
 
+  val pm = ProperMotion(ProperMotion.RA.milliarcsecondsPerYear.reverseGet(-6060),
+                        ProperMotion.Dec.milliarcsecondsPerYear.reverseGet(8298)
+  )
+
+  val tracking = SiderealTracking(m81Coords, Epoch.J2000, pm.some, none, none)
+
   def gaiaQuery[F[_]: Sync](client: Client[F]) = {
-    val bc      = BrightnessConstraints(BandsList.GaiaBandsList,
+    val bc    = BrightnessConstraints(BandsList.GaiaBandsList,
                                    FaintnessConstraint(16),
                                    SaturationConstraint(9).some
     )
-    val query   = CatalogSearch.gaiaSearchUri(QueryByADQL(m81Coords, candidatesArea, bc.some))
+    val query = CatalogSearch.gaiaSearchUri(
+      TimeRangeQueryByADQL(
+        tracking,
+        Bounded(Instant.EPOCH, Instant.EPOCH.plusSeconds(365 * 24 * 60 * 60 * 60), 0),
+        candidatesArea,
+        bc.some
+      )
+    )
+
     val request = Request[F](GET, query)
     client
       .stream(request)
@@ -49,7 +68,7 @@ trait GaiaQuerySample {
   }
 }
 
-object GaiaQueryApp extends IOApp.Simple with GaiaQuerySample {
+object GaiaQueryPMApp extends IOApp.Simple with GaiaQueryPMSample {
   def run =
     JdkHttpClient
       .simple[IO]
