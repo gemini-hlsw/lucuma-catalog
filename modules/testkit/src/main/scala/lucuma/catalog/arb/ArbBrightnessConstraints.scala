@@ -3,10 +3,10 @@
 
 package lucuma.catalog.arb
 
+import lucuma.catalog.BandsList
+import lucuma.catalog.BrightnessConstraints
 import lucuma.catalog.FaintnessConstraint
 import lucuma.catalog.SaturationConstraint
-import lucuma.catalog.BrightnessConstraints
-import lucuma.catalog.BandsList
 import lucuma.core.util.arb.ArbEnumerated._
 import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck._

@@ -33,7 +33,7 @@ object CatalogSearch {
    * Takes a search query and builds a uri to query gaia
    */
   def gaiaSearchUri[F[_]](
-    query:       QueryByADQL
+    query:       ADQLQuery
   )(implicit ci: ADQLInterpreter): Uri = {
     val esaUri = uri"https://gea.esac.esa.int/tap-server/tap/sync"
     val base   = query.proxy.fold(esaUri)(p =>

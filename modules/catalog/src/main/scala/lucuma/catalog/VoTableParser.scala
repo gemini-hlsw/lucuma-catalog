@@ -16,7 +16,7 @@ import lucuma.catalog.CatalogProblem._
 import lucuma.catalog._
 import lucuma.core.enum.StellarLibrarySpectrum
 import lucuma.core.math._
-import lucuma.core.math.units.KilometersPerSecond
+import lucuma.core.math.units._
 import lucuma.core.model.CatalogInfo
 import lucuma.core.model.SiderealTracking
 import lucuma.core.model.SourceProfile
@@ -96,7 +96,7 @@ trait VoTableParser {
         case Some((q @ Left(_), s))          =>
           Pull.output1(q.rightCast[Target.Sidereal]) >> go(s)
         case Some((Right(row: TableRow), s)) =>
-          Pull.output1(targetRow2GuideStar(adapter, row)) >> go(s)
+          Pull.output1(targetRow2GuideStar(adapter, BandsList.GaiaBandsList, row)) >> go(s)
         case _                               => Pull.done
       }
     in => go(in.through(trsf[F])).stream
@@ -158,6 +158,64 @@ trait VoTableParser {
           .map(a => RightAscension.fromDoubleDegrees(a))
       )
 
+  def parsePV(adapter: CatalogAdapter, entries: Map[FieldId, String]) =
+    adapter.parseProperMotion(entries)
+
+  // Read readial velocity. if not found it will try to get it from redshift
+  def parseRadialVelocity(
+    adapter: CatalogAdapter,
+    entries: Map[FieldId, String]
+  ): EitherNec[CatalogProblem, Option[RadialVelocity]] = {
+    def rvFromZ(z: String): EitherNec[CatalogProblem, Option[RadialVelocity]] =
+      parseDoubleValue(VoTableParser.UCD_Z.some, z).map(z => Redshift(z).toRadialVelocity)
+
+    def fromRV(rv: String): EitherNec[CatalogProblem, Option[RadialVelocity]] =
+      parseDoubleValue(VoTableParser.UCD_RV.some, rv)
+        .map(rv => RadialVelocity(rv.withUnit[KilometersPerSecond]))
+
+    (entries.get(adapter.rvField), entries.get(adapter.zField)) match {
+      case (Some(rv), Some(z)) => fromRV(rv).orElse(rvFromZ(z)).orElse(NoneRightNec)
+      case (Some(rv), _)       => fromRV(rv).orElse(NoneRightNec)
+      case (_, Some(z))        => rvFromZ(z).orElse(NoneRightNec)
+      case _                   => NoneRightNec
+    }
+  }
+
+  def parsePlx(
+    adapter: CatalogAdapter,
+    entries: Map[FieldId, String]
+  ): EitherNec[CatalogProblem, Option[Parallax]] =
+    entries.get(adapter.plxField) match {
+      case Some(p) =>
+        parseDoubleValue(VoTableParser.UCD_PLX.some, p).map(p =>
+          Parallax.milliarcseconds.reverseGet(math.max(0.0, p)).some
+        )
+      case _       =>
+        NoneRightNec
+    }
+
+  def parseSiderealTracking(
+    adapter: CatalogAdapter,
+    entries: Map[FieldId, String]
+  ): EitherNec[CatalogProblem, SiderealTracking] = {
+    val entriesById = entries.map { case (k, v) => (k.id, v) }
+    (parseRA(adapter, entriesById),
+     parseDec(adapter, entriesById),
+     parseEpoch(adapter, entriesById),
+     parsePV(adapter, entries),
+     parseRadialVelocity(adapter, entries),
+     parsePlx(adapter, entries)
+    ).parMapN { (ra, dec, epoch, pv, rv, plx) =>
+      SiderealTracking(
+        Coordinates(ra, dec),
+        epoch,
+        pv,
+        rv,
+        plx
+      )
+    }
+  }
+
   /**
    * Function to convert a TableRow to a target using a given adapter
    */
@@ -165,54 +223,7 @@ trait VoTableParser {
     adapter: CatalogAdapter,
     row:     TableRow
   ): EitherNec[CatalogProblem, CatalogTargetResult] = {
-    val entries     = row.itemsMap
-    val entriesById = entries.map { case (k, v) => (k.id, v) }
-
-    def parsePV = adapter.parseProperMotion(entries)
-
-    def parsePlx: EitherNec[CatalogProblem, Option[Parallax]] =
-      entries.get(adapter.plxField) match {
-        case Some(p) =>
-          parseDoubleValue(VoTableParser.UCD_PLX.some, p).map(p =>
-            Parallax.milliarcseconds.reverseGet(math.max(0.0, p)).some
-          )
-        case _       =>
-          NoneRightNec
-      }
-
-    // Read readial velocity. if not found it will try to get it from redshift
-    def parseRadialVelocity: EitherNec[CatalogProblem, Option[RadialVelocity]] = {
-      def rvFromZ(z: String): EitherNec[CatalogProblem, Option[RadialVelocity]] =
-        parseDoubleValue(VoTableParser.UCD_Z.some, z).map(z => Redshift(z).toRadialVelocity)
-
-      def fromRV(rv: String): EitherNec[CatalogProblem, Option[RadialVelocity]] =
-        parseDoubleValue(VoTableParser.UCD_RV.some, rv)
-          .map(rv => RadialVelocity(rv.withUnit[KilometersPerSecond]))
-
-      (entries.get(adapter.rvField), entries.get(adapter.zField)) match {
-        case (Some(rv), Some(z)) => fromRV(rv).orElse(rvFromZ(z)).orElse(NoneRightNec)
-        case (Some(rv), _)       => fromRV(rv).orElse(NoneRightNec)
-        case (_, Some(z))        => rvFromZ(z).orElse(NoneRightNec)
-        case _                   => NoneRightNec
-      }
-    }
-
-    def parseSiderealTracking: EitherNec[CatalogProblem, SiderealTracking] =
-      (parseRA(adapter, entriesById),
-       parseDec(adapter, entriesById),
-       parseEpoch(adapter, entriesById),
-       parsePV,
-       parseRadialVelocity,
-       parsePlx
-      ).parMapN { (ra, dec, epoch, pv, rv, plx) =>
-        SiderealTracking(
-          Coordinates(ra, dec),
-          epoch,
-          pv,
-          rv,
-          plx
-        )
-      }
+    val entries = row.itemsMap
 
     def parseBandBrightnesses = adapter.parseBandBrightnesses(entries)
 
@@ -254,7 +265,7 @@ trait VoTableParser {
 
     def parseSiderealTarget: EitherNec[CatalogProblem, CatalogTargetResult] =
       (parseName(adapter, entries),
-       parseSiderealTracking,
+       parseSiderealTracking(adapter, entries),
        parseBandBrightnesses,
        parseCatalogInfo,
        parseAngularSize
@@ -285,25 +296,30 @@ trait VoTableParser {
    * Function to convert a TableRow to a guide star
    */
   protected def targetRow2GuideStar(
-    adapter: CatalogAdapter,
-    row:     TableRow
+    adapter:  CatalogAdapter,
+    bandList: BandsList,
+    row:      TableRow
   ): EitherNec[CatalogProblem, Target.Sidereal] = {
-    val entries     = row.itemsMap
-    val entriesById = entries.map { case (k, v) => (k.id, v) }
+    val entries = row.itemsMap
 
-    def parseBandBrightnesses = adapter.parseBandBrightnesses(entries)
+    // Only pick one relevant brightness
+    def parseBandBrightnesses =
+      adapter.parseBandBrightnesses(entries).map { brightnesses =>
+        bandList.bands
+          .map { case b =>
+            brightnesses.find(_._1 === b)
+          }
+          .collectFirst { case Some(b) =>
+            b
+          }
+      }
 
     def parseSiderealTarget: EitherNec[CatalogProblem, Target.Sidereal] =
-      (parseName(adapter, entries),
-       parseEpoch(adapter, entriesById),
-       parseRA(adapter, entriesById),
-       parseDec(adapter, entriesById),
-       parseBandBrightnesses
-      )
-        .parMapN { (name, epoch, ra, dec, brightnesses) =>
+      (parseName(adapter, entries), parseSiderealTracking(adapter, entries), parseBandBrightnesses)
+        .parMapN { (name, tracking, brightnesses) =>
           Target.Sidereal(
             name,
-            SiderealTracking(Coordinates(ra, dec), epoch, none, none, none),
+            tracking,
             // We set arbitrary values for `sourceProfile`, `spectralDefinition`, `sed` and  `librarySpectrum`: the first in each ADT.
             // In the future we will attempt to infer some or all of these from the catalog info.
             SourceProfile.Point(

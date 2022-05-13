@@ -11,7 +11,7 @@ sealed trait ADQLGaiaQuery {
   /**
    * Builds an adql query for gaia taking input from the adapter and the query itself
    */
-  def adql(cs: QueryByADQL)(implicit ci: ADQLInterpreter): String = {
+  def adql(cs: ADQLQuery)(implicit ci: ADQLInterpreter): String = {
     //
     val fields           = ci.allFields.map(_.id.value.toLowerCase).mkString(",")
     val extraFields      = ci.extraFields(cs.base)
