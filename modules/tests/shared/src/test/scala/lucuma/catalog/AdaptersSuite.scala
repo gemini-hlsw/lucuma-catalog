@@ -59,7 +59,7 @@ class AdaptersSuite extends CatsEffectSuite with VoTableParser with VoTableSampl
           // proper motions
           assertEquals(
             Target.properMotionRA.getOption(t),
-            ProperMotion.RA(6456.withUnit[MicroArcSecondPerYear]).some
+            ProperMotion.RA(6.456.withUnit[MilliArcSecondPerYear]).some
           )
           assertEquals(
             Target.properMotionDec.getOption(t),

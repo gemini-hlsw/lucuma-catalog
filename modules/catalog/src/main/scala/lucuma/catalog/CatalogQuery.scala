@@ -9,6 +9,7 @@ import lucuma.core.enum.CatalogName
 import lucuma.core.geom.ShapeExpression
 import lucuma.core.geom.syntax.all._
 import lucuma.core.math.Coordinates
+import lucuma.core.math.Offset
 import lucuma.core.model.SiderealTracking
 import org.http4s.Uri
 import spire.math.Bounded
@@ -117,14 +118,27 @@ final case class TimeRangeQueryByADQL(
     implicit val si = ev.shapeInterpreter
 
     // Coordinates at the start and of the time range
-    val start  = tracking.at(timeRange.lowerBound.a)
-    val end    = tracking.at(timeRange.upperBound.a)
-    // offset between them
-    val offset = start.diff(end).offset
-    val r      = (shapeConstraint ∪ (shapeConstraint ↗ offset)).maxSide.bisect
-    // Set the base in the middle of both time ends
-    val base   = start.interpolate(end, 0.5)
+    val start = tracking.at(timeRange.lowerBound.a)
+    val end   = tracking.at(timeRange.upperBound.a)
 
+    // Try to set the base in the middle of both time ends
+    val (offset, base) = (start, end) match {
+      case (Some(start), Some(end)) =>
+        // offset between them and base at the middle point
+        (start.diff(end).offset, start.interpolate(end, 0.5))
+      case (Some(start), None)      =>
+        // offset between start and original, and base in the middle
+        (start.diff(tracking.baseCoordinates).offset,
+         start.interpolate(tracking.baseCoordinates, 0.5)
+        )
+      case (None, Some(end))        =>
+        // offset between original and then, and base in the middle
+        (tracking.baseCoordinates.diff(end).offset, tracking.baseCoordinates.interpolate(end, 0.5))
+      case _                        =>
+        // Original values
+        (Offset.Zero, tracking.baseCoordinates)
+    }
+    val r              = (shapeConstraint ∪ (shapeConstraint ↗ offset)).maxSide.bisect
     f"CIRCLE('ICRS', ${(base.ra.toAngle.toDoubleDegrees)}%9.8f, ${(base.dec.toAngle.toSignedDoubleDegrees)}%9.8f, ${r.toDoubleDegrees / 2}%9.8f)"
   }
 }
