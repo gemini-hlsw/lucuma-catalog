@@ -91,7 +91,7 @@ final case class QueryByADQL(
 
     val r = shapeConstraint.maxSide.bisect
 
-    f"CIRCLE('ICRS', ${(base.ra.toAngle.toDoubleDegrees)}%9.8f, ${(base.dec.toAngle.toSignedDoubleDegrees)}%9.8f, ${r.toDoubleDegrees / 2}%9.8f)"
+    f"CIRCLE('ICRS', ${(base.ra.toAngle.toDoubleDegrees)}%9.8f, ${(base.dec.toAngle.toSignedDoubleDegrees)}%9.8f, ${r.toDoubleDegrees}%9.8f)"
   }
 }
 
@@ -139,6 +139,7 @@ final case class TimeRangeQueryByADQL(
         (Offset.Zero, tracking.baseCoordinates)
     }
     val r              = (shapeConstraint ∪ (shapeConstraint ↗ offset)).maxSide.bisect
-    f"CIRCLE('ICRS', ${(base.ra.toAngle.toDoubleDegrees)}%9.8f, ${(base.dec.toAngle.toSignedDoubleDegrees)}%9.8f, ${r.toDoubleDegrees / 2}%9.8f)"
+
+    f"CIRCLE('ICRS', ${(base.ra.toAngle.toDoubleDegrees)}%9.8f, ${(base.dec.toAngle.toSignedDoubleDegrees)}%9.8f, ${r.toDoubleDegrees}%9.8f)"
   }
 }
