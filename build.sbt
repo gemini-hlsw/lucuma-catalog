@@ -44,6 +44,19 @@ lazy val catalog = crossProject(JVMPlatform, JSPlatform)
     scalacOptions ~= (_.filterNot(Set("-Vtype-diffs")))
   )
 
+lazy val ags = crossProject(JVMPlatform, JSPlatform)
+  .crossType(CrossType.Pure)
+  .in(file("modules/ags"))
+  .settings(
+    name := "lucuma-ags",
+    libraryDependencies ++= Seq(
+      "edu.gemini"    %%% "lucuma-core" % lucumaCoreVersion,
+      "org.typelevel" %%% "cats-core"   % catsVersion
+    ),
+    scalacOptions ~= (_.filterNot(Set("-Vtype-diffs")))
+  )
+  .dependsOn(catalog)
+
 lazy val testkit = crossProject(JVMPlatform, JSPlatform)
   .crossType(CrossType.Pure)
   .in(file("modules/testkit"))
@@ -63,7 +76,7 @@ lazy val tests = crossProject(JVMPlatform, JSPlatform)
   .in(file("modules/tests"))
   .enablePlugins(NoPublishPlugin)
   .jsEnablePlugins(ScalaJSBundlerPlugin)
-  .dependsOn(catalog, testkit)
+  .dependsOn(catalog, testkit, ags)
   .settings(
     name := "lucuma-catalog-tests",
     libraryDependencies ++= Seq(
