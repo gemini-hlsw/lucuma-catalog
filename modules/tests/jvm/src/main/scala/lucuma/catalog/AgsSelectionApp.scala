@@ -8,22 +8,22 @@ import cats.effect.IOApp
 import cats.effect.Sync
 import cats.syntax.all._
 import fs2.text
-import lucuma.core.geom.jts.interpreter._
+import lucuma.ags._
+import lucuma.core.enum.CloudExtinction
+import lucuma.core.enum.GuideSpeed
+import lucuma.core.enum.ImageQuality
+import lucuma.core.enum.SkyBackground
 import lucuma.core.geom.gmos.all.candidatesArea
+import lucuma.core.geom.jts.interpreter._
 import lucuma.core.math.Coordinates
 import lucuma.core.math.Declination
 import lucuma.core.math.Epoch
 import lucuma.core.math.RightAscension
-import lucuma.ags._
+import lucuma.core.math.Wavelength
 import org.http4s.Method._
 import org.http4s.Request
 import org.http4s.client.Client
 import org.http4s.jdkhttpclient.JdkHttpClient
-import lucuma.core.enum.GuideSpeed
-import lucuma.core.math.Wavelength
-import lucuma.core.enum.SkyBackground
-import lucuma.core.enum.ImageQuality
-import lucuma.core.enum.CloudExtinction
 
 trait AgsSelectionSample {
   val epoch = Epoch.fromString.getOption("J2022.000").getOrElse(Epoch.J2000)
