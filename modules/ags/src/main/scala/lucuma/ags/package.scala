@@ -47,38 +47,38 @@ package object ags {
       case SkyBackground.Darkest =>
         guideSpeed match {
           case GuideSpeed.Fast   =>
-            16.4 - 0.8 * wfsFwhm(iq, wavelength).value - ce.toMagnitudes
+            16.4 - 0.8 * wfsFwhm(iq, wavelength).value - ce.toBrightness
           case GuideSpeed.Medium =>
-            16.9 - 0.8 * wfsFwhm(iq, wavelength).value - ce.toMagnitudes
+            16.9 - 0.8 * wfsFwhm(iq, wavelength).value - ce.toBrightness
           case GuideSpeed.Slow   =>
-            17.4 - 0.8 * wfsFwhm(iq, wavelength).value - ce.toMagnitudes
+            17.4 - 0.8 * wfsFwhm(iq, wavelength).value - ce.toBrightness
         }
       case SkyBackground.Dark    =>
         guideSpeed match {
           case GuideSpeed.Fast   =>
-            16.3 - 0.8 * wfsFwhm(iq, wavelength).value - ce.toMagnitudes
+            16.3 - 0.8 * wfsFwhm(iq, wavelength).value - ce.toBrightness
           case GuideSpeed.Medium =>
-            16.8 - 0.8 * wfsFwhm(iq, wavelength).value - ce.toMagnitudes
+            16.8 - 0.8 * wfsFwhm(iq, wavelength).value - ce.toBrightness
           case GuideSpeed.Slow   =>
-            17.3 - 0.8 * wfsFwhm(iq, wavelength).value - ce.toMagnitudes
+            17.3 - 0.8 * wfsFwhm(iq, wavelength).value - ce.toBrightness
         }
       case SkyBackground.Gray    =>
         guideSpeed match {
           case GuideSpeed.Fast   =>
-            16.2 - 0.8 * wfsFwhm(iq, wavelength).value - ce.toMagnitudes
+            16.2 - 0.8 * wfsFwhm(iq, wavelength).value - ce.toBrightness
           case GuideSpeed.Medium =>
-            16.7 - 0.8 * wfsFwhm(iq, wavelength).value - ce.toMagnitudes
+            16.7 - 0.8 * wfsFwhm(iq, wavelength).value - ce.toBrightness
           case GuideSpeed.Slow   =>
-            17.2 - 0.8 * wfsFwhm(iq, wavelength).value - ce.toMagnitudes
+            17.2 - 0.8 * wfsFwhm(iq, wavelength).value - ce.toBrightness
         }
       case SkyBackground.Bright  =>
         guideSpeed match {
           case GuideSpeed.Fast   =>
-            16.1 - 0.8 * wfsFwhm(iq, wavelength).value - ce.toMagnitudes
+            16.1 - 0.8 * wfsFwhm(iq, wavelength).value - ce.toBrightness
           case GuideSpeed.Medium =>
-            16.6 - 0.8 * wfsFwhm(iq, wavelength).value - ce.toMagnitudes
+            16.6 - 0.8 * wfsFwhm(iq, wavelength).value - ce.toBrightness
           case GuideSpeed.Slow   =>
-            17.1 - 0.8 * wfsFwhm(iq, wavelength).value - ce.toMagnitudes
+            17.1 - 0.8 * wfsFwhm(iq, wavelength).value - ce.toBrightness
         }
     }
     FaintnessConstraint(limit)
