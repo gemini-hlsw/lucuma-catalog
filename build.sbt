@@ -15,7 +15,7 @@ lazy val catsScalacheckVersion      = "0.3.1"
 lazy val scalaXmlVersion            = "2.1.0"
 lazy val http4sVersion              = "0.23.11"
 lazy val http4sJdkHttpClientVersion = "0.7.0"
-lazy val http4sDomVersion           = "0.2.1"
+lazy val http4sDomVersion           = "0.2.2"
 
 Global / onChangedBuildSource   := ReloadOnSourceChanges
 Global / scalacOptions += "-Ymacro-annotations"
