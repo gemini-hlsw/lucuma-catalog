@@ -115,6 +115,14 @@ object AgsAnalysis {
       Order.by(u => (u.guideSpeed, u.quality, u.vignettingArea))
   }
 
+  implicit val order: Order[AgsAnalysis] =
+    Order.from {
+      case (a: Usable, b: Usable) => Usable.order.compare(a, b)
+      case _                      => -10
+    }
+
+  implicit val ordering: Ordering[AgsAnalysis] = order.toOrdering
+
   // def guideProbe(a: AgsAnalysis): Option[GuideProbe] = a match {
   //   case NoGuideStarForProbe(p)     => Some(p)
   //   // case NoGuideStarForGroup(_)     => None

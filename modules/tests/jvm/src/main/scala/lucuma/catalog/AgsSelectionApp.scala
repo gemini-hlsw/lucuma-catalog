@@ -92,7 +92,7 @@ object AgsSelectionSampleApp extends IOApp.Simple with AgsSelectionSample {
           .toList
       )
       // .flatMap(x => x.traverse(u => IO(pprint.pprintln(u))))
-      .flatMap(x => IO.println(x.length))
+      .flatMap(x => IO.println(AGS.sortGuideStarCandidates(x)))
       // .flatMap(x =>
       //   x.span(_._2.find(_.quality === AgsGuideQuality.Unusable).isDefined)
       //     .traverse(u => IO(pprint.pprintln(u)))

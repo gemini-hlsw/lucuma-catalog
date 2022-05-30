@@ -23,6 +23,7 @@ import lucuma.core.geom.Area
 import lucuma.core.model.Target
 import lucuma.core.geom.jts.interpreter._
 import lucuma.core.math.Wavelength
+import scala.collection.immutable.SortedSet
 
 final case class AGSPosition(posAngle: Angle, offsetPos: Offset)
 
@@ -140,6 +141,23 @@ object AGS {
         val offset = baseCoordinates.diff(gsc.tracking.baseCoordinates).offset
         gsc -> runAnalysis(constraints, sequenceOffsets, wavelength, offset, gsc)
       }
+
+  /**
+   * Sort the guidde stars by analysis
+   */
+  def sortGuideStarCandidates(
+    l: List[(GuideStarCandidate, Map[AGSPosition, AgsAnalysis])]
+  ): Map[AGSPosition, SortedSet[(GuideStarCandidate, AgsAnalysis)]] =
+    l.foldLeft(Map.empty[AGSPosition, Vector[(GuideStarCandidate, AgsAnalysis)]]) {
+      case (map, (candidate, positions)) =>
+        val results = positions.map { case (pos, analysis) =>
+          pos -> map.getOrElse(pos, Vector.empty).appended((candidate -> analysis))
+        }
+        map ++ results
+    }.map { case (k, v) =>
+      implicit val ordering: Ordering[(GuideStarCandidate, AgsAnalysis)] = Ordering.by(_._2)
+      k -> SortedSet.from(v)
+    }
 
   /**
    * Determines the fastest possible guide speed (if any) that may be used for guiding given a star
