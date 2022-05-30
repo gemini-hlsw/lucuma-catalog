@@ -32,15 +32,16 @@ import lucuma.core.enum.CloudExtinction
 import lucuma.core.enum.WaterVapor
 import lucuma.core.model.ElevationRange
 import lucuma.core.enum.PortDisposition
+import lucuma.core.enum.GmosNorthFpu
 
 trait AgsSelectionSample {
   val epoch = Epoch.fromString.getOption("J2022.000").getOrElse(Epoch.J2000)
 
   implicit val ci =
-    ADQLInterpreter.pmCorrected(1000, epoch)
+    ADQLInterpreter.pmCorrected(30000, epoch)
 
-  val m81Coords = (RightAscension.fromStringHMS.getOption("16:17:2.410"),
-                   Declination.fromStringSignedDMS.getOption("-22:58:33.90")
+  val m81Coords = (RightAscension.fromStringHMS.getOption("18:15:47.550"),
+                   Declination.fromStringSignedDMS.getOption("-29:49:05.00")
   ).mapN(Coordinates.apply).getOrElse(Coordinates.Zero)
 
   def gaiaQuery[F[_]: Sync](
@@ -61,40 +62,40 @@ trait AgsSelectionSample {
 }
 
 object AgsSelectionSampleApp extends IOApp.Simple with AgsSelectionSample {
-  def run =
+  val constraints = ConstraintSet(ImageQuality.PointTwo,
+                                  CloudExtinction.PointFive,
+                                  SkyBackground.Dark,
+                                  WaterVapor.Wet,
+                                  ElevationRange.AirMass.Default
+  )
+
+  val wavelength = Wavelength.fromNanometers(700).get
+  def run        =
     JdkHttpClient
       .simple[IO]
       .use(
-        gaiaQuery[IO](_,
-                      gaiaBrightnessConstraints(GuideSpeed.Fast,
-                                                Wavelength.fromNanometers(700).get,
-                                                SkyBackground.Darkest,
-                                                ImageQuality.PointTwo,
-                                                CloudExtinction.PointFive
-                      )
-        ).through(
-          AGS.agsAnalysis(
-            m81Coords,
-            Map(
-              AGSPosition(Angle.Angle0, Offset.Zero) -> GmosAGSParams(
-                ConstraintSet(ImageQuality.PointTwo,
-                              CloudExtinction.PointFive,
-                              SkyBackground.Dark,
-                              WaterVapor.Wet,
-                              ElevationRange.AirMass.Default
-                ),
-                none,
-                PortDisposition.Bottom
+        gaiaQuery[IO](_, gaiaBrightnessConstraints(constraints, GuideSpeed.Fast, wavelength))
+          .through(
+            AGS.agsAnalysis(
+              constraints,
+              Wavelength.fromNanometers(700).get,
+              m81Coords,
+              Map(
+                AGSPosition(Angle.Angle0, Offset.Zero) -> GmosAGSParams(
+                  GmosNorthFpu.LongSlit_5_00.asLeft.some,
+                  PortDisposition.Bottom
+                )
               )
             )
           )
-        ).compile
+          .compile
           .toList
       )
       // .flatMap(x => x.traverse(u => IO(pprint.pprintln(u))))
-      .flatMap(x =>
-        x.span(_._2.find(_.quality === AgsGuideQuality.Unusable).isDefined)
-          .traverse(u => IO(pprint.pprintln(u)))
-      )
+      .flatMap(x => IO.println(x.length))
+      // .flatMap(x =>
+      //   x.span(_._2.find(_.quality === AgsGuideQuality.Unusable).isDefined)
+      //     .traverse(u => IO(pprint.pprintln(u)))
+      // )
       .void
 }

@@ -19,6 +19,7 @@ import lucuma.catalog.FaintnessConstraint
 import lucuma.catalog.BrightnessConstraints
 import lucuma.catalog.BandsList
 import lucuma.catalog.SaturationConstraint
+import lucuma.core.model.ConstraintSet
 
 package object ags {
   val baseFwhm = Wavelength.fromNanometers(500).get
@@ -95,5 +96,17 @@ package object ags {
     val saturation = SaturationConstraint(faintness.brightness - 6)
     BrightnessConstraints(BandsList.GaiaBandsList, faintness, saturation.some)
   }
+
+  def gaiaBrightnessConstraints(
+    constraints: ConstraintSet,
+    guideSpeed:  GuideSpeed,
+    wavelength:  Wavelength
+  ): BrightnessConstraints =
+    gaiaBrightnessConstraints(guideSpeed,
+                              wavelength,
+                              constraints.skyBackground,
+                              constraints.imageQuality,
+                              constraints.cloudExtinction
+    )
 
 }
