@@ -20,12 +20,12 @@ sealed trait ADQLGaiaQuery {
     val shapeAdql        = cs.adqlGeom
     val brightnessFields = cs.adqlBrightness
     val brightnessAdql   =
-      if (brightnessFields.isEmpty) "" else brightnessFields.mkString("and ", " and ", "")
+      if (brightnessFields.isEmpty) "" else brightnessFields.mkString("and (", " or ", ")")
     val orderBy          = ci.orderBy.foldMap(s => s"ORDER BY $s")
 
     val query =
       f"""|SELECT TOP ${ci.MaxCount} $fields $extraFieldsStr
-        |     FROM gaiadr2.gaia_source
+        |     FROM ${gaia.gaiaDB}
         |     WHERE CONTAINS(POINT('ICRS',${gaia.raField.id},${gaia.decField.id}),$shapeAdql)=1
         |     $brightnessAdql
         |     $orderBy

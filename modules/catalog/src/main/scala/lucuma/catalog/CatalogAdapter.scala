@@ -285,6 +285,8 @@ object CatalogAdapter {
   sealed trait Gaia extends CatalogAdapter {
     val catalog: CatalogName = CatalogName.Gaia
 
+    val gaiaDB: String = "gaiadr2.gaia_source"
+
     val idField: FieldId             = FieldId.unsafeFrom("DESIGNATION", VoTableParser.UCD_OBJID)
     val nameField: FieldId           = idField
     val raField: FieldId             = FieldId("ra", none)
@@ -326,7 +328,6 @@ object CatalogAdapter {
         plxField,
         rvField,
         gMagField,
-        bpMagField,
         rpMagField
       )
 
@@ -349,7 +350,6 @@ object CatalogAdapter {
       band.map((_, vegaUnits)).toRightNec(UnmatchedField(f.ucd))
     }
 
-    // Simbad has a few special cases to map sloan band brightnesses
     def findBand(id: FieldId): Option[Band] =
       id.id match {
         case gMagField.id  => Band.Gaia.some
