@@ -8,6 +8,7 @@ import cats.syntax.all._
 import coulomb._
 import eu.timepit.refined.cats._
 import eu.timepit.refined.types.string.NonEmptyString
+import lucuma.catalog.BandsList
 import lucuma.core.enum.Band
 import lucuma.core.enum.StellarLibrarySpectrum
 import lucuma.core.math.BrightnessUnits._
@@ -34,14 +35,24 @@ final case class GuideStarCandidate(
 object GuideStarCandidate {
   implicit val eqGuideStar: Eq[GuideStarCandidate] = Eq.by(x => (x.name, x.tracking, x.gBrightness))
 
+  // There is some loss of info converting one to the other but further
+  // conversions are always the same, thus SplitEpi
   val siderealTarget: SplitEpi[Target.Sidereal, GuideStarCandidate] =
     SplitEpi(
-      st =>
+      st => {
+        val gBrightness = BandsList.GaiaBandsList.bands
+          .flatMap { band =>
+            SourceProfile.integratedBrightnessIn(band).headOption(st.sourceProfile)
+          }
+          .headOption
+          .map(_.value)
+
         GuideStarCandidate(
           st.name,
           st.tracking,
-          SourceProfile.integratedBrightnessIn(Band.Gaia).headOption(st.sourceProfile).map(_.value)
-        ),
+          gBrightness
+        )
+      },
       g =>
         Target.Sidereal(
           g.name,

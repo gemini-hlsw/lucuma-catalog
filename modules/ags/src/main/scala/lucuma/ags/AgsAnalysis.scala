@@ -4,12 +4,14 @@
 package lucuma.ags
 
 import cats.Order
-import lucuma.core.enum.GuideSpeed
+import cats.syntax.all._
 import lucuma.core.enum.Band
+import lucuma.core.enum.GuideSpeed
 import lucuma.core.geom.Area
 
 sealed trait AgsAnalysis {
   def quality: AgsGuideQuality = AgsGuideQuality.Unusable
+  def isUsable: Boolean        = quality =!= AgsGuideQuality.Unusable
   def message(withProbe: Boolean): String
 }
 
@@ -25,11 +27,6 @@ object AgsAnalysis {
       s"No ${p}guide star selected."
     }
   }
-
-  // final case class NoGuideStarForGroup(guideGroup: GuideProbeGroup) extends AgsAnalysis {
-  //   override def message(withProbe: Boolean): String =
-  //     s"No ${guideGroup.getKey} guide star selected."
-  // }
 
   final case class MagnitudeTooFaint(
     guideProbe:     GuideProbe,
@@ -51,13 +48,8 @@ object AgsAnalysis {
     }
   }
 
-  // object NotReachable {
-  //   implicit val order: Order[NotReachable] =
-  //     Order.allEqual
-  // }
-  //
   final case class NotReachable(
-    position:   AGSPosition,
+    position:   AgsPosition,
     guideProbe: GuideProbe,
     target:     GuideStarCandidate
   ) extends AgsAnalysis {
@@ -118,19 +110,11 @@ object AgsAnalysis {
   implicit val order: Order[AgsAnalysis] =
     Order.from {
       case (a: Usable, b: Usable) => Usable.order.compare(a, b)
-      case _                      => -10
+      case (_: Usable, _)         => Int.MinValue
+      case (_, _: Usable)         => Int.MaxValue
+      case _                      => Int.MinValue
     }
 
   implicit val ordering: Ordering[AgsAnalysis] = order.toOrdering
-
-  // def guideProbe(a: AgsAnalysis): Option[GuideProbe] = a match {
-  //   case NoGuideStarForProbe(p)     => Some(p)
-  //   // case NoGuideStarForGroup(_)     => None
-  //   case MagnitudeTooFaint(p, _, _) => Some(p)
-  //   case MagnitudeTooBright(p, _)   => Some(p)
-  //   case NotReachable(p, _)         => Some(p)
-  //   case NoMagnitudeForBand(p, _)   => Some(p)
-  //   case Usable(p, _, _, _)         => Some(p)
-  // }
 
 }

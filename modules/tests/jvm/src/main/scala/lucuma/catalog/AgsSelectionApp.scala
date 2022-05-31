@@ -9,30 +9,30 @@ import cats.effect.Sync
 import cats.syntax.all._
 import fs2._
 import fs2.text
+import lucuma.ags._
+import lucuma.core.enum.CloudExtinction
+import lucuma.core.enum.GmosNorthFpu
+import lucuma.core.enum.GuideSpeed
+import lucuma.core.enum.ImageQuality
+import lucuma.core.enum.PortDisposition
+import lucuma.core.enum.SkyBackground
+import lucuma.core.enum.WaterVapor
 import lucuma.core.geom.gmos.all.candidatesArea
 import lucuma.core.geom.jts.interpreter._
-import lucuma.core.math.Coordinates
 import lucuma.core.math.Angle
-import lucuma.core.math.Offset
+import lucuma.core.math.Coordinates
 import lucuma.core.math.Declination
 import lucuma.core.math.Epoch
+import lucuma.core.math.Offset
 import lucuma.core.math.RightAscension
-import lucuma.core.model.Target
+import lucuma.core.math.Wavelength
 import lucuma.core.model.ConstraintSet
-import lucuma.ags._
+import lucuma.core.model.ElevationRange
+import lucuma.core.model.Target
 import org.http4s.Method._
 import org.http4s.Request
 import org.http4s.client.Client
 import org.http4s.jdkhttpclient.JdkHttpClient
-import lucuma.core.enum.GuideSpeed
-import lucuma.core.math.Wavelength
-import lucuma.core.enum.SkyBackground
-import lucuma.core.enum.ImageQuality
-import lucuma.core.enum.CloudExtinction
-import lucuma.core.enum.WaterVapor
-import lucuma.core.model.ElevationRange
-import lucuma.core.enum.PortDisposition
-import lucuma.core.enum.GmosNorthFpu
 
 trait AgsSelectionSample {
   val epoch = Epoch.fromString.getOption("J2022.000").getOrElse(Epoch.J2000)
@@ -40,15 +40,15 @@ trait AgsSelectionSample {
   implicit val ci =
     ADQLInterpreter.pmCorrected(30000, epoch)
 
-  val m81Coords = (RightAscension.fromStringHMS.getOption("18:15:47.550"),
-                   Declination.fromStringSignedDMS.getOption("-29:49:05.00")
+  val coords = (RightAscension.fromStringHMS.getOption("18:15:47.550"),
+                Declination.fromStringSignedDMS.getOption("-29:49:05.00")
   ).mapN(Coordinates.apply).getOrElse(Coordinates.Zero)
 
   def gaiaQuery[F[_]: Sync](
     client: Client[F],
     bc:     BrightnessConstraints
   ): Stream[F, Target.Sidereal] = {
-    val query   = CatalogSearch.gaiaSearchUri(QueryByADQL(m81Coords, candidatesArea, bc.some))
+    val query   = CatalogSearch.gaiaSearchUri(QueryByADQL(coords, candidatesArea, bc.some))
     val request = Request[F](GET, query)
     client
       .stream(request)
@@ -75,27 +75,22 @@ object AgsSelectionSampleApp extends IOApp.Simple with AgsSelectionSample {
       .simple[IO]
       .use(
         gaiaQuery[IO](_, gaiaBrightnessConstraints(constraints, GuideSpeed.Fast, wavelength))
+          .map(GuideStarCandidate.siderealTarget.get)
           .through(
-            AGS.agsAnalysis(
+            Ags.agsAnalysisStream[IO](
               constraints,
               Wavelength.fromNanometers(700).get,
-              m81Coords,
-              Map(
-                AGSPosition(Angle.Angle0, Offset.Zero) -> GmosAGSParams(
-                  GmosNorthFpu.LongSlit_5_00.asLeft.some,
-                  PortDisposition.Bottom
-                )
+              coords,
+              AgsPosition(Angle.Angle0, Offset.Zero),
+              AgsParams.GmosAgsParams(
+                GmosNorthFpu.LongSlit_5_00.asLeft.some,
+                PortDisposition.Bottom
               )
             )
           )
           .compile
           .toList
       )
-      // .flatMap(x => x.traverse(u => IO(pprint.pprintln(u))))
-      .flatMap(x => IO.println(AGS.sortGuideStarCandidates(x)))
-      // .flatMap(x =>
-      //   x.span(_._2.find(_.quality === AgsGuideQuality.Unusable).isDefined)
-      //     .traverse(u => IO(pprint.pprintln(u)))
-      // )
+      .flatMap(x => x.traverse(u => IO(pprint.pprintln(u))))
       .void
 }

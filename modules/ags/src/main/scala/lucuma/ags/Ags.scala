@@ -4,77 +4,39 @@
 package lucuma.ags
 
 import cats.syntax.all._
-import lucuma.core.enum.PortDisposition
-import lucuma.core.enum.GuideSpeed
-import lucuma.core.enum.GmosNorthFpu
-import lucuma.core.enum.GmosSouthFpu
-import lucuma.core.geom.ShapeExpression
-import lucuma.core.geom.syntax.all._
-import lucuma.core.math.Angle
-import lucuma.core.math.Offset
-import lucuma.core.math.Coordinates
-import lucuma.core.model.ConstraintSet
 import fs2._
-import lucuma.core.geom.gmos.probeArm
-import lucuma.core.geom.gmos.scienceArea
 import lucuma.core.enum.Band
+import lucuma.core.enum.GuideSpeed
 import lucuma.core.enum.ImageQuality
 import lucuma.core.geom.Area
-import lucuma.core.model.Target
 import lucuma.core.geom.jts.interpreter._
+import lucuma.core.math.Coordinates
+import lucuma.core.math.Offset
 import lucuma.core.math.Wavelength
-import scala.collection.immutable.SortedSet
+import lucuma.core.model.ConstraintSet
 
-final case class AGSPosition(posAngle: Angle, offsetPos: Offset)
-
-sealed trait AGSParams {
-  def probe: GuideProbe
-  def isReachable(gsOffset:    Offset, position:      AGSPosition): Boolean
-  def vignettingArea(position: AGSPosition)(gsOffset: Offset): ShapeExpression
-}
-
-final case class GmosAGSParams(
-  fpu:  Option[Either[GmosNorthFpu, GmosSouthFpu]],
-  port: PortDisposition
-) extends AGSParams {
-  val probe = GuideProbe.OIWFS
-
-  def isReachable(gsOffset: Offset, position: AGSPosition): Boolean =
-    patrolField(position).eval.contains(gsOffset)
-
-  def patrolField(position: AGSPosition): ShapeExpression =
-    probeArm.patrolFieldAt(position.posAngle, position.offsetPos, fpu, port)
-
-  override def vignettingArea(position: AGSPosition)(gsOffset: Offset): ShapeExpression =
-    scienceArea.shapeAt(position.posAngle, position.offsetPos, fpu) ∩
-      probeArm.shapeAt(position.posAngle, gsOffset, position.offsetPos, fpu, port)
-}
-
-object AGS {
+object Ags {
 
   def runAnalysis(
-    conditions:      ConstraintSet,
-    sequenceOffsets: Map[AGSPosition, AGSParams],
-    wavelength:      Wavelength,
-    gsOffset:        Offset,
-    gsc:             GuideStarCandidate
-  ): Map[AGSPosition, AgsAnalysis] =
-    sequenceOffsets.map { case (pos, params) =>
-      val analysis =
-        if (!params.isReachable(gsOffset, pos))
-          AgsAnalysis.NotReachable(pos, params.probe, gsc)
-        else
-          magnitudeAnalysis(
-            conditions,
-            params.probe,
-            gsOffset,
-            gsc,
-            wavelength,
-            // calculate vignetting
-            params.vignettingArea(pos)(_).eval.area
-          )
-      pos -> analysis
-    }
+    conditions: ConstraintSet,
+    wavelength: Wavelength,
+    gsOffset:   Offset,
+    pos:        AgsPosition,
+    params:     AgsParams,
+    gsc:        GuideStarCandidate
+  ): AgsAnalysis =
+    if (!params.isReachable(gsOffset, pos))
+      AgsAnalysis.NotReachable(pos, params.probe, gsc)
+    else
+      magnitudeAnalysis(
+        conditions,
+        params.probe,
+        gsOffset,
+        gsc,
+        wavelength,
+        // calculate vignetting
+        params.vignettingArea(pos)(_).eval.area
+      )
 
   /**
    * Analysis of the suitability of the magnitude of the given guide star regardless of its
@@ -129,34 +91,33 @@ object AGS {
   /**
    * FS2 pipe to convert a stream of Sideral targets to analyzed guidestars
    */
+  def agsAnalysisStream[F[_]](
+    constraints:     ConstraintSet,
+    wavelength:      Wavelength,
+    baseCoordinates: Coordinates,
+    position:        AgsPosition,
+    params:          AgsParams
+  ): Pipe[F, GuideStarCandidate, (GuideStarCandidate, AgsAnalysis)] =
+    in =>
+      in.map { gsc =>
+        val offset = baseCoordinates.diff(gsc.tracking.baseCoordinates).offset
+        gsc -> runAnalysis(constraints, wavelength, offset, position, params, gsc)
+      }
+
+  /**
+   * FS2 pipe to convert a stream of Sideral targets to analyzed guidestars
+   */
   def agsAnalysis[F[_]](
     constraints:     ConstraintSet,
     wavelength:      Wavelength,
     baseCoordinates: Coordinates,
-    sequenceOffsets: Map[AGSPosition, AGSParams]
-  ): Pipe[F, Target.Sidereal, (GuideStarCandidate, Map[AGSPosition, AgsAnalysis])] =
-    in =>
-      in.map { u =>
-        val gsc    = GuideStarCandidate.siderealTarget.get(u)
-        val offset = baseCoordinates.diff(gsc.tracking.baseCoordinates).offset
-        gsc -> runAnalysis(constraints, sequenceOffsets, wavelength, offset, gsc)
-      }
-
-  /**
-   * Sort the guidde stars by analysis
-   */
-  def sortGuideStarCandidates(
-    l: List[(GuideStarCandidate, Map[AGSPosition, AgsAnalysis])]
-  ): Map[AGSPosition, SortedSet[(GuideStarCandidate, AgsAnalysis)]] =
-    l.foldLeft(Map.empty[AGSPosition, Vector[(GuideStarCandidate, AgsAnalysis)]]) {
-      case (map, (candidate, positions)) =>
-        val results = positions.map { case (pos, analysis) =>
-          pos -> map.getOrElse(pos, Vector.empty).appended((candidate -> analysis))
-        }
-        map ++ results
-    }.map { case (k, v) =>
-      implicit val ordering: Ordering[(GuideStarCandidate, AgsAnalysis)] = Ordering.by(_._2)
-      k -> SortedSet.from(v)
+    position:        AgsPosition,
+    params:          AgsParams,
+    candidates:      List[GuideStarCandidate]
+  ): List[(GuideStarCandidate, AgsAnalysis)] =
+    candidates.map { gsc =>
+      val offset = baseCoordinates.diff(gsc.tracking.baseCoordinates).offset
+      gsc -> runAnalysis(constraints, wavelength, offset, position, params, gsc)
     }
 
   /**
