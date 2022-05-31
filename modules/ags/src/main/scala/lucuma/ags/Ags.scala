@@ -62,13 +62,13 @@ object Ags {
         case GuideSpeed.Fast   =>
           DeliversRequestedIq
         case GuideSpeed.Medium =>
-          // if (worseOrEqual(ImageQuality.PERCENT_70)) DeliversRequestedIq
+          // TODO Review this limit
           if (worseOrEqual(ImageQuality.PointSix)) DeliversRequestedIq
           else PossibleIqDegradation
         case GuideSpeed.Slow   =>
-          // if (worseOrEqual(ImageQuality.PERCENT_85)) DeliversRequestedIq
+          // TODO Review this limit
           if (worseOrEqual(ImageQuality.PointEight)) DeliversRequestedIq
-          // else if (worseOrEqual(ImageQuality.PERCENT_70)) PossibleIqDegradation
+          // TODO Review this limit
           else if (worseOrEqual(ImageQuality.PointSix)) PossibleIqDegradation
           else IqDegradation
       }
@@ -80,16 +80,14 @@ object Ags {
     guideStar.gBrightness
       .map { g =>
         fastestGuideSpeed(constraints, wavelength, g)
-          .map { speed =>
-            usable(speed)
-          }
+          .map(usable)
           .getOrElse(NoGuideStarForProbe(guideProbe))
       }
       .getOrElse(NoMagnitudeForBand(guideProbe, guideStar))
   }
 
   /**
-   * FS2 pipe to convert a stream of Sideral targets to analyzed guidestars
+   * FS2 pipe to do analysis of a stream of Candidate Guide Stars
    */
   def agsAnalysisStream[F[_]](
     constraints:     ConstraintSet,
@@ -105,7 +103,7 @@ object Ags {
       }
 
   /**
-   * FS2 pipe to convert a stream of Sideral targets to analyzed guidestars
+   * Do analysis of a list of Candidate Guide Stars
    */
   def agsAnalysis[F[_]](
     constraints:     ConstraintSet,
