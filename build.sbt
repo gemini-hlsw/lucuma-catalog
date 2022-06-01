@@ -60,7 +60,7 @@ lazy val ags = crossProject(JVMPlatform, JSPlatform)
 lazy val testkit = crossProject(JVMPlatform, JSPlatform)
   .crossType(CrossType.Pure)
   .in(file("modules/testkit"))
-  .dependsOn(catalog)
+  .dependsOn(catalog, ags)
   .settings(
     name := "lucuma-catalog-testkit",
     libraryDependencies ++= Seq(

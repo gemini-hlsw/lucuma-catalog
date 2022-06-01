@@ -5,5 +5,11 @@ package lucuma.catalog
 
 package object arb {
 
-  object all extends ArbUcd with ArbFieldId
+  object all
+      extends ArbUcd
+      with ArbFieldId
+      with ArbAngularSize
+      with ArbBandsList
+      with ArbBrightnessConstraints
+      with ArbCatalogTargetResult
 }
