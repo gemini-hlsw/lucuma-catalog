@@ -1,7 +1,7 @@
 lazy val fs2Version                 = "3.2.7"
 lazy val fs2DataVersion             = "1.3.1"
 lazy val catsVersion                = "2.7.0"
-lazy val catsEffectVersion          = "3.0.1"
+lazy val catsEffectVersion          = "3.0.2"
 lazy val kindProjectorVersion       = "0.13.2"
 lazy val pprintVersion              = "0.7.2"
 lazy val lucumaCoreVersion          = "0.39.0"
