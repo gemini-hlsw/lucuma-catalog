@@ -23,7 +23,7 @@ Global / scalacOptions += "-Ymacro-annotations"
 ThisBuild / tlBaseVersion       := "0.16"
 ThisBuild / tlCiReleaseBranches := Seq("master")
 
-lazy val root = tlCrossRootProject.aggregate(catalog, testkit, tests)
+lazy val root = tlCrossRootProject.aggregate(catalog, ags, testkit, tests)
 
 lazy val catalog = crossProject(JVMPlatform, JSPlatform)
   .crossType(CrossType.Pure)
