@@ -1,7 +1,7 @@
 resolvers += Resolver.sonatypeRepo("public")
 resolvers += Resolver.sonatypeRepo("snapshots")
 
-val sbtLucumaVersion = "0.8.1"
+val sbtLucumaVersion = "0.8.2"
 addSbtPlugin("edu.gemini"         % "sbt-lucuma-lib"         % sbtLucumaVersion)
 addSbtPlugin("edu.gemini"         % "sbt-lucuma-sjs-bundler" % sbtLucumaVersion)
 addSbtPlugin("com.timushev.sbt"   % "sbt-updates"            % "0.6.3")
