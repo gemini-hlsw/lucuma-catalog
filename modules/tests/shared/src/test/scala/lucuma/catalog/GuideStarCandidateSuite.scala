@@ -4,9 +4,9 @@
 package lucuma.ags
 
 import cats.kernel.laws.discipline._
-import lucuma.core.optics.laws.discipline.SplitEpiTests
 import lucuma.ags.arb._
 import lucuma.core.model.arb._
+import lucuma.core.optics.laws.discipline.SplitEpiTests
 import munit._
 
 class GuideStarCandidateSuite extends DisciplineSuite {

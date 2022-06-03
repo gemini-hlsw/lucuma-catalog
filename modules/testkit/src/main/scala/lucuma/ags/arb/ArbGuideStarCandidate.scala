@@ -3,14 +3,14 @@
 
 package lucuma.ags.arb
 
+import eu.timepit.refined.scalacheck.string._
+import eu.timepit.refined.types.string.NonEmptyString
 import lucuma.ags.GuideStarCandidate
 import lucuma.core.model.SiderealTracking
 import lucuma.core.model.arb.ArbSiderealTracking
 import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.Cogen._
 import org.scalacheck._
-import eu.timepit.refined.types.string.NonEmptyString
-import eu.timepit.refined.scalacheck.string._
 
 trait ArbGuideStarCandidate {
   import ArbSiderealTracking._
