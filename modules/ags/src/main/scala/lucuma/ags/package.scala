@@ -17,6 +17,7 @@ import lucuma.core.enum.ImageQuality
 import lucuma.core.enum.SkyBackground
 import lucuma.core.math.Wavelength
 import lucuma.core.model.ConstraintSet
+import lucuma.core.util.Enumerated
 import spire.math.Rational
 
 import scala.math
@@ -31,6 +32,22 @@ package object ags {
       baseFwhm.toPicometers.toValue[Rational] / wavelength.toPicometers.toValue[Rational]
     (sciFwhm.toArcSeconds * math.pow(coeff.value.toDouble, -0.2).withUnit[Unitless]).toValue[Double]
 
+  }
+
+  // Calculate the widest set of constraints, useful to cache catalog results
+  // We get the union off all possible constraints at the slow guide speed
+  // darkest sky background and 300nm wavelength
+  val widestConstraints: BrightnessConstraints = {
+    val widest = Wavelength.fromNanometers(300).get
+
+    val constraints = Enumerated[ImageQuality].all.flatMap { iq =>
+      Enumerated[CloudExtinction].all.map { ce =>
+        faintLimit(GuideSpeed.Slow, widest, SkyBackground.Darkest, iq, ce)
+      }
+    }
+    // The list is never empty
+    val lowest      = constraints.maximumOption.get
+    BrightnessConstraints(BandsList.GaiaBandsList, lowest, none)
   }
 
   /**
