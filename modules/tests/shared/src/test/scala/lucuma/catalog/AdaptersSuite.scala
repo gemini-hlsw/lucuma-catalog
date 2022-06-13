@@ -33,7 +33,7 @@ class AdaptersSuite extends CatsEffectSuite with VoTableParser with VoTableSampl
   test("be able to parse a field definition") {
     Stream
       .emits(Utility.trim(gaia).toString)
-      .through(events[IO, Char])
+      .through(events[IO, Char]())
       .through(referenceResolver[IO]())
       .through(normalize[IO])
       .through(VoTableParser.xml2targets[IO](CatalogAdapter.Gaia))
@@ -87,7 +87,7 @@ class AdaptersSuite extends CatsEffectSuite with VoTableParser with VoTableSampl
   test("parse pm corrected fields") {
     Stream
       .emits(Utility.trim(voTableGaiaPMCorrected).toString)
-      .through(events[IO, Char])
+      .through(events[IO, Char]())
       .through(referenceResolver[IO]())
       .through(normalize[IO])
       .through(VoTableParser.xml2guidestars[IO](CatalogAdapter.Gaia))
