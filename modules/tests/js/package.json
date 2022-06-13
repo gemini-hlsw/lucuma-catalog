@@ -1,7 +1,0 @@
-{
-  "devDependencies": {
-    "abortcontroller-polyfill": "^1.5.0",
-    "fetch-headers": "^2.0.0",
-    "node-fetch": "^2.6.1"
-  }
-}
