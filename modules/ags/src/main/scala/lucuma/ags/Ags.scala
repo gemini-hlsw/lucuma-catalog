@@ -108,9 +108,11 @@ object Ags {
     // This is essentially a cache of geometries avoiding calculatting them
     // over and over again as they don't change for different positions
     val calcs       = params.posCalculations(List(position))
+    // use the slowest speed to filter out
+    val bc          = guideSpeeds.find(_._1 === GuideSpeed.Slow).map(_._2)
 
     in =>
-      in.map { gsc =>
+      in.filter(c => c.gBrightness.exists(g => bc.exists(_.contains(Band.Gaia, g)))).map { gsc =>
         val offset = baseCoordinates.diff(gsc.tracking.baseCoordinates).offset
         runAnalysis(constraints, offset, position, params, gsc)(guideSpeeds, calcs)
       }
@@ -132,10 +134,13 @@ object Ags {
     // This is essentially a cache of geometries avoiding calculatting them
     // over and over again as they don't change for different positions
     val calcs       = params.posCalculations(List(position))
+    // use the slowest speed to filter out
+    val bc          = guideSpeeds.find(_._1 === GuideSpeed.Slow).map(_._2)
 
-    candidates.map { gsc =>
-      val offset = baseCoordinates.diff(gsc.tracking.baseCoordinates).offset
-      runAnalysis(constraints, offset, position, params, gsc)(guideSpeeds, calcs)
+    candidates.filter(c => c.gBrightness.exists(g => bc.exists(_.contains(Band.Gaia, g)))).map {
+      gsc =>
+        val offset = baseCoordinates.diff(gsc.tracking.baseCoordinates).offset
+        runAnalysis(constraints, offset, position, params, gsc)(guideSpeeds, calcs)
     }
   }
 
