@@ -12,6 +12,7 @@ import lucuma.catalog._
 import lucuma.core.enums.Band
 import lucuma.core.enums.CatalogName
 import lucuma.core.math.BrightnessUnits._
+import lucuma.core.math.Epoch
 import lucuma.core.math.ProperMotion
 import lucuma.core.math.ProperMotion.AngularVelocityComponent
 import lucuma.core.math.RadialVelocity
@@ -43,6 +44,8 @@ sealed trait CatalogAdapter {
   def morphTypeField: FieldId
   def angSizeMajAxisField: FieldId
   def angSizeMinAxisField: FieldId
+
+  def defaultEpoch: Epoch = Epoch.J2000
 
   // Parse nameField. In Simbad, this can include a prefix, e.g. "NAME "
   def parseName(entries: Map[FieldId, String]): Option[String] =
@@ -285,10 +288,12 @@ object CatalogAdapter {
   sealed trait Gaia extends CatalogAdapter {
     val catalog: CatalogName = CatalogName.Gaia
 
-    val gaiaDB: String = "gaiadr2.gaia_source"
+    override def defaultEpoch: Epoch = Epoch.Julian.fromEpochYears(2016.0).get
 
-    val idField: FieldId             = FieldId.unsafeFrom("DESIGNATION", VoTableParser.UCD_OBJID)
-    val nameField: FieldId           = idField
+    val gaiaDB: String = "gaiadr3.gaia_source_lite"
+
+    def idField: FieldId             = FieldId.unsafeFrom("DESIGNATION", VoTableParser.UCD_OBJID)
+    def nameField: FieldId           = idField
     val raField: FieldId             = FieldId("ra", none)
     val decField: FieldId            = FieldId("dec", none)
     override val pmRaField: FieldId  = FieldId.unsafeFrom("pmra", VoTableParser.UCD_PMRA)
@@ -297,12 +302,12 @@ object CatalogAdapter {
     override val plxField: FieldId   = FieldId.unsafeFrom("parallax", VoTableParser.UCD_PLX)
 
     // Morphologyy is not read
-    override val oTypeField                   = FieldId.unsafeFrom("OTYPE_S", VoTableParser.UCD_OTYPE)
-    override val spTypeField                  = FieldId.unsafeFrom("SP_TYPE", VoTableParser.UCD_SPTYPE)
-    override val morphTypeField               = FieldId.unsafeFrom("MORPH_TYPE", VoTableParser.UCD_MORPHTYPE)
-    override val angSizeMajAxisField: FieldId =
+    override def oTypeField                   = FieldId.unsafeFrom("OTYPE_S", VoTableParser.UCD_OTYPE)
+    override def spTypeField                  = FieldId.unsafeFrom("SP_TYPE", VoTableParser.UCD_SPTYPE)
+    override def morphTypeField               = FieldId.unsafeFrom("MORPH_TYPE", VoTableParser.UCD_MORPHTYPE)
+    override def angSizeMajAxisField: FieldId =
       FieldId.unsafeFrom("GALDIM_MAJAXIS", VoTableParser.UCD_ANGSIZE_MAJ)
-    override val angSizeMinAxisField: FieldId =
+    override def angSizeMinAxisField: FieldId =
       FieldId.unsafeFrom("GALDIM_MINAXIS", VoTableParser.UCD_ANGSIZE_MIN)
 
     // These are used to derive all other magnitude values.
@@ -373,10 +378,42 @@ object CatalogAdapter {
 
   object Gaia extends Gaia
 
+  object Gaia2 extends Gaia {
+    override val gaiaDB: String = "gaiadr2.gaia_source"
+  }
+
+  object Gaia3 extends Gaia {
+    override val gaiaDB: String = "gaiadr3.gaia_source"
+  }
+
+  object Gaia3Lite extends Gaia {
+    override val idField: FieldId = FieldId.unsafeFrom("source_id", VoTableParser.UCD_TYPEDID)
+    override val gaiaDB: String   = "gaiadr3.gaia_source_lite"
+
+    override def parseName(entries: Map[FieldId, String]): Option[String] =
+      super.parseName(entries).map(n => s"Goia DR3 $n")
+
+    /**
+     * Gaia lite doesn't have epoch
+     */
+    override val allFields: List[FieldId] =
+      List(
+        idField,
+        raField,
+        pmRaField,
+        decField,
+        pmDecField,
+        plxField,
+        rvField,
+        gMagField,
+        rpMagField
+      )
+  }
+
   def forCatalog(c: CatalogName): Option[CatalogAdapter] =
     c match {
       case CatalogName.Simbad => Simbad.some
-      case CatalogName.Gaia   => Gaia.some
+      case CatalogName.Gaia   => Gaia2.some
       case _                  => none
     }
 }
