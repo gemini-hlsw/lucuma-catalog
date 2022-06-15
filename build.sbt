@@ -75,7 +75,6 @@ lazy val tests = crossProject(JVMPlatform, JSPlatform)
   .crossType(CrossType.Full)
   .in(file("modules/tests"))
   .enablePlugins(NoPublishPlugin)
-  .jsEnablePlugins(ScalaJSBundlerPlugin)
   .dependsOn(catalog, testkit, ags)
   .settings(
     name := "lucuma-catalog-tests",
@@ -92,10 +91,13 @@ lazy val tests = crossProject(JVMPlatform, JSPlatform)
   .jsSettings(
     scalaJSUseMainModuleInitializer := true,
     scalacOptions ~= (_.filterNot(Set("-Wdead-code"))),
-    scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule)),
     libraryDependencies ++= Seq(
       "org.http4s" %%% "http4s-dom" % http4sDomVersion
-    )
+    ),
+    jsEnv                           := {
+      import org.scalajs.jsenv.nodejs.NodeJSEnv
+      new NodeJSEnv(NodeJSEnv.Config().withArgs(List("--experimental-fetch")))
+    }
   )
   .jvmSettings(
     libraryDependencies ++= Seq(
