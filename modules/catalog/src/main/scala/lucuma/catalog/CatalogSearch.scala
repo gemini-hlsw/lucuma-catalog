@@ -56,7 +56,7 @@ object CatalogSearch {
   ): Pipe[F, String, EitherNec[CatalogProblem, CatalogTargetResult]] =
     in =>
       in.flatMap(Stream.emits(_))
-        .through(events[F, Char])
+        .through(events[F, Char]())
         .through(normalize[F])
         .through(VoTableParser.xml2targets[F](adapter))
 
@@ -68,7 +68,7 @@ object CatalogSearch {
   ): Pipe[F, String, EitherNec[CatalogProblem, Target.Sidereal]] =
     in =>
       in.flatMap(Stream.emits(_))
-        .through(events[F, Char])
+        .through(events[F, Char]())
         .through(normalize[F])
         .through(VoTableParser.xml2guidestars[F](adapter))
 }
