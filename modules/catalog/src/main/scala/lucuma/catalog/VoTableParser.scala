@@ -365,7 +365,7 @@ trait VoTableParser {
               .map(v => Ucd.parseUcd(v).map(_.some))
               .getOrElse(NoneRightNec)
 
-          ((id, ucd).parMapN(FieldId.apply)).map { i =>
+          (id, ucd).parMapN(FieldId.apply).map { i =>
             i :: partialFields
           } match {
             case Right(f) => go(s, partialTable, f, fields)

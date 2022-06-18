@@ -190,7 +190,7 @@ sealed trait CatalogAdapter {
 
   // From a Field extract the band from either the field id or the UCD
   def fieldToBand(field: FieldId): Option[Band] =
-    if ((field.ucd.exists(_.includes(VoTableParser.UCD_MAG)) && !ignoreBrightnessValueField(field)))
+    if (field.ucd.exists(_.includes(VoTableParser.UCD_MAG)) && !ignoreBrightnessValueField(field))
       findBand(field)
     else
       none
@@ -359,9 +359,7 @@ object CatalogAdapter {
       }
 
     override def fieldToBand(field: FieldId): Option[Band] =
-      if (
-        (field.ucd.exists(_.includes(VoTableParser.UCD_MAG)) && !ignoreBrightnessValueField(field))
-      )
+      if (field.ucd.exists(_.includes(VoTableParser.UCD_MAG)) && !ignoreBrightnessValueField(field))
         findBand(field)
       else
         none
