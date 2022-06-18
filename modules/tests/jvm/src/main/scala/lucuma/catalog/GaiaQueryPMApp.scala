@@ -20,14 +20,16 @@ import org.http4s.Method._
 import org.http4s.Request
 import org.http4s.client.Client
 import org.http4s.jdkhttpclient.JdkHttpClient
+import org.typelevel.cats.time._
 import spire.math.Bounded
+import spire.math.Interval
 
 import java.time.Instant
 
 trait GaiaQueryPMSample {
   val epoch = Epoch.fromString.getOption("J2022.000").getOrElse(Epoch.J2000)
 
-  implicit val ci =
+  implicit val ci: ADQLInterpreter =
     ADQLInterpreter.nTarget(10)
 
   val m81Coords = (RightAscension.fromStringHMS.getOption("16:17:2.410"),
@@ -48,7 +50,9 @@ trait GaiaQueryPMSample {
     val query = CatalogSearch.gaiaSearchUri(
       TimeRangeQueryByADQL(
         tracking,
-        Bounded(Instant.EPOCH, Instant.EPOCH.plusSeconds(365 * 24 * 60 * 60 * 60), 0),
+        Interval
+          .closed(Instant.EPOCH, Instant.EPOCH.plusSeconds(365 * 24 * 60 * 60 * 60))
+          .asInstanceOf[Bounded[Instant]],
         candidatesArea,
         bc.some
       )

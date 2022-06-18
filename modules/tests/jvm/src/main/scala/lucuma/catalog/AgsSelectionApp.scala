@@ -36,7 +36,7 @@ import org.http4s.jdkhttpclient.JdkHttpClient
 trait AgsSelectionSample {
   val epoch = Epoch.fromString.getOption("J2022.000").getOrElse(Epoch.J2000)
 
-  implicit val ci =
+  implicit val ci: ADQLInterpreter =
     ADQLInterpreter.pmCorrected(30000, epoch)
 
   val coords = (RightAscension.fromStringHMS.getOption("18:15:47.550"),

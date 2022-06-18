@@ -5,8 +5,12 @@ package lucuma.ags
 
 import cats.Eq
 import cats.syntax.all._
-import coulomb._
-import eu.timepit.refined._
+import coulomb.*
+import coulomb.ops.algebra.spire.all.given
+import coulomb.policy.spire.standard.given
+import coulomb.syntax.*
+import coulomb.units.si.*
+import coulomb.units.si.given
 import eu.timepit.refined.cats._
 import eu.timepit.refined.collection.NonEmpty
 import eu.timepit.refined.types.string.NonEmptyString

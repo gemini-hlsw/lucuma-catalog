@@ -4,8 +4,15 @@
 package lucuma
 
 import cats.syntax.all._
-import coulomb._
-import coulomb.accepted.ArcSecond
+import algebra.instances.all.given
+import _root_.refined.algebra._
+import coulomb.units.accepted.ArcSecond
+import coulomb.*
+import coulomb.ops.algebra.spire.all.given
+import coulomb.policy.spire.standard.given
+import coulomb.syntax.*
+import coulomb.units.si.*
+import coulomb.units.si.given
 import lucuma.catalog.BandsList
 import lucuma.catalog.BrightnessConstraints
 import lucuma.catalog.FaintnessConstraint
@@ -17,6 +24,9 @@ import lucuma.core.enums.SkyBackground
 import lucuma.core.math.Wavelength
 import lucuma.core.model.ConstraintSet
 import lucuma.core.util.Enumerated
+// import spire.math.Rational
+// import spire.std.int._
+// import lucuma.core.math.units.rationalPosIntConverter
 
 import scala.math
 
