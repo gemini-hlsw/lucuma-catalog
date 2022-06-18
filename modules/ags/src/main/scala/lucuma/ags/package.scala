@@ -4,6 +4,8 @@
 package lucuma
 
 import cats.syntax.all._
+import coulomb._
+import coulomb.accepted.ArcSecond
 import lucuma.catalog.BandsList
 import lucuma.catalog.BrightnessConstraints
 import lucuma.catalog.FaintnessConstraint

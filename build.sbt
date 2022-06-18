@@ -4,7 +4,7 @@ lazy val catsVersion                = "2.8.0"
 lazy val catsEffectVersion          = "3.3.13"
 lazy val kindProjectorVersion       = "0.13.2"
 lazy val pprintVersion              = "0.7.3"
-lazy val lucumaCoreVersion          = "0.43.0"
+lazy val lucumaCoreVersion          = "0.44-13de521-SNAPSHOT"
 lazy val monocleVersion             = "3.1.0"
 lazy val munitVersion               = "0.7.29"
 lazy val munitDisciplineVersion     = "1.0.9"
@@ -21,6 +21,12 @@ Global / onChangedBuildSource := ReloadOnSourceChanges
 
 ThisBuild / tlBaseVersion       := "0.20"
 ThisBuild / tlCiReleaseBranches := Seq("master")
+
+ThisBuild / scalaVersion       := "3.1.2"
+ThisBuild / crossScalaVersions := Seq("3.1.2")
+ThisBuild / scalacOptions ++= Seq(
+  "-language:implicitConversions"
+)
 
 lazy val root = tlCrossRootProject.aggregate(catalog, ags, testkit, tests)
 

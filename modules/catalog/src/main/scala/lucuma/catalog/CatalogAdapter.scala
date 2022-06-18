@@ -5,8 +5,13 @@ package lucuma.catalog
 
 import cats.data._
 import cats.syntax.all._
-import coulomb._
+import coulomb.*
+import coulomb.syntax.*
+import coulomb.ops.algebra.spire.all.given
+import coulomb.policy.spire.standard.given
+import eu.timepit.refined._
 import eu.timepit.refined.auto._
+import eu.timepit.refined.collection.NonEmpty
 import lucuma.catalog.CatalogProblem._
 import lucuma.catalog._
 import lucuma.core.enums.Band
@@ -18,6 +23,7 @@ import lucuma.core.math.RadialVelocity
 import lucuma.core.math.VelocityAxis
 import lucuma.core.math.dimensional._
 import lucuma.core.math.units._
+import lucuma.core.math.refined.*
 
 import scala.math.BigDecimal
 
@@ -89,7 +95,7 @@ sealed trait CatalogAdapter {
   // Attempts to extract the radial velocity of a field
   def parseRadialVelocity(ucd: Ucd, v: String): EitherNec[CatalogProblem, RadialVelocity] =
     parseDoubleValue(ucd.some, v)
-      .map(v => RadialVelocity(v.withUnit[MetersPerSecond]))
+      .map(v => RadialVelocity(v.toLong.withUnit[MetersPerSecond]))
       .flatMap(Either.fromOption(_, NonEmptyChain.one(FieldValueProblem(ucd.some, v))))
 
   // Attempts to extract the angular velocity of a field
@@ -98,7 +104,11 @@ sealed trait CatalogAdapter {
     v:   String
   ): EitherNec[CatalogProblem, AngularVelocityComponent[A]] =
     parseDoubleValue(ucd.some, v)
-      .map(v => AngularVelocityComponent[A](v.withUnit[MilliArcSecondPerYear]))
+      .map(v =>
+        AngularVelocityComponent[A](
+          v.toLong.withUnit[MilliArcSecondPerYear].tToUnit[MicroArcSecondPerYear]
+        )
+      )
 
   protected def parseProperMotion(
     pmra:  Option[String],
@@ -289,8 +299,8 @@ object CatalogAdapter {
 
     val idField: FieldId             = FieldId.unsafeFrom("DESIGNATION", VoTableParser.UCD_OBJID)
     val nameField: FieldId           = idField
-    val raField: FieldId             = FieldId("ra", none)
-    val decField: FieldId            = FieldId("dec", none)
+    val raField: FieldId             = FieldId.unsafeFrom("ra")
+    val decField: FieldId            = FieldId.unsafeFrom("dec")
     override val pmRaField: FieldId  = FieldId.unsafeFrom("pmra", VoTableParser.UCD_PMRA)
     override val pmDecField: FieldId = FieldId.unsafeFrom("pmdec", VoTableParser.UCD_PMDEC)
     override val rvField: FieldId    = FieldId.unsafeFrom("radial_velocity", VoTableParser.UCD_RV)
