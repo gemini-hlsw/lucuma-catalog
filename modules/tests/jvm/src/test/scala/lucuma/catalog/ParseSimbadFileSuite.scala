@@ -5,7 +5,12 @@ package lucuma.catalog
 
 import cats.effect._
 import cats.implicits._
-import coulomb._
+import coulomb.*
+import coulomb.ops.algebra.spire.all.given
+import coulomb.policy.spire.standard.given
+import coulomb.syntax.*
+import coulomb.units.si.*
+import coulomb.units.si.given
 import eu.timepit.refined._
 import eu.timepit.refined.collection.NonEmpty
 import fs2._
@@ -61,7 +66,7 @@ class ParseSimbadFileSuite extends CatsEffectSuite with VoTableParser {
             // proper motions
             assertEquals(
               Target.properMotionRA.getOption(t),
-              ProperMotion.RA(200939.withUnit[MicroArcSecondPerYear]).some
+              ProperMotion.RA(200940.withUnit[MicroArcSecondPerYear]).some
             )
             assertEquals(
               Target.properMotionDec.getOption(t),
@@ -484,7 +489,7 @@ class ParseSimbadFileSuite extends CatsEffectSuite with VoTableParser {
             // proper motions
             assertEquals(
               Target.properMotionRA.getOption(t),
-              ProperMotion.RA(200939.withUnit[MicroArcSecondPerYear]).some
+              ProperMotion.RA(200940.withUnit[MicroArcSecondPerYear]).some
             )
             assertEquals(
               Target.properMotionDec.getOption(t),

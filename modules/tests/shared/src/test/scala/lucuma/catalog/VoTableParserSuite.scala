@@ -3,7 +3,7 @@
 
 package lucuma.catalog
 
-import cats.MonadError
+import cats.MonadThrow
 import cats.effect._
 import cats.syntax.all._
 import fs2._
@@ -15,7 +15,7 @@ import scala.xml.Node
 import scala.xml.Utility
 
 class VoTableParserSuite extends CatsEffectSuite with VoTableParser with VoTableSamples {
-  def toStream[F[_]: MonadError[*[_], Throwable]](xml: Node): Stream[F, XmlEvent] =
+  def toStream[F[_]: MonadThrow](xml: Node): Stream[F, XmlEvent] =
     Stream
       .emits(Utility.trim(xml).toString)
       .through(events[F, Char]())

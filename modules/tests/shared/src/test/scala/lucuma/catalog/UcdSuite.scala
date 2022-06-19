@@ -8,11 +8,16 @@ import cats.kernel.laws.discipline.EqTests
 import cats.syntax.all._
 import eu.timepit.refined._
 import eu.timepit.refined.collection._
+import eu.timepit.refined.types.string.NonEmptyString
 import lucuma.catalog._
 import lucuma.catalog.arb.ArbUcd._
+import lucuma.core.math.refined.*
 import munit.DisciplineSuite
 
 class UcdSuite extends munit.FunSuite with DisciplineSuite {
+  def refineMV[A](s: String): NonEmptyString =
+    refineV[NonEmpty](s).getOrElse(sys.error("Empty string"))
+
   checkAll("Ucd", EqTests[Ucd].eqv)
 
   test("detect if is a superset") {

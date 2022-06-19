@@ -103,10 +103,10 @@ sealed trait CatalogAdapter {
     ucd: Ucd,
     v:   String
   ): EitherNec[CatalogProblem, AngularVelocityComponent[A]] =
-    parseDoubleValue(ucd.some, v)
+    parseBigDecimalValue(ucd.some, v)
       .map(v =>
         AngularVelocityComponent[A](
-          v.toLong.withUnit[MilliArcSecondPerYear].tToUnit[MicroArcSecondPerYear]
+          v.withUnit[MilliArcSecondPerYear].toUnit[MicroArcSecondPerYear].tToValue
         )
       )
 

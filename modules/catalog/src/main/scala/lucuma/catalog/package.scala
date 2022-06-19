@@ -7,21 +7,32 @@ import cats.data._
 import cats.syntax.all._
 import eu.timepit.refined._
 import eu.timepit.refined.collection.NonEmpty
+import eu.timepit.refined.types.string.NonEmptyString
 import lucuma.core.math.refined.*
 import lucuma.catalog.CatalogProblem.FieldValueProblem
+import lucuma.core.syntax.string._
 
 package object catalog {
   // Move to lucuma-core
   inline given Predicate[String, NonEmpty] with
     transparent inline def isValid(inline t: String): Boolean = t.nonEmpty
 
+  def refineMV[A](s: String): NonEmptyString =
+    refineV[NonEmpty](s).getOrElse(sys.error("Empty string"))
+
   def parseDoubleValue(
     ucd: Option[Ucd],
     s:   String
   ): EitherNec[CatalogProblem, Double] =
     Either
-      .catchNonFatal(s.toDouble)
-      .leftMap(_ => FieldValueProblem(ucd, s))
+      .fromOption(s.parseDoubleOption, FieldValueProblem(ucd, s))
       .toEitherNec
 
+  def parseBigDecimalValue(
+    ucd: Option[Ucd],
+    s:   String
+  ): EitherNec[CatalogProblem, BigDecimal] =
+    Either
+      .fromOption(s.parseBigDecimalOption, FieldValueProblem(ucd, s))
+      .toEitherNec
 }
