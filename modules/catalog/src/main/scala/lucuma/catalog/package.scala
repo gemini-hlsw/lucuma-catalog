@@ -8,8 +8,8 @@ import cats.syntax.all._
 import eu.timepit.refined._
 import eu.timepit.refined.collection.NonEmpty
 import eu.timepit.refined.types.string.NonEmptyString
-import lucuma.core.math.refined.*
 import lucuma.catalog.CatalogProblem.FieldValueProblem
+import lucuma.core.math.refined.*
 import lucuma.core.syntax.string._
 
 package object catalog {

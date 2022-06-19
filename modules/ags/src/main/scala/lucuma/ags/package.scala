@@ -3,14 +3,14 @@
 
 package lucuma
 
-import cats.syntax.all._
+import refined.algebra._
 import algebra.instances.all.given
-import _root_.refined.algebra._
-import coulomb.units.accepted.ArcSecond
+import cats.syntax.all._
 import coulomb.*
 import coulomb.ops.algebra.spire.all.given
 import coulomb.policy.spire.standard.given
 import coulomb.syntax.*
+import coulomb.units.accepted.ArcSecond
 import coulomb.units.si.*
 import coulomb.units.si.given
 import lucuma.catalog.BandsList
@@ -22,11 +22,9 @@ import lucuma.core.enums.GuideSpeed
 import lucuma.core.enums.ImageQuality
 import lucuma.core.enums.SkyBackground
 import lucuma.core.math.Wavelength
+import lucuma.core.math.units.rationalPosIntConverter
 import lucuma.core.model.ConstraintSet
 import lucuma.core.util.Enumerated
-// import spire.math.Rational
-// import spire.std.int._
-// import lucuma.core.math.units.rationalPosIntConverter
 
 import scala.math
 

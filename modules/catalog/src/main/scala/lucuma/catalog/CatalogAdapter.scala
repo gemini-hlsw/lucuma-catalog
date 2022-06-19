@@ -6,9 +6,9 @@ package lucuma.catalog
 import cats.data._
 import cats.syntax.all._
 import coulomb.*
-import coulomb.syntax.*
 import coulomb.ops.algebra.spire.all.given
 import coulomb.policy.spire.standard.given
+import coulomb.syntax.*
 import eu.timepit.refined._
 import eu.timepit.refined.auto._
 import eu.timepit.refined.collection.NonEmpty
@@ -22,8 +22,8 @@ import lucuma.core.math.ProperMotion.AngularVelocityComponent
 import lucuma.core.math.RadialVelocity
 import lucuma.core.math.VelocityAxis
 import lucuma.core.math.dimensional._
-import lucuma.core.math.units._
 import lucuma.core.math.refined.*
+import lucuma.core.math.units._
 
 import scala.math.BigDecimal
 
