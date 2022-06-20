@@ -4,7 +4,7 @@
 package lucuma.catalog
 
 import cats.syntax.all._
-import lucuma.core.enum.Band
+import lucuma.core.enums.Band
 import munit.FunSuite
 
 class SimbadAdapterSuite extends FunSuite {

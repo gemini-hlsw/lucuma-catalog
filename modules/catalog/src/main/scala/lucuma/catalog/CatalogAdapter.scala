@@ -9,8 +9,8 @@ import coulomb._
 import eu.timepit.refined.auto._
 import lucuma.catalog.CatalogProblem._
 import lucuma.catalog._
-import lucuma.core.enum.Band
-import lucuma.core.enum.CatalogName
+import lucuma.core.enums.Band
+import lucuma.core.enums.CatalogName
 import lucuma.core.math.BrightnessUnits._
 import lucuma.core.math.ProperMotion
 import lucuma.core.math.ProperMotion.AngularVelocityComponent

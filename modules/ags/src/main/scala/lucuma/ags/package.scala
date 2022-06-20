@@ -11,10 +11,10 @@ import lucuma.catalog.BandsList
 import lucuma.catalog.BrightnessConstraints
 import lucuma.catalog.FaintnessConstraint
 import lucuma.catalog.SaturationConstraint
-import lucuma.core.enum.CloudExtinction
-import lucuma.core.enum.GuideSpeed
-import lucuma.core.enum.ImageQuality
-import lucuma.core.enum.SkyBackground
+import lucuma.core.enums.CloudExtinction
+import lucuma.core.enums.GuideSpeed
+import lucuma.core.enums.ImageQuality
+import lucuma.core.enums.SkyBackground
 import lucuma.core.math.Wavelength
 import lucuma.core.model.ConstraintSet
 import lucuma.core.util.Enumerated

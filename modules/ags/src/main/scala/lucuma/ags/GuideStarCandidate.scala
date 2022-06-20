@@ -9,8 +9,8 @@ import coulomb._
 import eu.timepit.refined.cats._
 import eu.timepit.refined.types.string.NonEmptyString
 import lucuma.catalog.BandsList
-import lucuma.core.enum.Band
-import lucuma.core.enum.StellarLibrarySpectrum
+import lucuma.core.enums.Band
+import lucuma.core.enums.StellarLibrarySpectrum
 import lucuma.core.math.BrightnessUnits._
 import lucuma.core.math.dimensional._
 import lucuma.core.math.units._

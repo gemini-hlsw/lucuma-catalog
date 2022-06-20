@@ -11,8 +11,8 @@ import eu.timepit.refined.collection.NonEmpty
 import fs2._
 import fs2.io.file.Files
 import fs2.io.file.Path
-import lucuma.core.enum.Band
-import lucuma.core.enum.CatalogName
+import lucuma.core.enums.Band
+import lucuma.core.enums.CatalogName
 import lucuma.core.math.Angle
 import lucuma.core.math.BrightnessUnits._
 import lucuma.core.math.Declination

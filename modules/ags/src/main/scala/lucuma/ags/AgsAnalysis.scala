@@ -5,8 +5,8 @@ package lucuma.ags
 
 import cats.Order
 import cats.syntax.all._
-import lucuma.core.enum.Band
-import lucuma.core.enum.GuideSpeed
+import lucuma.core.enums.Band
+import lucuma.core.enums.GuideSpeed
 import lucuma.core.geom.Area
 
 sealed trait AgsAnalysis {

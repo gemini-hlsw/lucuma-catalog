@@ -11,8 +11,8 @@ import eu.timepit.refined.collection.NonEmpty
 import fs2._
 import fs2.data.xml._
 import lucuma.catalog._
-import lucuma.core.enum.Band
-import lucuma.core.enum.CatalogName
+import lucuma.core.enums.Band
+import lucuma.core.enums.CatalogName
 import lucuma.core.math.BrightnessUnits._
 import lucuma.core.math.Declination
 import lucuma.core.math.Epoch
