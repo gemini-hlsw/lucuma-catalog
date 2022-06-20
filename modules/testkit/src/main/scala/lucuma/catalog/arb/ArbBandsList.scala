@@ -4,7 +4,7 @@
 package lucuma.catalog.arb
 
 import lucuma.catalog.BandsList
-import lucuma.core.enum.Band
+import lucuma.core.enums.Band
 import lucuma.core.util.arb.ArbEnumerated._
 import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck._

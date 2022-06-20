@@ -14,7 +14,7 @@ import fs2.data.xml.XmlEvent._
 import fs2.data.xml._
 import lucuma.catalog.CatalogProblem._
 import lucuma.catalog._
-import lucuma.core.enum.StellarLibrarySpectrum
+import lucuma.core.enums.StellarLibrarySpectrum
 import lucuma.core.math._
 import lucuma.core.math.units._
 import lucuma.core.model.CatalogInfo

@@ -4,8 +4,8 @@
 package lucuma.catalog
 
 import cats.syntax.all._
-import lucuma.core.enum.Band
-import lucuma.core.enum.CatalogName
+import lucuma.core.enums.Band
+import lucuma.core.enums.CatalogName
 import lucuma.core.geom.ShapeExpression
 import lucuma.core.geom.syntax.all._
 import lucuma.core.math.Coordinates

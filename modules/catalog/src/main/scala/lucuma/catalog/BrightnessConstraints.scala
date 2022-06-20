@@ -5,7 +5,7 @@ package lucuma.catalog
 
 import cats.Eq
 import cats.Order
-import lucuma.core.enum.Band
+import lucuma.core.enums.Band
 
 /**
  * Constrain a target if a brightness is fainter than a threshold

@@ -4,7 +4,7 @@
 package lucuma.catalog
 
 import cats.Eq
-import lucuma.core.enum.Band
+import lucuma.core.enums.Band
 
 /**
  * Defines a list of bands It is used, e.g. to extract a magnitude from a target

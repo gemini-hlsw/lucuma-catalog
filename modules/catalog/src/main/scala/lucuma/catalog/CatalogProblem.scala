@@ -4,7 +4,7 @@
 package lucuma.catalog
 
 import cats.syntax.all._
-import lucuma.core.enum.CatalogName
+import lucuma.core.enums.CatalogName
 
 /** Indicates an issue parsing the targets, e.g. missing values, bad format, etc. */
 sealed trait CatalogProblem extends Throwable with Product with Serializable {

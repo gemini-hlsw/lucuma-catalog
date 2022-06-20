@@ -5,7 +5,7 @@ package lucuma.catalog
 
 import cats.kernel.laws.discipline._
 import lucuma.catalog.arb._
-import lucuma.core.enum.Band
+import lucuma.core.enums.Band
 import munit._
 
 class BrightnessConstraintsSuite extends DisciplineSuite {
