@@ -13,7 +13,7 @@ lazy val betterMonadicForVersion    = "0.3.1"
 lazy val refinedVersion             = "0.9.29"
 lazy val catsScalacheckVersion      = "0.3.1"
 lazy val scalaXmlVersion            = "2.1.0"
-lazy val http4sVersion              = "0.23.12"
+lazy val http4sVersion              = "0.23.13"
 lazy val http4sJdkHttpClientVersion = "0.7.0"
 lazy val http4sDomVersion           = "0.2.3"
 
