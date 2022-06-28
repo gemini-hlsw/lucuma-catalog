@@ -62,11 +62,6 @@ object AgsAnalysis {
     }
   }
 
-  object NotReachable {
-    implicit val order: Order[NotReachable] =
-      Order.allEqual
-  }
-
   final case class NoMagnitudeForBand(guideProbe: GuideProbe, target: GuideStarCandidate)
       extends AgsAnalysis {
     private val probeBands: List[Band]               = BandsList.GaiaBandsList.bands
@@ -79,11 +74,6 @@ object AgsAnalysis {
       }
     }
     override val quality: AgsGuideQuality            = AgsGuideQuality.PossiblyUnusable
-  }
-
-  object NoMagnitudeForBand {
-    implicit val order: Order[NoMagnitudeForBand] =
-      Order.allEqual
   }
 
   final case class Usable(
@@ -106,18 +96,18 @@ object AgsAnalysis {
   }
 
   object Usable {
-    implicit val order: Order[Usable] =
-      Order.by(u => (u.guideSpeed, u.quality, u.vignettingArea))
+    val rankingOrder: Order[Usable] =
+      Order.by(u => (u.guideSpeed, u.quality, u.vignettingArea, u.target.id))
   }
 
-  implicit val order: Order[AgsAnalysis] =
+  val rankingOrder: Order[AgsAnalysis] =
     Order.from {
-      case (a: Usable, b: Usable) => Usable.order.compare(a, b)
+      case (a: Usable, b: Usable) => Usable.rankingOrder.compare(a, b)
       case (_: Usable, _)         => Int.MinValue
       case (_, _: Usable)         => Int.MaxValue
       case _                      => Int.MinValue
     }
 
-  implicit val ordering: Ordering[AgsAnalysis] = order.toOrdering
+  val rankingOrdering: Ordering[AgsAnalysis] = rankingOrder.toOrdering
 
 }
