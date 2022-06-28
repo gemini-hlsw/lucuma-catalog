@@ -12,7 +12,6 @@ import fs2.text
 import lucuma.ags._
 import lucuma.core.enums.CloudExtinction
 import lucuma.core.enums.GmosNorthFpu
-import lucuma.core.enums.GuideSpeed
 import lucuma.core.enums.ImageQuality
 import lucuma.core.enums.PortDisposition
 import lucuma.core.enums.SkyBackground
@@ -74,12 +73,12 @@ object AgsSelectionSampleApp extends IOApp.Simple with AgsSelectionSample {
     JdkHttpClient
       .simple[IO]
       .use(
-        gaiaQuery[IO](_, gaiaBrightnessConstraints(constraints, GuideSpeed.Fast, wavelength))
+        gaiaQuery[IO](_, widestConstraints)
           .map(GuideStarCandidate.siderealTarget.get)
           .through(
             Ags.agsAnalysisStream[IO](
               constraints,
-              Wavelength.fromNanometers(700).get,
+              wavelength,
               coords,
               AgsPosition(Angle.Angle0, Offset.Zero),
               AgsParams.GmosAgsParams(
@@ -91,6 +90,7 @@ object AgsSelectionSampleApp extends IOApp.Simple with AgsSelectionSample {
           .compile
           .toList
       )
+      .flatTap(x => IO.println(x.length))
       .flatMap(x => x.traverse(u => IO(pprint.pprintln(u))))
       .void
 }

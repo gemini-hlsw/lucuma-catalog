@@ -6,7 +6,9 @@ package lucuma.ags
 import cats.Eq
 import cats.syntax.all._
 import coulomb._
+import eu.timepit.refined._
 import eu.timepit.refined.cats._
+import eu.timepit.refined.collection.NonEmpty
 import eu.timepit.refined.types.string.NonEmptyString
 import lucuma.catalog.BandsList
 import lucuma.core.enums.Band
@@ -27,13 +29,18 @@ import scala.collection.immutable.SortedMap
  * Poors' man Target.Sidereal with a single G brightness and no extra metadata
  */
 final case class GuideStarCandidate(
-  name:        NonEmptyString,
+  id:          Long,
   tracking:    SiderealTracking,
   gBrightness: Option[BigDecimal]
-)
+) {
+  def name: NonEmptyString =
+    refineV[NonEmpty](s"Gaia DR2 $id").getOrElse(sys.error("Cannot happen"))
+}
 
 object GuideStarCandidate {
   implicit val eqGuideStar: Eq[GuideStarCandidate] = Eq.by(x => (x.name, x.tracking, x.gBrightness))
+
+  val GaiaNameRegex = """Gaia DR2 (-?\d*)""".r
 
   // There is some loss of info converting one to the other but further
   // conversions are always the same, thus SplitEpi
@@ -48,7 +55,10 @@ object GuideStarCandidate {
           .map(_.value)
 
         GuideStarCandidate(
-          st.name,
+          st.name.value match {
+            case GaiaNameRegex(d) => d.toLong
+            case _                => -1
+          },
           st.tracking,
           gBrightness
         )
