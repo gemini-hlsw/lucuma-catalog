@@ -91,6 +91,6 @@ object AgsSelectionSampleApp extends IOApp.Simple with AgsSelectionSample {
           .toList
       )
       .flatTap(x => IO.println(x.length))
-      .flatMap(x => x.traverse(u => IO(pprint.pprintln(u))))
+      // .flatMap(x => x.traverse(u => IO(pprint.pprintln(u))))
       .void
 }

@@ -8,20 +8,23 @@ import cats.syntax.all._
 import lucuma.core.enums.Band
 import lucuma.core.enums.GuideSpeed
 import lucuma.core.geom.Area
+import lucuma.catalog.BandsList
 
 sealed trait AgsAnalysis {
   def quality: AgsGuideQuality = AgsGuideQuality.Unusable
   def isUsable: Boolean        = quality =!= AgsGuideQuality.Unusable
+  def target: GuideStarCandidate
   def message(withProbe: Boolean): String
 }
 
 object AgsAnalysis {
 
-  case object NotAnalized extends AgsAnalysis {
+  final case class NotAnalized(target: GuideStarCandidate) extends AgsAnalysis {
     override def message(withProbe: Boolean): String = "Not analyzed yet"
   }
 
-  final case class NoGuideStarForProbe(guideProbe: GuideProbe) extends AgsAnalysis {
+  final case class NoGuideStarForProbe(guideProbe: GuideProbe, target: GuideStarCandidate)
+      extends AgsAnalysis {
     override def message(withProbe: Boolean): String = {
       val p = if (withProbe) s"$guideProbe " else ""
       s"No ${p}guide star selected."
@@ -66,7 +69,7 @@ object AgsAnalysis {
 
   final case class NoMagnitudeForBand(guideProbe: GuideProbe, target: GuideStarCandidate)
       extends AgsAnalysis {
-    private val probeBands: List[Band]               = Nil // guideProbe.getBands
+    private val probeBands: List[Band]               = BandsList.GaiaBandsList.bands
     override def message(withProbe: Boolean): String = {
       val p = if (withProbe) s"${guideProbe} g" else "G"
       if (probeBands.length == 1) {
