@@ -10,7 +10,6 @@ import eu.timepit.refined.collection.NonEmpty
 import eu.timepit.refined.types.string.NonEmptyString
 import lucuma.catalog.CatalogProblem.FieldValueProblem
 import lucuma.core.syntax.string._
-import lucuma.refined.*
 
 package object catalog {
   def refineMV[A](s: String): NonEmptyString =

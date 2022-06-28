@@ -5,14 +5,9 @@ package lucuma.catalog
 
 import cats.data._
 import cats.syntax.all._
-import coulomb.*
-import coulomb.ops.algebra.spire.all.given
 import coulomb.policy.spire.standard.given
 import coulomb.syntax.*
-import coulomb.units.si.*
-import coulomb.units.si.given
 import eu.timepit.refined._
-import eu.timepit.refined.auto._
 import eu.timepit.refined.collection.NonEmpty
 import eu.timepit.refined.types.string.NonEmptyString
 import fs2._
@@ -22,7 +17,6 @@ import lucuma.catalog.CatalogProblem._
 import lucuma.catalog._
 import lucuma.core.enums.StellarLibrarySpectrum
 import lucuma.core.math._
-import lucuma.core.math.*
 import lucuma.core.math.units._
 import lucuma.core.model.CatalogInfo
 import lucuma.core.model.SiderealTracking
@@ -31,7 +25,6 @@ import lucuma.core.model.SpectralDefinition
 import lucuma.core.model.Target
 import lucuma.core.model.UnnormalizedSED
 import lucuma.core.syntax.string._
-import lucuma.refined.*
 import monocle.Focus
 import monocle.Lens
 import monocle.function.Index.listIndex

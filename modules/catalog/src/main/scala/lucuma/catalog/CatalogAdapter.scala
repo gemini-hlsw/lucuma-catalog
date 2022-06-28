@@ -5,13 +5,8 @@ package lucuma.catalog
 
 import cats.data._
 import cats.syntax.all._
-import coulomb.*
-import coulomb.ops.algebra.spire.all.given
 import coulomb.policy.spire.standard.given
 import coulomb.syntax.*
-import eu.timepit.refined._
-import eu.timepit.refined.auto._
-import eu.timepit.refined.collection.NonEmpty
 import lucuma.catalog.CatalogProblem._
 import lucuma.catalog._
 import lucuma.core.enums.Band
@@ -23,7 +18,6 @@ import lucuma.core.math.RadialVelocity
 import lucuma.core.math.VelocityAxis
 import lucuma.core.math.dimensional._
 import lucuma.core.math.units._
-import lucuma.refined.*
 
 import scala.math.BigDecimal
 
