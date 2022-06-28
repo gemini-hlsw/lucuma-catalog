@@ -5,10 +5,10 @@ package lucuma.ags
 
 import cats.Order
 import cats.syntax.all._
+import lucuma.catalog.BandsList
 import lucuma.core.enums.Band
 import lucuma.core.enums.GuideSpeed
 import lucuma.core.geom.Area
-import lucuma.catalog.BandsList
 
 sealed trait AgsAnalysis {
   def quality: AgsGuideQuality = AgsGuideQuality.Unusable

@@ -17,7 +17,7 @@ lazy val http4sVersion              = "0.23.13"
 lazy val http4sJdkHttpClientVersion = "0.7.0"
 lazy val http4sDomVersion           = "0.2.3"
 
-Global / onChangedBuildSource   := ReloadOnSourceChanges
+Global / onChangedBuildSource := ReloadOnSourceChanges
 
 ThisBuild / tlBaseVersion       := "0.19"
 ThisBuild / tlCiReleaseBranches := Seq("master")
