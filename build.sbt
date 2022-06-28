@@ -5,6 +5,7 @@ lazy val catsEffectVersion          = "3.3.13"
 lazy val kindProjectorVersion       = "0.13.2"
 lazy val pprintVersion              = "0.7.3"
 lazy val lucumaCoreVersion          = "0.44-13de521-SNAPSHOT"
+lazy val lucumaRefinedVersion       = "0.0-c2d0e92-SNAPSHOT"
 lazy val monocleVersion             = "3.1.0"
 lazy val munitVersion               = "0.7.29"
 lazy val munitDisciplineVersion     = "1.0.9"
@@ -41,6 +42,7 @@ lazy val catalog = crossProject(JVMPlatform, JSPlatform)
       "co.fs2"        %%% "fs2-core"        % fs2Version,
       "org.gnieh"     %%% "fs2-data-xml"    % fs2DataVersion,
       "edu.gemini"    %%% "lucuma-core"     % lucumaCoreVersion,
+      "edu.gemini"    %%% "lucuma-refined"  % lucumaRefinedVersion,
       "org.typelevel" %%% "cats-core"       % catsVersion,
       "dev.optics"    %%% "monocle-core"    % monocleVersion,
       "dev.optics"    %%% "monocle-state"   % monocleVersion,

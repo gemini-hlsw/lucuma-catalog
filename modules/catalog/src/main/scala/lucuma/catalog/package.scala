@@ -9,14 +9,10 @@ import eu.timepit.refined._
 import eu.timepit.refined.collection.NonEmpty
 import eu.timepit.refined.types.string.NonEmptyString
 import lucuma.catalog.CatalogProblem.FieldValueProblem
-import lucuma.core.math.refined.*
 import lucuma.core.syntax.string._
+import lucuma.refined.*
 
 package object catalog {
-  // Move to lucuma-core
-  inline given Predicate[String, NonEmpty] with
-    transparent inline def isValid(inline t: String): Boolean = t.nonEmpty
-
   def refineMV[A](s: String): NonEmptyString =
     refineV[NonEmpty](s).getOrElse(sys.error("Empty string"))
 

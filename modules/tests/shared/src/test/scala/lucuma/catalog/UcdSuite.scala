@@ -11,7 +11,7 @@ import eu.timepit.refined.collection._
 import eu.timepit.refined.types.string.NonEmptyString
 import lucuma.catalog._
 import lucuma.catalog.arb.ArbUcd._
-import lucuma.core.math.refined.*
+import lucuma.refined.*
 import munit.DisciplineSuite
 
 class UcdSuite extends munit.FunSuite with DisciplineSuite {

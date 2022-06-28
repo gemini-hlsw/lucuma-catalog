@@ -22,8 +22,8 @@ import lucuma.core.math.ProperMotion.AngularVelocityComponent
 import lucuma.core.math.RadialVelocity
 import lucuma.core.math.VelocityAxis
 import lucuma.core.math.dimensional._
-import lucuma.core.math.refined.*
 import lucuma.core.math.units._
+import lucuma.refined.*
 
 import scala.math.BigDecimal
 

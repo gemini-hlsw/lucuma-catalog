@@ -3,7 +3,7 @@
 
 package lucuma
 
-import refined.algebra._
+import _root_.refined.algebra._
 import algebra.instances.all.given
 import cats.syntax.all._
 import coulomb.*
