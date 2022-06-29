@@ -11,6 +11,7 @@ import coulomb.policy.spire.standard.given
 import coulomb.syntax.*
 import coulomb.units.si.*
 import coulomb.units.si.given
+import eu.timepit.refined._
 import eu.timepit.refined.cats._
 import eu.timepit.refined.collection.NonEmpty
 import eu.timepit.refined.types.string.NonEmptyString

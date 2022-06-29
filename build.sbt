@@ -60,8 +60,9 @@ lazy val ags = crossProject(JVMPlatform, JSPlatform)
   .settings(
     name := "lucuma-ags",
     libraryDependencies ++= Seq(
-      "edu.gemini"    %%% "lucuma-core" % lucumaCoreVersion,
-      "org.typelevel" %%% "cats-core"   % catsVersion
+      "edu.gemini"    %%% "lucuma-core"    % lucumaCoreVersion,
+      "edu.gemini"    %%% "lucuma-refined" % lucumaRefinedVersion,
+      "org.typelevel" %%% "cats-core"      % catsVersion
     ),
     scalacOptions ~= (_.filterNot(Set("-Vtype-diffs")))
   )
