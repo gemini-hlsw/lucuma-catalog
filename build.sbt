@@ -10,17 +10,16 @@ lazy val munitVersion               = "0.7.29"
 lazy val munitDisciplineVersion     = "1.0.9"
 lazy val munitCatsEffectVersion     = "1.0.7"
 lazy val betterMonadicForVersion    = "0.3.1"
-lazy val refinedVersion             = "0.9.29"
+lazy val refinedVersion             = "0.10.0"
 lazy val catsScalacheckVersion      = "0.3.1"
 lazy val scalaXmlVersion            = "2.1.0"
 lazy val http4sVersion              = "0.23.13"
 lazy val http4sJdkHttpClientVersion = "0.7.0"
 lazy val http4sDomVersion           = "0.2.3"
 
-Global / onChangedBuildSource   := ReloadOnSourceChanges
-Global / scalacOptions += "-Ymacro-annotations"
+Global / onChangedBuildSource := ReloadOnSourceChanges
 
-ThisBuild / tlBaseVersion       := "0.18"
+ThisBuild / tlBaseVersion       := "0.19"
 ThisBuild / tlCiReleaseBranches := Seq("master")
 
 lazy val root = tlCrossRootProject.aggregate(catalog, ags, testkit, tests)
@@ -64,10 +63,11 @@ lazy val testkit = crossProject(JVMPlatform, JSPlatform)
   .settings(
     name := "lucuma-catalog-testkit",
     libraryDependencies ++= Seq(
-      "org.typelevel"     %%% "cats-testkit"        % catsVersion,
-      "edu.gemini"        %%% "lucuma-core-testkit" % lucumaCoreVersion,
-      "eu.timepit"        %%% "refined-scalacheck"  % refinedVersion,
-      "io.chrisdavenport" %%% "cats-scalacheck"     % catsScalacheckVersion
+      "org.typelevel"          %%% "cats-testkit"        % catsVersion,
+      "edu.gemini"             %%% "lucuma-core-testkit" % lucumaCoreVersion,
+      "eu.timepit"             %%% "refined-scalacheck"  % refinedVersion,
+      "org.scala-lang.modules" %%% "scala-xml"           % scalaXmlVersion,
+      "io.chrisdavenport"      %%% "cats-scalacheck"     % catsScalacheckVersion
     )
   )
 
@@ -79,13 +79,12 @@ lazy val tests = crossProject(JVMPlatform, JSPlatform)
   .settings(
     name := "lucuma-catalog-tests",
     libraryDependencies ++= Seq(
-      "org.typelevel"          %%% "cats-effect"         % catsEffectVersion      % Test,
-      "org.scalameta"          %%% "munit"               % munitVersion           % Test,
-      "org.typelevel"          %%% "discipline-munit"    % munitDisciplineVersion % Test,
-      "org.typelevel"          %%% "munit-cats-effect-3" % munitCatsEffectVersion % Test,
-      "org.scala-lang.modules" %%% "scala-xml"           % scalaXmlVersion        % Test,
-      "org.http4s"             %%% "http4s-core"         % http4sVersion,
-      "com.lihaoyi"            %%% "pprint"              % pprintVersion
+      "org.typelevel" %%% "cats-effect"         % catsEffectVersion      % Test,
+      "org.scalameta" %%% "munit"               % munitVersion           % Test,
+      "org.typelevel" %%% "discipline-munit"    % munitDisciplineVersion % Test,
+      "org.typelevel" %%% "munit-cats-effect-3" % munitCatsEffectVersion % Test,
+      "org.http4s"    %%% "http4s-core"         % http4sVersion,
+      "com.lihaoyi"   %%% "pprint"              % pprintVersion
     )
   )
   .jsSettings(

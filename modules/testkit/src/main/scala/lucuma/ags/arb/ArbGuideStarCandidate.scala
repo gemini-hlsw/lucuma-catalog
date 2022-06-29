@@ -3,8 +3,6 @@
 
 package lucuma.ags.arb
 
-import eu.timepit.refined.scalacheck.string._
-import eu.timepit.refined.types.string.NonEmptyString
 import lucuma.ags.GuideStarCandidate
 import lucuma.core.model.SiderealTracking
 import lucuma.core.model.arb.ArbSiderealTracking
@@ -18,15 +16,15 @@ trait ArbGuideStarCandidate {
   implicit val arbGuideStarCandidate: Arbitrary[GuideStarCandidate] =
     Arbitrary {
       for {
-        n <- arbitrary[NonEmptyString]
+        n <- arbitrary[Long]
         t <- arbitrary[SiderealTracking]
         g <- arbitrary[Option[BigDecimal]]
       } yield GuideStarCandidate(n, t, g)
     }
 
   implicit val cogGuideStarCandidate: Cogen[GuideStarCandidate] =
-    Cogen[(String, SiderealTracking, Option[BigDecimal])].contramap(r =>
-      (r.name.value, r.tracking, r.gBrightness)
+    Cogen[(Long, SiderealTracking, Option[BigDecimal])].contramap(r =>
+      (r.id, r.tracking, r.gBrightness)
     )
 }
 

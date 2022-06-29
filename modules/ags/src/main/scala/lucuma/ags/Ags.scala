@@ -81,7 +81,7 @@ object Ags {
       .map { g =>
         fastestGuideSpeed(constraints, wavelength, g)
           .map(usable)
-          .getOrElse(NoGuideStarForProbe(guideProbe))
+          .getOrElse(NoGuideStarForProbe(guideProbe, guideStar))
       }
       .getOrElse(NoMagnitudeForBand(guideProbe, guideStar))
   }
@@ -95,11 +95,11 @@ object Ags {
     baseCoordinates: Coordinates,
     position:        AgsPosition,
     params:          AgsParams
-  ): Pipe[F, GuideStarCandidate, (GuideStarCandidate, AgsAnalysis)] =
+  ): Pipe[F, GuideStarCandidate, AgsAnalysis] =
     in =>
       in.map { gsc =>
         val offset = baseCoordinates.diff(gsc.tracking.baseCoordinates).offset
-        gsc -> runAnalysis(constraints, wavelength, offset, position, params, gsc)
+        runAnalysis(constraints, wavelength, offset, position, params, gsc)
       }
 
   /**
@@ -112,10 +112,10 @@ object Ags {
     position:        AgsPosition,
     params:          AgsParams,
     candidates:      List[GuideStarCandidate]
-  ): List[(GuideStarCandidate, AgsAnalysis)] =
+  ): List[AgsAnalysis] =
     candidates.map { gsc =>
       val offset = baseCoordinates.diff(gsc.tracking.baseCoordinates).offset
-      gsc -> runAnalysis(constraints, wavelength, offset, position, params, gsc)
+      runAnalysis(constraints, wavelength, offset, position, params, gsc)
     }
 
   /**
