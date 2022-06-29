@@ -186,11 +186,11 @@ trait VoTableParser {
     entries: Map[FieldId, String]
   ): EitherNec[CatalogProblem, Option[Parallax]] =
     entries.get(adapter.plxField) match {
-      case Some(p) =>
+      case Some(p) if p.trim.nonEmpty =>
         parseDoubleValue(VoTableParser.UCD_PLX.some, p).map(p =>
           Parallax.milliarcseconds.reverseGet(math.max(0.0, p)).some
         )
-      case _       =>
+      case _                          =>
         NoneRightNec
     }
 

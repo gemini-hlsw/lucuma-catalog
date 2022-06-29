@@ -54,6 +54,7 @@ trait AgsSelectionSample {
       .flatMap(
         _.body
           .through(text.utf8.decode)
+          // .evalTap(a => Sync[F].delay(println(a)))
           .through(CatalogSearch.guideStars[F](gaia))
           // .evalTap(a => Sync[F].delay(println(a)))
           .collect { case Right(t) => t }
