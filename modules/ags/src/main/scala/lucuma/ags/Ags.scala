@@ -6,6 +6,7 @@ package lucuma.ags
 import cats.syntax.all._
 import fs2._
 import lucuma.core.enums.Band
+import lucuma.core.enums.GuideProbe
 import lucuma.core.enums.GuideSpeed
 import lucuma.core.enums.ImageQuality
 import lucuma.core.geom.Area

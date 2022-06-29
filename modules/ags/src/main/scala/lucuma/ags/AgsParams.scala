@@ -7,6 +7,7 @@ import cats.Eq
 import cats.syntax.all._
 import lucuma.core.enums.GmosNorthFpu
 import lucuma.core.enums.GmosSouthFpu
+import lucuma.core.enums.GuideProbe
 import lucuma.core.enums.PortDisposition
 import lucuma.core.geom.ShapeExpression
 import lucuma.core.geom.gmos.probeArm
@@ -36,10 +37,13 @@ object AgsParams {
     fpu:  Option[Either[GmosNorthFpu, GmosSouthFpu]],
     port: PortDisposition
   ) extends AgsParams {
-    val probe = GuideProbe.OIWFS
+    val probe = GuideProbe.GmosOIWFS
 
     def isReachable(gsOffset: Offset, position: AgsPosition): Boolean =
-      patrolField(position).eval.contains(gsOffset)
+      (patrolField(position) - innerRadius(position)).eval.contains(gsOffset)
+
+    def innerRadius(position: AgsPosition): ShapeExpression =
+      probeArm.innerRadiusAt(probe, position.posAngle, position.offsetPos)
 
     def patrolField(position: AgsPosition): ShapeExpression =
       probeArm.patrolFieldAt(position.posAngle, position.offsetPos, fpu, port)
