@@ -104,6 +104,12 @@ class AgsBenchmark extends AgsSelectionSample {
 // [info]   (min, avg, max) = (0.007, 0.007, 0.007), stdev = 0.001
 // [info]   CI (99.9%): [0.007, 0.007] (assumes normal distribution)
 //
+// Cache geometry calculations
+// [info] Result "lucuma.catalog.AgsBenchmark.ags":
+// [info]   0.055 ±(99.9%) 0.001 ops/ms [Average]
+// [info]   (min, avg, max) = (0.054, 0.055, 0.056), stdev = 0.001
+// [info]   CI (99.9%): [0.054, 0.056] (assumes normal distribution)
+//
 // Baseline mag
 //
 // [info] Result "lucuma.catalog.AgsBenchmark.magnitudeAnalysis":

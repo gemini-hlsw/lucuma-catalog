@@ -22,15 +22,33 @@ object AgsPosition {
   implicit val agsPositionEq: Eq[AgsPosition] = Eq.by(x => (x.posAngle, x.offsetPos))
 }
 
+sealed trait AgsCalculations {
+  def isReachable(gsOffset: Offset): Boolean
+
+  def vignettingArea(gsOffset: Offset): ShapeExpression
+}
+
 sealed trait AgsParams {
   def probe: GuideProbe
 
-  def isReachable(gsOffset: Offset, position: AgsPosition): Boolean
-
-  def vignettingArea(position: AgsPosition)(gsOffset: Offset): ShapeExpression
+  def posCalculations(positions: List[AgsPosition]): Map[AgsPosition, AgsCalculations]
+  // def isReachable(gsOffset: Offset, position: AgsPosition): Boolean
+  //
+  // def vignettingArea(position: AgsPosition)(gsOffset: Offset): ShapeExpression
 }
 
 object AgsParams {
+//   private case class GmosAgsCalculations(
+//     def isReachable(gsOffset: Offset, position: AgsPosition): Boolean =
+//       patrolField(position).eval.contains(gsOffset)
+//
+//     def patrolField(position: AgsPosition): ShapeExpression =
+//       probeArm.patrolFieldAt(position.posAngle, position.offsetPos, fpu, port)
+//
+//     override def vignettingArea(position: AgsPosition)(gsOffset: Offset): ShapeExpression =
+//       scienceArea.shapeAt(position.posAngle, position.offsetPos, fpu) ∩
+//         probeArm.shapeAt(position.posAngle, gsOffset, position.offsetPos, fpu, port)
+// }
 
   final case class GmosAgsParams(
     fpu:  Option[Either[GmosNorthFpu, GmosSouthFpu]],
@@ -38,15 +56,24 @@ object AgsParams {
   ) extends AgsParams {
     val probe = GuideProbe.OIWFS
 
-    def isReachable(gsOffset: Offset, position: AgsPosition): Boolean =
-      patrolField(position).eval.contains(gsOffset)
+    def posCalculations(positions: List[AgsPosition]): Map[AgsPosition, AgsCalculations] =
+      positions.map { position =>
+        position -> new AgsCalculations() {
+          def isReachable(gsOffset: Offset): Boolean =
+            patrolField.contains(gsOffset)
 
-    def patrolField(position: AgsPosition): ShapeExpression =
-      probeArm.patrolFieldAt(position.posAngle, position.offsetPos, fpu, port)
+          val patrolField =
+            probeArm.patrolFieldAt(position.posAngle, position.offsetPos, fpu, port).eval
 
-    override def vignettingArea(position: AgsPosition)(gsOffset: Offset): ShapeExpression =
-      scienceArea.shapeAt(position.posAngle, position.offsetPos, fpu) ∩
-        probeArm.shapeAt(position.posAngle, gsOffset, position.offsetPos, fpu, port)
+          val scienceAreaShape = 
+            scienceArea.shapeAt(position.posAngle, position.offsetPos, fpu)
+
+          override def vignettingArea(gsOffset: Offset): ShapeExpression =
+            scienceAreaShape ∩
+              probeArm.shapeAt(position.posAngle, gsOffset, position.offsetPos, fpu, port)
+
+        }
+      }.toMap
 
     implicit val gmosParamsEq: Eq[GmosAgsParams] = Eq.by(x => (x.fpu, x.port))
   }

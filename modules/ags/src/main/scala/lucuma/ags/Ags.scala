@@ -25,8 +25,11 @@ object Ags {
     pos:        AgsPosition,
     params:     AgsParams,
     gsc:        GuideStarCandidate
-  )(speeds:     List[(GuideSpeed, BrightnessConstraints)]): AgsAnalysis =
-    if (!params.isReachable(gsOffset, pos))
+  )(
+    speeds:     List[(GuideSpeed, BrightnessConstraints)],
+    calcs:      Map[AgsPosition, AgsCalculations]
+  ): AgsAnalysis =
+    if (!calcs.get(pos).forall(_.isReachable(gsOffset)))
       AgsAnalysis.NotReachable(pos, params.probe, gsc)
     else
       magnitudeAnalysis(
@@ -36,7 +39,10 @@ object Ags {
         gsc,
         wavelength,
         // calculate vignetting
-        params.vignettingArea(pos)(_).eval.area
+        calcs
+          .get(pos)
+          .map(c => (o: Offset) => c.vignettingArea(o).eval.area)
+          .getOrElse((_: Offset) => Area.MaxArea)
       )(speeds)
 
   /**
@@ -100,12 +106,16 @@ object Ags {
     baseCoordinates: Coordinates,
     position:        AgsPosition,
     params:          AgsParams
-  ): Pipe[F, GuideStarCandidate, AgsAnalysis] =
+  ): Pipe[F, GuideStarCandidate, AgsAnalysis] = {
+
+    val guideSpeeds = fastestGuideSpeeds(constraints, wavelength)
+    val calcs       = params.posCalculations(List(position))
     in =>
       in.map { gsc =>
         val offset = baseCoordinates.diff(gsc.tracking.baseCoordinates).offset
-        runAnalysis(constraints, wavelength, offset, position, params, gsc)(Nil)
+        runAnalysis(constraints, wavelength, offset, position, params, gsc)(guideSpeeds, calcs)
       }
+  }
 
   /**
    * Do analysis of a list of Candidate Guide Stars
@@ -119,9 +129,11 @@ object Ags {
     candidates:      List[GuideStarCandidate]
   ): List[AgsAnalysis] = {
     val guideSpeeds = fastestGuideSpeeds(constraints, wavelength)
+    val calcs       = params.posCalculations(List(position))
+
     candidates.map { gsc =>
       val offset = baseCoordinates.diff(gsc.tracking.baseCoordinates).offset
-      runAnalysis(constraints, wavelength, offset, position, params, gsc)(guideSpeeds)
+      runAnalysis(constraints, wavelength, offset, position, params, gsc)(guideSpeeds, calcs)
     }
   }
 
