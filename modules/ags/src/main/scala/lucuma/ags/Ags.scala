@@ -14,6 +14,7 @@ import lucuma.core.math.Coordinates
 import lucuma.core.math.Offset
 import lucuma.core.math.Wavelength
 import lucuma.core.model.ConstraintSet
+import lucuma.catalog.BrightnessConstraints
 
 object Ags {
 
@@ -24,7 +25,7 @@ object Ags {
     pos:        AgsPosition,
     params:     AgsParams,
     gsc:        GuideStarCandidate
-  ): AgsAnalysis =
+  )(speeds:     List[(GuideSpeed, BrightnessConstraints)]): AgsAnalysis =
     if (!params.isReachable(gsOffset, pos))
       AgsAnalysis.NotReachable(pos, params.probe, gsc)
     else
@@ -36,7 +37,7 @@ object Ags {
         wavelength,
         // calculate vignetting
         params.vignettingArea(pos)(_).eval.area
-      )
+      )(speeds)
 
   /**
    * Analysis of the suitability of the magnitude of the given guide star regardless of its
@@ -49,7 +50,7 @@ object Ags {
     guideStar:      GuideStarCandidate,
     wavelength:     Wavelength,
     vignettingArea: Offset => Area
-  ): AgsAnalysis = {
+  )(speeds:         List[(GuideSpeed, BrightnessConstraints)]): AgsAnalysis = {
     import AgsGuideQuality._
     import AgsAnalysis._
 
@@ -79,12 +80,14 @@ object Ags {
     // Do we have a g magnitude
     guideStar.gBrightness
       .map { g =>
-        fastestGuideSpeed(constraints, wavelength, g)
-          .map(usable)
+        speeds
+          .find(_._2.contains(Band.Gaia, g))
+          // fastestGuideSpeed(constraints, wavelength, g)
+          .map(u => usable(u._1))
           .getOrElse(NoGuideStarForProbe(guideProbe, guideStar))
       }
       .getOrElse(NoMagnitudeForBand(guideProbe, guideStar))
-    
+
     // AgsAnalysis.NotAnalized(guideStar)
   }
 
@@ -101,7 +104,7 @@ object Ags {
     in =>
       in.map { gsc =>
         val offset = baseCoordinates.diff(gsc.tracking.baseCoordinates).offset
-        runAnalysis(constraints, wavelength, offset, position, params, gsc)
+        runAnalysis(constraints, wavelength, offset, position, params, gsc)(Nil)
       }
 
   /**
@@ -114,13 +117,13 @@ object Ags {
     position:        AgsPosition,
     params:          AgsParams,
     candidates:      List[GuideStarCandidate]
-  ): List[AgsAnalysis] =
-    // Nil
+  ): List[AgsAnalysis] = {
+    val guideSpeeds = fastestGuideSpeeds(constraints, wavelength)
     candidates.map { gsc =>
       val offset = baseCoordinates.diff(gsc.tracking.baseCoordinates).offset
-      // AgsAnalysis.NotAnalized(gsc)
-    runAnalysis(constraints, wavelength, offset, position, params, gsc)
+      runAnalysis(constraints, wavelength, offset, position, params, gsc)(guideSpeeds)
     }
+  }
 
   /**
    * Determines the fastest possible guide speed (if any) that may be used for guiding given a star
@@ -133,6 +136,18 @@ object Ags {
   ): Option[GuideSpeed] =
     GuideSpeed.all.find { speed => // assumes the values are sorted fast to slow
       gaiaBrightnessConstraints(constraints, speed, wavelength).contains(Band.Gaia, magnitude)
+    }
+
+  /**
+   * Determines the fastest possible guide speed (if any) that may be used for guiding given a star
+   * with the indicated magnitude.
+   */
+  def fastestGuideSpeeds(
+    constraints: ConstraintSet,
+    wavelength:  Wavelength
+  ): List[(GuideSpeed, BrightnessConstraints)] =
+    GuideSpeed.all.map { speed => // assumes the values are sorted fast to slow
+      (speed, gaiaBrightnessConstraints(constraints, speed, wavelength))
     }
 
 }

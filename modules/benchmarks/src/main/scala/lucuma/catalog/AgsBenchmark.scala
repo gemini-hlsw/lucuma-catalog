@@ -76,19 +76,19 @@ class AgsBenchmark extends AgsSelectionSample {
     ()
   }
 
-  @Benchmark
-  def magnitudeAnalysis: Unit = {
-    Ags.magnitudeAnalysis(
-      constraints,
-      params.probe,
-      Offset.Zero,
-      items.head,
-      wavelength,
-      // _ => Area.MinArea
-      params.vignettingArea(pos)(_).eval.area
-    )
-    ()
-  }
+  // @Benchmark
+  // def magnitudeAnalysis: Unit = {
+  //   Ags.magnitudeAnalysis(
+  //     constraints,
+  //     params.probe,
+  //     Offset.Zero,
+  //     items.head,
+  //     wavelength,
+  //     // _ => Area.MinArea
+  //     params.vignettingArea(pos)(_).eval.area
+  //   )
+  //   ()
+  // }
 }
 
 // Baseline ags
