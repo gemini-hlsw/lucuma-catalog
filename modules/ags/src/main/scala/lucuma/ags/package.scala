@@ -27,10 +27,10 @@ package object ags {
 
   // FWHM as seen on the optical wavefront sensor (WFS)
   // Operate on Double, we don't need exact precision
-  def wfsFwhm(sciFwhm: ImageQuality, wavelength: Wavelength): Quantity[Double, ArcSecond] = {
+  def wfsFwhm(sciFwhm: ImageQuality, wavelength: Wavelength): Double = {
     val coeff =
-      baseFwhm.toPicometers.toValue[Rational] / wavelength.toPicometers.toValue[Rational]
-    (sciFwhm.toArcSeconds * math.pow(coeff.value.toDouble, -0.2).withUnit[Unitless]).toValue[Double]
+      baseFwhm.toPicometers.value.value.toDouble / wavelength.toPicometers.value.value.toDouble
+    (sciFwhm.toDeciArcSeconds.value.value * 10 * math.pow(coeff.toDouble, -0.2))
 
   }
 
@@ -65,38 +65,38 @@ package object ags {
       case SkyBackground.Darkest =>
         guideSpeed match {
           case GuideSpeed.Fast   =>
-            16.4 - 0.8 * wfsFwhm(iq, wavelength).value - ce.toBrightness
+            16.4 - 0.8 * wfsFwhm(iq, wavelength) - ce.toBrightness
           case GuideSpeed.Medium =>
-            16.9 - 0.8 * wfsFwhm(iq, wavelength).value - ce.toBrightness
+            16.9 - 0.8 * wfsFwhm(iq, wavelength) - ce.toBrightness
           case GuideSpeed.Slow   =>
-            17.4 - 0.8 * wfsFwhm(iq, wavelength).value - ce.toBrightness
+            17.4 - 0.8 * wfsFwhm(iq, wavelength) - ce.toBrightness
         }
       case SkyBackground.Dark    =>
         guideSpeed match {
           case GuideSpeed.Fast   =>
-            16.3 - 0.8 * wfsFwhm(iq, wavelength).value - ce.toBrightness
+            16.3 - 0.8 * wfsFwhm(iq, wavelength) - ce.toBrightness
           case GuideSpeed.Medium =>
-            16.8 - 0.8 * wfsFwhm(iq, wavelength).value - ce.toBrightness
+            16.8 - 0.8 * wfsFwhm(iq, wavelength) - ce.toBrightness
           case GuideSpeed.Slow   =>
-            17.3 - 0.8 * wfsFwhm(iq, wavelength).value - ce.toBrightness
+            17.3 - 0.8 * wfsFwhm(iq, wavelength) - ce.toBrightness
         }
       case SkyBackground.Gray    =>
         guideSpeed match {
           case GuideSpeed.Fast   =>
-            16.2 - 0.8 * wfsFwhm(iq, wavelength).value - ce.toBrightness
+            16.2 - 0.8 * wfsFwhm(iq, wavelength) - ce.toBrightness
           case GuideSpeed.Medium =>
-            16.7 - 0.8 * wfsFwhm(iq, wavelength).value - ce.toBrightness
+            16.7 - 0.8 * wfsFwhm(iq, wavelength) - ce.toBrightness
           case GuideSpeed.Slow   =>
-            17.2 - 0.8 * wfsFwhm(iq, wavelength).value - ce.toBrightness
+            17.2 - 0.8 * wfsFwhm(iq, wavelength) - ce.toBrightness
         }
       case SkyBackground.Bright  =>
         guideSpeed match {
           case GuideSpeed.Fast   =>
-            16.1 - 0.8 * wfsFwhm(iq, wavelength).value - ce.toBrightness
+            16.1 - 0.8 * wfsFwhm(iq, wavelength) - ce.toBrightness
           case GuideSpeed.Medium =>
-            16.6 - 0.8 * wfsFwhm(iq, wavelength).value - ce.toBrightness
+            16.6 - 0.8 * wfsFwhm(iq, wavelength) - ce.toBrightness
           case GuideSpeed.Slow   =>
-            17.1 - 0.8 * wfsFwhm(iq, wavelength).value - ce.toBrightness
+            17.1 - 0.8 * wfsFwhm(iq, wavelength) - ce.toBrightness
         }
     }
     FaintnessConstraint(limit)

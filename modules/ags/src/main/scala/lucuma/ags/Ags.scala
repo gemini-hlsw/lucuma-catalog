@@ -84,6 +84,8 @@ object Ags {
           .getOrElse(NoGuideStarForProbe(guideProbe, guideStar))
       }
       .getOrElse(NoMagnitudeForBand(guideProbe, guideStar))
+    
+    // AgsAnalysis.NotAnalized(guideStar)
   }
 
   /**
@@ -105,7 +107,7 @@ object Ags {
   /**
    * Do analysis of a list of Candidate Guide Stars
    */
-  def agsAnalysis[F[_]](
+  def agsAnalysis(
     constraints:     ConstraintSet,
     wavelength:      Wavelength,
     baseCoordinates: Coordinates,
@@ -113,9 +115,11 @@ object Ags {
     params:          AgsParams,
     candidates:      List[GuideStarCandidate]
   ): List[AgsAnalysis] =
+    // Nil
     candidates.map { gsc =>
       val offset = baseCoordinates.diff(gsc.tracking.baseCoordinates).offset
-      runAnalysis(constraints, wavelength, offset, position, params, gsc)
+      // AgsAnalysis.NotAnalized(gsc)
+    runAnalysis(constraints, wavelength, offset, position, params, gsc)
     }
 
   /**
