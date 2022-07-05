@@ -4,9 +4,6 @@
 package lucuma
 
 import cats.syntax.all._
-import coulomb._
-import coulomb.accepted.ArcSecond
-import coulomb.refined._
 import lucuma.catalog.BandsList
 import lucuma.catalog.BrightnessConstraints
 import lucuma.catalog.FaintnessConstraint
@@ -18,7 +15,6 @@ import lucuma.core.enums.SkyBackground
 import lucuma.core.math.Wavelength
 import lucuma.core.model.ConstraintSet
 import lucuma.core.util.Enumerated
-import spire.math.Rational
 
 import scala.math
 
@@ -30,7 +26,7 @@ package object ags {
   def wfsFwhm(sciFwhm: ImageQuality, wavelength: Wavelength): Double = {
     val coeff =
       baseFwhm.toPicometers.value.value.toDouble / wavelength.toPicometers.value.value.toDouble
-    (sciFwhm.toDeciArcSeconds.value.value * 10 * math.pow(coeff.toDouble, -0.2))
+    (sciFwhm.toDeciArcSeconds.value.value / 10.0) * math.pow(coeff, -0.2)
 
   }
 

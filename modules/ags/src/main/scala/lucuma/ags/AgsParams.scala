@@ -8,7 +8,7 @@ import cats.syntax.all._
 import lucuma.core.enums.GmosNorthFpu
 import lucuma.core.enums.GmosSouthFpu
 import lucuma.core.enums.PortDisposition
-import lucuma.core.geom.ShapeExpression
+import lucuma.core.geom.Area
 import lucuma.core.geom.gmos.probeArm
 import lucuma.core.geom.gmos.scienceArea
 import lucuma.core.geom.jts.interpreter._
@@ -22,33 +22,23 @@ object AgsPosition {
   implicit val agsPositionEq: Eq[AgsPosition] = Eq.by(x => (x.posAngle, x.offsetPos))
 }
 
-sealed trait AgsCalculations {
+sealed trait AgsGeomCalc {
+  // Indicates if the given offset is reachable
   def isReachable(gsOffset: Offset): Boolean
 
-  def vignettingArea(gsOffset: Offset): ShapeExpression
+  // Calculates the area vignetted at a given offset
+  def vignettingArea(gsOffset: Offset): Area
 }
 
 sealed trait AgsParams {
   def probe: GuideProbe
 
-  def posCalculations(positions: List[AgsPosition]): Map[AgsPosition, AgsCalculations]
-  // def isReachable(gsOffset: Offset, position: AgsPosition): Boolean
-  //
-  // def vignettingArea(position: AgsPosition)(gsOffset: Offset): ShapeExpression
+  // Builds an AgsGeom object for each position
+  // Some of the geometries don't chage with the position and we can cache them
+  def posCalculations(positions: List[AgsPosition]): Map[AgsPosition, AgsGeomCalc]
 }
 
 object AgsParams {
-//   private case class GmosAgsCalculations(
-//     def isReachable(gsOffset: Offset, position: AgsPosition): Boolean =
-//       patrolField(position).eval.contains(gsOffset)
-//
-//     def patrolField(position: AgsPosition): ShapeExpression =
-//       probeArm.patrolFieldAt(position.posAngle, position.offsetPos, fpu, port)
-//
-//     override def vignettingArea(position: AgsPosition)(gsOffset: Offset): ShapeExpression =
-//       scienceArea.shapeAt(position.posAngle, position.offsetPos, fpu) ∩
-//         probeArm.shapeAt(position.posAngle, gsOffset, position.offsetPos, fpu, port)
-// }
 
   final case class GmosAgsParams(
     fpu:  Option[Either[GmosNorthFpu, GmosSouthFpu]],
@@ -56,21 +46,26 @@ object AgsParams {
   ) extends AgsParams {
     val probe = GuideProbe.OIWFS
 
-    def posCalculations(positions: List[AgsPosition]): Map[AgsPosition, AgsCalculations] =
+    def posCalculations(positions: List[AgsPosition]): Map[AgsPosition, AgsGeomCalc] =
       positions.map { position =>
-        position -> new AgsCalculations() {
-          def isReachable(gsOffset: Offset): Boolean =
-            patrolField.contains(gsOffset)
-
+        position -> new AgsGeomCalc() {
           val patrolField =
             probeArm.patrolFieldAt(position.posAngle, position.offsetPos, fpu, port).eval
 
-          val scienceAreaShape = 
+          val scienceAreaShape =
             scienceArea.shapeAt(position.posAngle, position.offsetPos, fpu)
 
-          override def vignettingArea(gsOffset: Offset): ShapeExpression =
-            scienceAreaShape ∩
-              probeArm.shapeAt(position.posAngle, gsOffset, position.offsetPos, fpu, port)
+          override def isReachable(gsOffset: Offset): Boolean =
+            patrolField.contains(gsOffset)
+
+          override def vignettingArea(gsOffset: Offset): Area =
+            (scienceAreaShape ∩
+              probeArm.shapeAt(position.posAngle,
+                               gsOffset,
+                               position.offsetPos,
+                               fpu,
+                               port
+              )).eval.area
 
         }
       }.toMap

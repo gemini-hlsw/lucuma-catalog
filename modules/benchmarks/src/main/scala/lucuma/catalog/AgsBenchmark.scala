@@ -17,8 +17,6 @@ import lucuma.core.model.ElevationRange
 import org.http4s.jdkhttpclient.JdkHttpClient
 import lucuma.core.math.Angle
 import lucuma.core.math.Offset
-import lucuma.core.geom.jts.interpreter._
-import lucuma.core.geom.Area
 
 @State(Scope.Thread)
 @Fork(1)
@@ -76,19 +74,18 @@ class AgsBenchmark extends AgsSelectionSample {
     ()
   }
 
-  // @Benchmark
-  // def magnitudeAnalysis: Unit = {
-  //   Ags.magnitudeAnalysis(
-  //     constraints,
-  //     params.probe,
-  //     Offset.Zero,
-  //     items.head,
-  //     wavelength,
-  //     // _ => Area.MinArea
-  //     params.vignettingArea(pos)(_).eval.area
-  //   )
-  //   ()
-  // }
+  @Benchmark
+  def magnitudeAnalysis: Unit = {
+    val geoms = params.posCalculations(List(pos))
+    Ags.magnitudeAnalysis(
+      constraints,
+      params.probe,
+      Offset.Zero,
+      items.head,
+      geoms.get(pos).get.vignettingArea(_)
+    )(Ags.guideSpeedLimits(constraints, wavelength))
+    ()
+  }
 }
 
 // Baseline ags
