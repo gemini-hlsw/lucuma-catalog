@@ -22,7 +22,7 @@ lazy val catsTimeVersion            = "0.5.0"
 
 Global / onChangedBuildSource := ReloadOnSourceChanges
 
-ThisBuild / tlBaseVersion       := "0.20"
+ThisBuild / tlBaseVersion       := "0.21"
 ThisBuild / tlCiReleaseBranches := Seq("master")
 
 ThisBuild / scalaVersion       := "3.1.2"
