@@ -302,12 +302,12 @@ object CatalogAdapter {
     override val plxField: FieldId   = FieldId.unsafeFrom("parallax", VoTableParser.UCD_PLX)
 
     // Morphologyy is not read
-    override def oTypeField                   = FieldId.unsafeFrom("OTYPE_S", VoTableParser.UCD_OTYPE)
-    override def spTypeField                  = FieldId.unsafeFrom("SP_TYPE", VoTableParser.UCD_SPTYPE)
-    override def morphTypeField               = FieldId.unsafeFrom("MORPH_TYPE", VoTableParser.UCD_MORPHTYPE)
-    override def angSizeMajAxisField: FieldId =
+    override val oTypeField                   = FieldId.unsafeFrom("OTYPE_S", VoTableParser.UCD_OTYPE)
+    override val spTypeField                  = FieldId.unsafeFrom("SP_TYPE", VoTableParser.UCD_SPTYPE)
+    override val morphTypeField               = FieldId.unsafeFrom("MORPH_TYPE", VoTableParser.UCD_MORPHTYPE)
+    override val angSizeMajAxisField: FieldId =
       FieldId.unsafeFrom("GALDIM_MAJAXIS", VoTableParser.UCD_ANGSIZE_MAJ)
-    override def angSizeMinAxisField: FieldId =
+    override val angSizeMinAxisField: FieldId =
       FieldId.unsafeFrom("GALDIM_MINAXIS", VoTableParser.UCD_ANGSIZE_MIN)
 
     // These are used to derive all other magnitude values.
@@ -391,7 +391,7 @@ object CatalogAdapter {
     override val gaiaDB: String   = "gaiadr3.gaia_source_lite"
 
     override def parseName(entries: Map[FieldId, String]): Option[String] =
-      super.parseName(entries).map(n => s"Goia DR3 $n")
+      super.parseName(entries).map(n => s"Gaia DR3 $n")
 
     /**
      * Gaia lite doesn't have epoch
@@ -413,7 +413,7 @@ object CatalogAdapter {
   def forCatalog(c: CatalogName): Option[CatalogAdapter] =
     c match {
       case CatalogName.Simbad => Simbad.some
-      case CatalogName.Gaia   => Gaia2.some
+      case CatalogName.Gaia   => Gaia3.some
       case _                  => none
     }
 }
