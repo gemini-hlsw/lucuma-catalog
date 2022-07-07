@@ -34,7 +34,7 @@ import org.http4s.jdkhttpclient.JdkHttpClient
 
 trait AgsSelectionSample {
 
-  implicit val gaia = CatalogAdapter.Gaia3Lite
+  implicit val gaia: CatalogAdapter.Gaia = CatalogAdapter.Gaia3Lite
 
   implicit val ci =
     ADQLInterpreter.nTarget(30000)

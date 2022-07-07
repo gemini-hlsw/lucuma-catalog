@@ -25,7 +25,7 @@ import spire.math.Bounded
 import java.time.Instant
 
 trait GaiaQueryPMSample {
-  implicit val gaia = CatalogAdapter.Gaia2
+  implicit val gaia: CatalogAdapter.Gaia = CatalogAdapter.Gaia2
 
   val epoch = Epoch.fromString.getOption("J2022.000").getOrElse(Epoch.J2000)
 
