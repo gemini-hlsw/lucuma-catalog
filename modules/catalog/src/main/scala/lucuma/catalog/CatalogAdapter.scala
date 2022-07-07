@@ -303,8 +303,8 @@ object CatalogAdapter {
 
     def idField: FieldId             = FieldId.unsafeFrom("DESIGNATION", VoTableParser.UCD_OBJID)
     def nameField: FieldId           = idField
-    val raField: FieldId             = FieldId("ra", none)
-    val decField: FieldId            = FieldId("dec", none)
+    val raField: FieldId             = FieldId.unsafeFrom("ra")
+    val decField: FieldId            = FieldId.unsafeFrom("dec")
     override val pmRaField: FieldId  = FieldId.unsafeFrom("pmra", VoTableParser.UCD_PMRA)
     override val pmDecField: FieldId = FieldId.unsafeFrom("pmdec", VoTableParser.UCD_PMDEC)
     override val rvField: FieldId    = FieldId.unsafeFrom("radial_velocity", VoTableParser.UCD_RV)
@@ -399,7 +399,7 @@ object CatalogAdapter {
     override val idField: FieldId = FieldId.unsafeFrom("source_id", VoTableParser.UCD_TYPEDID)
     override val gaiaDB: String   = "gaiadr3.gaia_source_lite"
 
-    override def defaultEpoch: Epoch = Epoch.Julian.fromIntegralYears(2016)
+    override def defaultEpoch: Epoch = Epoch.Julian.fromEpochYears(2016.0).get
 
     override def parseName(entries: Map[FieldId, String]): Option[String] =
       super.parseName(entries).map(n => s"Gaia DR3 $n")

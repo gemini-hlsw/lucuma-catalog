@@ -25,6 +25,11 @@ object FieldId {
   def unsafeFrom(id: String, ucd: Ucd): FieldId =
     apply(id, ucd).getOrElse(sys.error(s"Invalid field id $id"))
 
+  def unsafeFrom(id: String): FieldId =
+    refineV[NonEmpty](id)
+      .bimap(_ => NonEmptyChain.one(InvalidFieldId(id)).widen[CatalogProblem], FieldId(_, None))
+      .getOrElse(sys.error(s"Invalid field id $id"))
+
   def unsafeFrom(id: String, ucd: String): FieldId =
     Ucd(ucd).flatMap(apply(id, _)).getOrElse(sys.error(s"Invalid field id $id"))
 

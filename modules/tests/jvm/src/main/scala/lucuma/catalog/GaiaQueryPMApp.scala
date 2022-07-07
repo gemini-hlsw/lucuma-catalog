@@ -25,11 +25,11 @@ import spire.math.Bounded
 import java.time.Instant
 
 trait GaiaQueryPMSample {
-  implicit val gaia = CatalogAdapter.Gaia2
+  implicit val gaia: CatalogAdapter.Gaia = CatalogAdapter.Gaia2
 
   val epoch = Epoch.fromString.getOption("J2022.000").getOrElse(Epoch.J2000)
 
-  implicit val ci =
+  implicit val ci: ADQLInterpreter =
     ADQLInterpreter.nTarget(10)
 
   val m81Coords = (RightAscension.fromStringHMS.getOption("16:17:2.410"),

@@ -51,7 +51,7 @@ trait GaiaBrightnessADQL extends CatalogQuery {
             case Band.GaiaBP => CatalogAdapter.Gaia.bpMagField.id
             case Band.GaiaRP => CatalogAdapter.Gaia.rpMagField.id
           }
-          .map(bid => f"($bid > ${faintness.brightness}%.2f)")
+          .map(bid => f"($bid > ${faintness.brightness.toDouble}%.2f)")
       case BrightnessConstraints(bands, faintness, Some(saturation)) =>
         bands.bands
           .collect {
@@ -60,7 +60,7 @@ trait GaiaBrightnessADQL extends CatalogQuery {
             case Band.GaiaRP => CatalogAdapter.Gaia.rpMagField.id
           }
           .map(bid =>
-            f"($bid between ${saturation.brightness}%.2f and ${faintness.brightness}%.2f)"
+            f"($bid between ${saturation.brightness.toDouble}%.2f and ${faintness.brightness.toDouble}%.2f)"
           )
     }
 }
