@@ -19,6 +19,7 @@ import lucuma.core.math.RadialVelocity
 import lucuma.core.math.VelocityAxis
 import lucuma.core.math.dimensional._
 import lucuma.core.math.units._
+import lucuma.core.syntax.string._
 
 import scala.math.BigDecimal
 
@@ -50,6 +51,14 @@ sealed trait CatalogAdapter {
   // Parse nameField. In Simbad, this can include a prefix, e.g. "NAME "
   def parseName(entries: Map[FieldId, String]): Option[String] =
     entries.get(nameField)
+
+  // Parse the epoch field.
+  def parseEpoch(entries: Map[FieldId, String]): Epoch =
+    (for {
+      f <- entries.get(epochField)
+      d <- f.parseDoubleOption
+      e <- Epoch.Julian.fromEpochYears(d)
+    } yield e).getOrElse(defaultEpoch)
 
   // Indicates if a field contianing a brightness value should be ignored, by default all fields are considered
   protected def ignoreBrightnessValueField(v: FieldId): Boolean
@@ -390,8 +399,13 @@ object CatalogAdapter {
     override val idField: FieldId = FieldId.unsafeFrom("source_id", VoTableParser.UCD_TYPEDID)
     override val gaiaDB: String   = "gaiadr3.gaia_source_lite"
 
+    override def defaultEpoch: Epoch = Epoch.Julian.fromIntegralYears(2016)
+
     override def parseName(entries: Map[FieldId, String]): Option[String] =
       super.parseName(entries).map(n => s"Gaia DR3 $n")
+
+    override def parseEpoch(entries: Map[FieldId, String]): Epoch =
+      defaultEpoch
 
     /**
      * Gaia lite doesn't have epoch
