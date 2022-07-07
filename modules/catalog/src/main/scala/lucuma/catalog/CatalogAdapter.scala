@@ -12,12 +12,14 @@ import lucuma.catalog._
 import lucuma.core.enums.Band
 import lucuma.core.enums.CatalogName
 import lucuma.core.math.BrightnessUnits._
+import lucuma.core.math.Epoch
 import lucuma.core.math.ProperMotion
 import lucuma.core.math.ProperMotion.AngularVelocityComponent
 import lucuma.core.math.RadialVelocity
 import lucuma.core.math.VelocityAxis
 import lucuma.core.math.dimensional._
 import lucuma.core.math.units._
+import lucuma.core.syntax.string._
 
 import scala.math.BigDecimal
 
@@ -44,9 +46,19 @@ sealed trait CatalogAdapter {
   def angSizeMajAxisField: FieldId
   def angSizeMinAxisField: FieldId
 
+  def defaultEpoch: Epoch = Epoch.J2000
+
   // Parse nameField. In Simbad, this can include a prefix, e.g. "NAME "
   def parseName(entries: Map[FieldId, String]): Option[String] =
     entries.get(nameField)
+
+  // Parse the epoch field.
+  def parseEpoch(entries: Map[FieldId, String]): Epoch =
+    (for {
+      f <- entries.get(epochField)
+      d <- f.parseDoubleOption
+      e <- Epoch.Julian.fromEpochYears(d)
+    } yield e).getOrElse(defaultEpoch)
 
   // Indicates if a field contianing a brightness value should be ignored, by default all fields are considered
   protected def ignoreBrightnessValueField(v: FieldId): Boolean
@@ -285,10 +297,12 @@ object CatalogAdapter {
   sealed trait Gaia extends CatalogAdapter {
     val catalog: CatalogName = CatalogName.Gaia
 
-    val gaiaDB: String = "gaiadr2.gaia_source"
+    override def defaultEpoch: Epoch = Epoch.Julian.fromEpochYears(2016.0).get
 
-    val idField: FieldId             = FieldId.unsafeFrom("DESIGNATION", VoTableParser.UCD_OBJID)
-    val nameField: FieldId           = idField
+    val gaiaDB: String = "gaiadr3.gaia_source_lite"
+
+    def idField: FieldId             = FieldId.unsafeFrom("DESIGNATION", VoTableParser.UCD_OBJID)
+    def nameField: FieldId           = idField
     val raField: FieldId             = FieldId("ra", none)
     val decField: FieldId            = FieldId("dec", none)
     override val pmRaField: FieldId  = FieldId.unsafeFrom("pmra", VoTableParser.UCD_PMRA)
@@ -373,10 +387,47 @@ object CatalogAdapter {
 
   object Gaia extends Gaia
 
+  object Gaia2 extends Gaia {
+    override val gaiaDB: String = "gaiadr2.gaia_source"
+  }
+
+  object Gaia3 extends Gaia {
+    override val gaiaDB: String = "gaiadr3.gaia_source"
+  }
+
+  object Gaia3Lite extends Gaia {
+    override val idField: FieldId = FieldId.unsafeFrom("source_id", VoTableParser.UCD_TYPEDID)
+    override val gaiaDB: String   = "gaiadr3.gaia_source_lite"
+
+    override def defaultEpoch: Epoch = Epoch.Julian.fromIntegralYears(2016)
+
+    override def parseName(entries: Map[FieldId, String]): Option[String] =
+      super.parseName(entries).map(n => s"Gaia DR3 $n")
+
+    override def parseEpoch(entries: Map[FieldId, String]): Epoch =
+      defaultEpoch
+
+    /**
+     * Gaia lite doesn't have epoch
+     */
+    override val allFields: List[FieldId] =
+      List(
+        idField,
+        raField,
+        pmRaField,
+        decField,
+        pmDecField,
+        plxField,
+        rvField,
+        gMagField,
+        rpMagField
+      )
+  }
+
   def forCatalog(c: CatalogName): Option[CatalogAdapter] =
     c match {
       case CatalogName.Simbad => Simbad.some
-      case CatalogName.Gaia   => Gaia.some
+      case CatalogName.Gaia   => Gaia3.some
       case _                  => none
     }
 }

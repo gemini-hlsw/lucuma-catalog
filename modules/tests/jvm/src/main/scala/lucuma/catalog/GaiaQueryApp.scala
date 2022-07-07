@@ -20,6 +20,8 @@ import org.http4s.client.Client
 import org.http4s.jdkhttpclient.JdkHttpClient
 
 trait GaiaQuerySample {
+  implicit val gaia = CatalogAdapter.Gaia2
+
   val epoch = Epoch.fromString.getOption("J2022.000").getOrElse(Epoch.J2000)
 
   implicit val ci =
@@ -42,7 +44,7 @@ trait GaiaQuerySample {
         _.body
           .through(text.utf8.decode)
           .evalTap(a => Sync[F].delay(println(a)))
-          .through(CatalogSearch.guideStars[F](CatalogAdapter.Gaia))
+          .through(CatalogSearch.guideStars[F](gaia))
       )
       .compile
       .toList

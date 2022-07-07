@@ -23,7 +23,6 @@ import lucuma.core.model.SourceProfile
 import lucuma.core.model.SpectralDefinition
 import lucuma.core.model.Target
 import lucuma.core.model.UnnormalizedSED
-import lucuma.core.syntax.string._
 import monocle.Focus
 import monocle.Lens
 import monocle.function.Index.listIndex
@@ -122,13 +121,9 @@ trait VoTableParser {
 
   def parseEpoch(
     adapter: CatalogAdapter,
-    entries: Map[NonEmptyString, String]
+    entries: Map[FieldId, String]
   ): EitherNec[CatalogProblem, Epoch] =
-    (for {
-      f <- entries.get(adapter.epochField.id)
-      d <- f.parseDoubleOption
-      e <- Epoch.Julian.fromEpochYears(d)
-    } yield e).getOrElse(Epoch.J2000).rightNec
+    adapter.parseEpoch(entries).rightNec
 
   def parseDec(
     adapter: CatalogAdapter,
@@ -186,11 +181,11 @@ trait VoTableParser {
     entries: Map[FieldId, String]
   ): EitherNec[CatalogProblem, Option[Parallax]] =
     entries.get(adapter.plxField) match {
-      case Some(p) =>
+      case Some(p) if p.trim.nonEmpty =>
         parseDoubleValue(VoTableParser.UCD_PLX.some, p).map(p =>
           Parallax.milliarcseconds.reverseGet(math.max(0.0, p)).some
         )
-      case _       =>
+      case _                          =>
         NoneRightNec
     }
 
@@ -201,7 +196,7 @@ trait VoTableParser {
     val entriesById = entries.map { case (k, v) => (k.id, v) }
     (parseRA(adapter, entriesById),
      parseDec(adapter, entriesById),
-     parseEpoch(adapter, entriesById),
+     parseEpoch(adapter, entries),
      parsePV(adapter, entries),
      parseRadialVelocity(adapter, entries),
      parsePlx(adapter, entries)

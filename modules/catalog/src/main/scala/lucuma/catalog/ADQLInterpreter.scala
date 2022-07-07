@@ -25,17 +25,14 @@ trait ADQLInterpreter {
 }
 
 object ADQLInterpreter {
-  val gaia = CatalogAdapter.Gaia
-
-  val allBaseFields = gaia.allFields
 
   // Find the target closest to the base. Useful for debugging
-  def baseOnly(implicit si: ShapeInterpreter): ADQLInterpreter =
+  def baseOnly(implicit gaia: CatalogAdapter.Gaia, si: ShapeInterpreter): ADQLInterpreter =
     new ADQLInterpreter {
       val MaxCount         = 1
       val shapeInterpreter = si
 
-      def allFields: List[FieldId] = allBaseFields
+      def allFields: List[FieldId] = gaia.allFields
 
       override def extraFields(c: Coordinates) =
         List(
@@ -47,24 +44,29 @@ object ADQLInterpreter {
     }
 
   // Find one target. Useful for debugging
-  def oneTarget(implicit si: ShapeInterpreter): ADQLInterpreter =
+  def oneTarget(implicit gaia: CatalogAdapter.Gaia, si: ShapeInterpreter): ADQLInterpreter =
     nTarget(1)
 
   // Find n targets around the base
-  def nTarget(count: Int)(implicit si: ShapeInterpreter): ADQLInterpreter =
+  def nTarget(
+    count:         Int
+  )(implicit gaia: CatalogAdapter.Gaia, si: ShapeInterpreter): ADQLInterpreter =
     new ADQLInterpreter {
       val MaxCount                                  = count
       val shapeInterpreter                          = si
-      def allFields: List[FieldId]                  = allBaseFields
+      def allFields: List[FieldId]                  = gaia.allFields
       def extraFields(c: Coordinates): List[String] = Nil
     }
 
   // Find n targets around the base
-  def pmCorrected(count: Int, epoch: Epoch)(implicit si: ShapeInterpreter): ADQLInterpreter =
+  def pmCorrected(count: Int, epoch: Epoch)(implicit
+    gaia:                CatalogAdapter.Gaia,
+    si:                  ShapeInterpreter
+  ): ADQLInterpreter =
     new ADQLInterpreter {
       val MaxCount                 = count
       val shapeInterpreter         = si
-      def allFields: List[FieldId] = allBaseFields.filter {
+      def allFields: List[FieldId] = gaia.allFields.filter {
         case gaia.raField | gaia.decField | gaia.pmDecField | gaia.pmRaField | gaia.plxField |
             gaia.rvField =>
           false
