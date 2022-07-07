@@ -21,7 +21,6 @@ import lucuma.core.geom.jts.interpreter._
 import lucuma.core.math.Angle
 import lucuma.core.math.Coordinates
 import lucuma.core.math.Declination
-import lucuma.core.math.Epoch
 import lucuma.core.math.Offset
 import lucuma.core.math.RightAscension
 import lucuma.core.math.Wavelength
@@ -34,10 +33,11 @@ import org.http4s.client.Client
 import org.http4s.jdkhttpclient.JdkHttpClient
 
 trait AgsSelectionSample {
-  val epoch = Epoch.fromString.getOption("J2022.000").getOrElse(Epoch.J2000)
+
+  implicit val gaia = CatalogAdapter.Gaia3Lite
 
   implicit val ci: ADQLInterpreter =
-    ADQLInterpreter.pmCorrected(30000, epoch)
+    ADQLInterpreter.nTarget(30000)
 
   val coords = (RightAscension.fromStringHMS.getOption("18:15:47.550"),
                 Declination.fromStringSignedDMS.getOption("-29:49:05.00")
@@ -54,7 +54,8 @@ trait AgsSelectionSample {
       .flatMap(
         _.body
           .through(text.utf8.decode)
-          .through(CatalogSearch.guideStars[F](CatalogAdapter.Gaia))
+          .through(CatalogSearch.guideStars[F](gaia))
+          // .evalTap(a => Sync[F].delay(println(a)))
           .collect { case Right(t) => t }
       )
   }

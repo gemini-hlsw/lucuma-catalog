@@ -39,13 +39,13 @@ final case class GuideStarCandidate(
   gBrightness: Option[BigDecimal]
 ) {
   def name: NonEmptyString =
-    refineV[NonEmpty](s"Gaia DR2 $id").getOrElse(sys.error("Cannot happen"))
+    refineV[NonEmpty](s"Gaia DR3 $id").getOrElse(sys.error("Cannot happen"))
 }
 
 object GuideStarCandidate {
   implicit val eqGuideStar: Eq[GuideStarCandidate] = Eq.by(x => (x.name, x.tracking, x.gBrightness))
 
-  val GaiaNameRegex = """Gaia DR2 (-?\d*)""".r
+  val GaiaNameRegex = """Gaia DR3 (-?\d*)""".r
 
   // There is some loss of info converting one to the other but further
   // conversions are always the same, thus SplitEpi
