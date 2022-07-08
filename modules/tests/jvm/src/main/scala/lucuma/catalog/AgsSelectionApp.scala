@@ -80,7 +80,7 @@ object AgsSelectionSampleApp extends IOApp.Simple with AgsSelectionSample {
         gaiaQuery[IO](_)
           .map(GuideStarCandidate.siderealTarget.get)
           .through(
-            Ags.agsAnalysisStream[IO](
+            Ags.agsAnalysisStreamPM[IO](
               constraints,
               wavelength,
               SiderealTracking.const(coords),

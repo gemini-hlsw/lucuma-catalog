@@ -65,6 +65,22 @@ class AgsBenchmark extends AgsSelectionSample {
     Ags.agsAnalysis(
       constraints,
       wavelength,
+      coords,
+      AgsPosition(Angle.Angle0, Offset.Zero),
+      AgsParams.GmosAgsParams(
+        GmosNorthFpu.LongSlit_5_00.asLeft.some,
+        PortDisposition.Bottom
+      ),
+      items
+    )
+    ()
+  }
+
+  @Benchmark
+  def agsPM: Unit = {
+    Ags.agsAnalysisPM(
+      constraints,
+      wavelength,
       SiderealTracking.const(coords),
       AgsPosition(Angle.Angle0, Offset.Zero),
       AgsParams.GmosAgsParams(
@@ -80,13 +96,15 @@ class AgsBenchmark extends AgsSelectionSample {
   @Benchmark
   def magnitudeAnalysis: Unit = {
     val geoms = params.posCalculations(List(pos))
+    val limits = Ags.guideSpeedLimits(constraints, wavelength)
     Ags.magnitudeAnalysis(
       constraints,
       params.probe,
       Offset.Zero,
       items.head,
       geoms.get(pos).get.vignettingArea(_)
-    )(Ags.guideSpeedLimits(constraints, wavelength))
+    )(limits)
+    // println(u)
     ()
   }
 }
