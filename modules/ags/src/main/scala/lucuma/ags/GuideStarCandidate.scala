@@ -22,7 +22,10 @@ import lucuma.core.model.SpectralDefinition
 import lucuma.core.model.Target
 import lucuma.core.model.UnnormalizedSED
 import lucuma.core.optics.SplitEpi
+import monocle.Focus
+import monocle.Lens
 
+import java.time.Instant
 import scala.collection.immutable.SortedMap
 
 /**
@@ -35,12 +38,25 @@ final case class GuideStarCandidate(
 ) {
   def name: NonEmptyString =
     refineV[NonEmpty](s"Gaia DR3 $id").getOrElse(sys.error("Cannot happen"))
+
+  // Reset the candidate to a given instant
+  // This can be used to calculate and cache the location base on proper motion
+  // The tracking variables are reset to avoid double calculations
+  def at(i: Instant): GuideStarCandidate =
+    copy(tracking =
+      tracking.at(i).fold(tracking)(c => SiderealTracking.const(c).copy(epoch = tracking.epoch))
+    )
 }
 
 object GuideStarCandidate {
   implicit val eqGuideStar: Eq[GuideStarCandidate] = Eq.by(x => (x.name, x.tracking, x.gBrightness))
 
   val GaiaNameRegex = """Gaia DR3 (-?\d*)""".r
+
+  val id: Lens[GuideStarCandidate, Long]                        = Focus[GuideStarCandidate](_.id)
+  val tracking: Lens[GuideStarCandidate, SiderealTracking]      = Focus[GuideStarCandidate](_.tracking)
+  val gBrightness: Lens[GuideStarCandidate, Option[BigDecimal]] =
+    Focus[GuideStarCandidate](_.gBrightness)
 
   // There is some loss of info converting one to the other but further
   // conversions are always the same, thus SplitEpi
