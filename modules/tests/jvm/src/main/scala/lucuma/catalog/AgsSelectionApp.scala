@@ -52,6 +52,7 @@ trait AgsSelectionSample {
       .flatMap(
         _.body
           .through(text.utf8.decode)
+          // .evalTap(a => Sync[F].delay(println(a)))
           .through(CatalogSearch.guideStars[F](gaia))
           .collect { case Right(t) => t }
           // .evalTap(a => Sync[F].delay(println(a)))
@@ -67,7 +68,7 @@ object AgsSelectionSampleApp extends IOApp.Simple with AgsSelectionSample {
                                   ElevationRange.AirMass.Default
   )
 
-  val wavelength = Wavelength.fromNanometers(700).get
+  val wavelength = Wavelength.fromNanometers(300).get
 
   def run =
     JdkHttpClient

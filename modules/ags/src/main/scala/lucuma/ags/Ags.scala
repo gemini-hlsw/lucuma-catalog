@@ -108,8 +108,8 @@ object Ags {
     // This is essentially a cache of geometries avoiding calculatting them
     // over and over again as they don't change for different positions
     val calcs       = params.posCalculations(List(position))
-    // use the slowest speed to filter out
-    val bc          = guideSpeeds.find(_._1 === GuideSpeed.Slow).map(_._2)
+    // use constraints to calculate all guide speeds
+    val bc          = constraintsFor(guideSpeeds)
 
     in =>
       in.filter(c => c.gBrightness.exists(g => bc.exists(_.contains(Band.Gaia, g)))).map { gsc =>
@@ -117,6 +117,16 @@ object Ags {
         runAnalysis(constraints, offset, position, params, gsc)(guideSpeeds, calcs)
       }
   }
+
+  // Create a BrightnessConstrait that woulld include enough to calculate
+  // Fast and Slow speedds
+  private def constraintsFor(
+    limits: List[(GuideSpeed, BrightnessConstraints)]
+  ): Option[BrightnessConstraints] =
+    // use the slowest speed to filter out
+    (limits.find(_._1 === GuideSpeed.Slow).map(_._2),
+     limits.find(_._1 === GuideSpeed.Fast).map(_._2)
+    ).mapN(_ ∪ _)
 
   /**
    * Do analysis of a list of Candidate Guide Stars
@@ -134,8 +144,8 @@ object Ags {
     // This is essentially a cache of geometries avoiding calculatting them
     // over and over again as they don't change for different positions
     val calcs       = params.posCalculations(List(position))
-    // use the slowest speed to filter out
-    val bc          = guideSpeeds.find(_._1 === GuideSpeed.Slow).map(_._2)
+    // use constraints to calculate all guide speeds
+    val bc          = constraintsFor(guideSpeeds)
 
     candidates.filter(c => c.gBrightness.exists(g => bc.exists(_.contains(Band.Gaia, g)))).map {
       gsc =>

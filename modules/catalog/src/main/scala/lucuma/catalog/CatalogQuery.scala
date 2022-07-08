@@ -8,6 +8,7 @@ import lucuma.core.enums.Band
 import lucuma.core.enums.CatalogName
 import lucuma.core.geom.ShapeExpression
 import lucuma.core.geom.syntax.all._
+import lucuma.core.math.Angle
 import lucuma.core.math.Coordinates
 import lucuma.core.math.Offset
 import lucuma.core.model.SiderealTracking
@@ -42,6 +43,9 @@ case class QueryByName(id: String, proxy: Option[Uri] = None) extends CatalogQue
 trait GaiaBrightnessADQL extends CatalogQuery {
   override val catalog = CatalogName.Gaia
 
+  def circleQuery(base: Coordinates, r: Angle): String =
+    f"CIRCLE('ICRS', ${base.ra.toAngle.toDoubleDegrees}%7.5f, ${base.dec.toAngle.toSignedDoubleDegrees}%7.5f, ${r.toDoubleDegrees}%7.5f)"
+
   def adqlBrightness(brightnessConstraints: Option[BrightnessConstraints]): List[String] =
     brightnessConstraints.foldMap {
       case BrightnessConstraints(bands, faintness, None)             =>
@@ -51,7 +55,7 @@ trait GaiaBrightnessADQL extends CatalogQuery {
             case Band.GaiaBP => CatalogAdapter.Gaia.bpMagField.id
             case Band.GaiaRP => CatalogAdapter.Gaia.rpMagField.id
           }
-          .map(bid => f"($bid > ${faintness.brightness.toDouble}%.2f)")
+          .map(bid => f"($bid < ${faintness.brightness.toDouble}%.3f)")
       case BrightnessConstraints(bands, faintness, Some(saturation)) =>
         bands.bands
           .collect {
@@ -60,7 +64,7 @@ trait GaiaBrightnessADQL extends CatalogQuery {
             case Band.GaiaRP => CatalogAdapter.Gaia.rpMagField.id
           }
           .map(bid =>
-            f"($bid between ${saturation.brightness.toDouble}%.2f and ${faintness.brightness.toDouble}%.2f)"
+            f"($bid between ${saturation.brightness.toDouble}%.3f and ${faintness.brightness.toDouble}%.3f)"
           )
     }
 }
@@ -93,7 +97,7 @@ final case class QueryByADQL(
 
     val r = shapeConstraint.maxSide.bisect
 
-    f"CIRCLE('ICRS', ${base.ra.toAngle.toDoubleDegrees}%9.8f, ${base.dec.toAngle.toSignedDoubleDegrees}%9.8f, ${r.toDoubleDegrees}%9.8f)"
+    circleQuery(base, r)
   }
 }
 
@@ -142,6 +146,6 @@ final case class TimeRangeQueryByADQL(
     }
     val r              = (shapeConstraint ∪ (shapeConstraint ↗ offset)).maxSide.bisect
 
-    f"CIRCLE('ICRS', ${base.ra.toAngle.toDoubleDegrees}%9.8f, ${base.dec.toAngle.toSignedDoubleDegrees}%9.8f, ${r.toDoubleDegrees}%9.8f)"
+    circleQuery(base, r)
   }
 }
