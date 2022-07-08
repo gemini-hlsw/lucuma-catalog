@@ -14,6 +14,7 @@ import lucuma.catalog.BandsList
 import lucuma.core.enums.Band
 import lucuma.core.enums.StellarLibrarySpectrum
 import lucuma.core.math.BrightnessUnits._
+import lucuma.core.math.Epoch
 import lucuma.core.math.dimensional._
 import lucuma.core.math.units._
 import lucuma.core.model.SiderealTracking
@@ -22,7 +23,12 @@ import lucuma.core.model.SpectralDefinition
 import lucuma.core.model.Target
 import lucuma.core.model.UnnormalizedSED
 import lucuma.core.optics.SplitEpi
+import monocle.Focus
+import monocle.Lens
 
+import java.time.Instant
+import java.time.LocalDateTime
+import java.time.ZoneId
 import scala.collection.immutable.SortedMap
 
 /**
@@ -35,12 +41,33 @@ final case class GuideStarCandidate(
 ) {
   def name: NonEmptyString =
     refineV[NonEmpty](s"Gaia DR3 $id").getOrElse(sys.error("Cannot happen"))
+
+  // Reset the candidate to a given instant
+  // This can be used to calculate and cache the location base on proper motion
+  // The tracking variables are reset to match the epoch to the instant
+  def at(i: Instant): GuideStarCandidate = {
+    val ldt   = LocalDateTime.ofInstant(i, GuideStarCandidate.UTC)
+    val epoch = Epoch.Julian.fromLocalDateTime(ldt).getOrElse(tracking.epoch)
+    copy(tracking = tracking.at(i).fold(tracking) { c =>
+      val update = SiderealTracking.baseCoordinates.replace(c) >>> SiderealTracking.epoch
+        .replace(epoch)
+      update(tracking)
+    })
+  }
 }
 
 object GuideStarCandidate {
+
+  val UTC = ZoneId.of("UTC")
+
   implicit val eqGuideStar: Eq[GuideStarCandidate] = Eq.by(x => (x.name, x.tracking, x.gBrightness))
 
   val GaiaNameRegex = """Gaia DR3 (-?\d*)""".r
+
+  val id: Lens[GuideStarCandidate, Long]                        = Focus[GuideStarCandidate](_.id)
+  val tracking: Lens[GuideStarCandidate, SiderealTracking]      = Focus[GuideStarCandidate](_.tracking)
+  val gBrightness: Lens[GuideStarCandidate, Option[BigDecimal]] =
+    Focus[GuideStarCandidate](_.gBrightness)
 
   // There is some loss of info converting one to the other but further
   // conversions are always the same, thus SplitEpi
