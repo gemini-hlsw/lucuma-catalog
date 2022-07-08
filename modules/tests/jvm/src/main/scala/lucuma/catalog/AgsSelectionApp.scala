@@ -26,11 +26,14 @@ import lucuma.core.math.RightAscension
 import lucuma.core.math.Wavelength
 import lucuma.core.model.ConstraintSet
 import lucuma.core.model.ElevationRange
+import lucuma.core.model.SiderealTracking
 import lucuma.core.model.Target
 import org.http4s.Method._
 import org.http4s.Request
 import org.http4s.client.Client
 import org.http4s.jdkhttpclient.JdkHttpClient
+
+import java.time.Instant
 
 trait AgsSelectionSample {
 
@@ -80,12 +83,13 @@ object AgsSelectionSampleApp extends IOApp.Simple with AgsSelectionSample {
             Ags.agsAnalysisStream[IO](
               constraints,
               wavelength,
-              coords,
+              SiderealTracking.const(coords),
               AgsPosition(Angle.Angle0, Offset.Zero),
               AgsParams.GmosAgsParams(
                 GmosNorthFpu.LongSlit_5_00.asLeft.some,
                 PortDisposition.Bottom
-              )
+              ),
+              Instant.now()
             )
           )
           .compile

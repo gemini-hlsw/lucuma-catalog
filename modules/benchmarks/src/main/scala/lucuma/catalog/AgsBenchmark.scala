@@ -17,6 +17,8 @@ import lucuma.core.model.ElevationRange
 import org.http4s.jdkhttpclient.JdkHttpClient
 import lucuma.core.math.Angle
 import lucuma.core.math.Offset
+import lucuma.core.model.SiderealTracking
+import java.time.Instant
 
 @State(Scope.Thread)
 @Fork(1)
@@ -34,7 +36,7 @@ class AgsBenchmark extends AgsSelectionSample {
     items = JdkHttpClient
       .simple[IO]
       .use(
-        gaiaQuery[IO](_, widestConstraints)
+        gaiaQuery[IO](_)
           .map(GuideStarCandidate.siderealTarget.get)
           .compile
           .toList
@@ -63,12 +65,13 @@ class AgsBenchmark extends AgsSelectionSample {
     Ags.agsAnalysis(
       constraints,
       wavelength,
-      coords,
+      SiderealTracking.const(coords),
       AgsPosition(Angle.Angle0, Offset.Zero),
       AgsParams.GmosAgsParams(
         GmosNorthFpu.LongSlit_5_00.asLeft.some,
         PortDisposition.Bottom
       ),
+      Instant.now(),
       items
     )
     ()

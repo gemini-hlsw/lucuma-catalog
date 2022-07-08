@@ -5,15 +5,19 @@ package lucuma.ags
 
 import cats.syntax.all._
 import fs2._
+import lucuma.ags.AgsAnalysis._
+import lucuma.ags.AgsGuideQuality._
 import lucuma.catalog.BrightnessConstraints
 import lucuma.core.enums.Band
 import lucuma.core.enums.GuideSpeed
 import lucuma.core.enums.ImageQuality
 import lucuma.core.geom.Area
-import lucuma.core.math.Coordinates
 import lucuma.core.math.Offset
 import lucuma.core.math.Wavelength
 import lucuma.core.model.ConstraintSet
+import lucuma.core.model.SiderealTracking
+
+import java.time.Instant
 
 object Ags {
 
@@ -54,8 +58,6 @@ object Ags {
     guideStar:      GuideStarCandidate,
     vignettingArea: Offset => Area
   )(speeds:         List[(GuideSpeed, BrightnessConstraints)]): AgsAnalysis = {
-    import AgsGuideQuality._
-    import AgsAnalysis._
 
     // Called when we know that a valid guide speed can be chosen for the given guide star.
     // Determine the quality and return an analysis indicating that the star is usable.
@@ -93,29 +95,37 @@ object Ags {
   }
 
   /**
-   * FS2 pipe to do analysis of a stream of Candidate Guide Stars
+   * FS2 pipe to do analysis of a stream of Candidate Guide Stars Note the base coordinates should
+   * be pm corrected if needed
    */
   def agsAnalysisStream[F[_]](
-    constraints:     ConstraintSet,
-    wavelength:      Wavelength,
-    baseCoordinates: Coordinates,
-    position:        AgsPosition,
-    params:          AgsParams
+    constraints: ConstraintSet,
+    wavelength:  Wavelength,
+    base:        SiderealTracking,
+    position:    AgsPosition,
+    params:      AgsParams,
+    instant:     Instant
   ): Pipe[F, GuideStarCandidate, AgsAnalysis] = {
 
     // Cache the limits for different speeds
-    val guideSpeeds = guideSpeedLimits(constraints, wavelength)
+    val guideSpeeds     = guideSpeedLimits(constraints, wavelength)
     // This is essentially a cache of geometries avoiding calculatting them
     // over and over again as they don't change for different positions
-    val calcs       = params.posCalculations(List(position))
+    val calcs           = params.posCalculations(List(position))
     // use constraints to calculate all guide speeds
-    val bc          = constraintsFor(guideSpeeds)
+    val bc              = constraintsFor(guideSpeeds)
+    val baseCoordinates = base.at(instant)
 
     in =>
-      in.filter(c => c.gBrightness.exists(g => bc.exists(_.contains(Band.Gaia, g)))).map { gsc =>
-        val offset = baseCoordinates.diff(gsc.tracking.baseCoordinates).offset
-        runAnalysis(constraints, offset, position, params, gsc)(guideSpeeds, calcs)
-      }
+      in.filter(c => c.gBrightness.exists(g => bc.exists(_.contains(Band.Gaia, g))))
+        .map { gsc =>
+          val offset = (baseCoordinates, gsc.tracking.at(instant)).mapN(_.diff(_).offset)
+          offset
+            .map { offset =>
+              runAnalysis(constraints, offset, position, params, gsc)(guideSpeeds, calcs)
+            }
+            .getOrElse(ProperMotionNotAvailable(gsc))
+        }
   }
 
   // Create a BrightnessConstrait that woulld include enough to calculate
@@ -129,15 +139,17 @@ object Ags {
     ).mapN(_ ∪ _)
 
   /**
-   * Do analysis of a list of Candidate Guide Stars
+   * Do analysis of a list of Candidate Guide Stars Note the base coordinates should be pm corrected
+   * if needed
    */
   def agsAnalysis(
-    constraints:     ConstraintSet,
-    wavelength:      Wavelength,
-    baseCoordinates: Coordinates,
-    position:        AgsPosition,
-    params:          AgsParams,
-    candidates:      List[GuideStarCandidate]
+    constraints: ConstraintSet,
+    wavelength:  Wavelength,
+    base:        SiderealTracking,
+    position:    AgsPosition,
+    params:      AgsParams,
+    instant:     Instant,
+    candidates:  List[GuideStarCandidate]
   ): List[AgsAnalysis] = {
     // Cache the limits for different speeds
     val guideSpeeds = guideSpeedLimits(constraints, wavelength)
@@ -147,11 +159,18 @@ object Ags {
     // use constraints to calculate all guide speeds
     val bc          = constraintsFor(guideSpeeds)
 
-    candidates.filter(c => c.gBrightness.exists(g => bc.exists(_.contains(Band.Gaia, g)))).map {
-      gsc =>
-        val offset = baseCoordinates.diff(gsc.tracking.baseCoordinates).offset
-        runAnalysis(constraints, offset, position, params, gsc)(guideSpeeds, calcs)
-    }
+    val baseCoordinates = base.at(instant)
+
+    candidates
+      .filter(c => c.gBrightness.exists(g => bc.exists(_.contains(Band.Gaia, g))))
+      .map { gsc =>
+        val offset = (baseCoordinates, gsc.tracking.at(instant)).mapN(_.diff(_).offset)
+        offset
+          .map { offset =>
+            runAnalysis(constraints, offset, position, params, gsc)(guideSpeeds, calcs)
+          }
+          .getOrElse(ProperMotionNotAvailable(gsc))
+      }
   }
 
   /**
