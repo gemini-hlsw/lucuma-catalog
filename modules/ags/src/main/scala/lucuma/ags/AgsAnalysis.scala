@@ -19,10 +19,6 @@ sealed trait AgsAnalysis {
 
 object AgsAnalysis {
 
-  final case class NotAnalized(target: GuideStarCandidate) extends AgsAnalysis {
-    override def message(withProbe: Boolean): String = "Not analyzed yet"
-  }
-
   final case class NoGuideStarForProbe(guideProbe: GuideProbe, target: GuideStarCandidate)
       extends AgsAnalysis {
     override def message(withProbe: Boolean): String = {

@@ -5,6 +5,7 @@ package lucuma.catalog
 
 import cats.Eq
 import cats.Order
+import cats.syntax.all._
 import lucuma.core.enums.Band
 
 /**
@@ -43,6 +44,18 @@ case class BrightnessConstraints(
     searchBands.bands.contains(band) &&
       faintnessConstraint.brightness >= brightness &&
       saturationConstraint.forall(_.brightness <= brightness)
+
+  def ∪(that: BrightnessConstraints): BrightnessConstraints =
+    BrightnessConstraints(
+      searchBands ∪ that.searchBands,
+      FaintnessConstraint(faintnessConstraint.brightness.max(that.faintnessConstraint.brightness)),
+      (this.saturationConstraint, that.saturationConstraint) match {
+        case (a @ Some(_), None) => a
+        case (None, a @ Some(_)) => a
+        case (Some(a), Some(b))  => SaturationConstraint(a.brightness.min(b.brightness)).some
+        case _                   => none
+      }
+    )
 }
 
 object BrightnessConstraints {

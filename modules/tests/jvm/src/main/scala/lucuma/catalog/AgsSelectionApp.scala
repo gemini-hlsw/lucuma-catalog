@@ -43,20 +43,19 @@ trait AgsSelectionSample {
                 Declination.fromStringSignedDMS.getOption("-29:49:05.00")
   ).mapN(Coordinates.apply).getOrElse(Coordinates.Zero)
 
-  def gaiaQuery[F[_]: Sync](
-    client: Client[F],
-    bc:     BrightnessConstraints
-  ): Stream[F, Target.Sidereal] = {
-    val query   = CatalogSearch.gaiaSearchUri(QueryByADQL(coords, candidatesArea, bc.some))
+  def gaiaQuery[F[_]: Sync](client: Client[F]): Stream[F, Target.Sidereal] = {
+    val query   =
+      CatalogSearch.gaiaSearchUri(QueryByADQL(coords, candidatesArea, widestConstraints.some))
     val request = Request[F](GET, query)
     client
       .stream(request)
       .flatMap(
         _.body
           .through(text.utf8.decode)
-          .through(CatalogSearch.guideStars[F](gaia))
           // .evalTap(a => Sync[F].delay(println(a)))
+          .through(CatalogSearch.guideStars[F](gaia))
           .collect { case Right(t) => t }
+          // .evalTap(a => Sync[F].delay(println(a)))
       )
   }
 }
@@ -69,12 +68,13 @@ object AgsSelectionSampleApp extends IOApp.Simple with AgsSelectionSample {
                                   ElevationRange.AirMass.Default
   )
 
-  val wavelength = Wavelength.fromNanometers(700).get
-  def run        =
+  val wavelength = Wavelength.fromNanometers(300).get
+
+  def run =
     JdkHttpClient
       .simple[IO]
       .use(
-        gaiaQuery[IO](_, widestConstraints)
+        gaiaQuery[IO](_)
           .map(GuideStarCandidate.siderealTarget.get)
           .through(
             Ags.agsAnalysisStream[IO](
