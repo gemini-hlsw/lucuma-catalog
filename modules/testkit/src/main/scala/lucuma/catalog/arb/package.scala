@@ -9,7 +9,6 @@ package object arb {
       extends ArbUcd
       with ArbFieldId
       with ArbAngularSize
-      with ArbBandsList
       with ArbBrightnessConstraints
       with ArbCatalogTargetResult
 }

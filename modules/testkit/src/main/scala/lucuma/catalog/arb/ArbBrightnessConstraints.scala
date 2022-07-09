@@ -12,7 +12,6 @@ import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck._
 
 trait ArbBrightnessConstraints {
-  import ArbBandsList._
 
   implicit val arbFaintnessConstraints: Arbitrary[FaintnessConstraint] =
     Arbitrary {
@@ -37,15 +36,14 @@ trait ArbBrightnessConstraints {
   implicit val arbBrightnessConstraints: Arbitrary[BrightnessConstraints] =
     Arbitrary {
       for {
-        b <- arbitrary[BandsList]
         f <- arbitrary[FaintnessConstraint]
         l <- arbitrary[Option[SaturationConstraint]]
-      } yield BrightnessConstraints(b, f, l)
+      } yield BrightnessConstraints(BandsList.GaiaBandsList, f, l)
     }
 
   implicit val cogBrightnessConstraints: Cogen[BrightnessConstraints] =
-    Cogen[(BandsList, FaintnessConstraint, Option[SaturationConstraint])].contramap(x =>
-      (x.searchBands, x.faintnessConstraint, x.saturationConstraint)
+    Cogen[(FaintnessConstraint, Option[SaturationConstraint])].contramap(x =>
+      (x.faintnessConstraint, x.saturationConstraint)
     )
 }
 

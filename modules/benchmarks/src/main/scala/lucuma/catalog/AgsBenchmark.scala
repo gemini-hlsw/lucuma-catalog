@@ -17,6 +17,8 @@ import lucuma.core.model.ElevationRange
 import org.http4s.jdkhttpclient.JdkHttpClient
 import lucuma.core.math.Angle
 import lucuma.core.math.Offset
+import lucuma.core.model.SiderealTracking
+import java.time.Instant
 
 @State(Scope.Thread)
 @Fork(1)
@@ -34,7 +36,7 @@ class AgsBenchmark extends AgsSelectionSample {
     items = JdkHttpClient
       .simple[IO]
       .use(
-        gaiaQuery[IO](_, widestConstraints)
+        gaiaQuery[IO](_)
           .map(GuideStarCandidate.siderealTarget.get)
           .compile
           .toList
@@ -75,15 +77,34 @@ class AgsBenchmark extends AgsSelectionSample {
   }
 
   @Benchmark
+  def agsPM: Unit = {
+    Ags.agsAnalysisPM(
+      constraints,
+      wavelength,
+      SiderealTracking.const(coords),
+      AgsPosition(Angle.Angle0, Offset.Zero),
+      AgsParams.GmosAgsParams(
+        GmosNorthFpu.LongSlit_5_00.asLeft.some,
+        PortDisposition.Bottom
+      ),
+      Instant.now(),
+      items
+    )
+    ()
+  }
+
+  @Benchmark
   def magnitudeAnalysis: Unit = {
     val geoms = params.posCalculations(List(pos))
+    val limits = Ags.guideSpeedLimits(constraints, wavelength)
     Ags.magnitudeAnalysis(
       constraints,
       params.probe,
       Offset.Zero,
       items.head,
       geoms.get(pos).get.vignettingArea(_)
-    )(Ags.guideSpeedLimits(constraints, wavelength))
+    )(limits)
+    // println(u)
     ()
   }
 }

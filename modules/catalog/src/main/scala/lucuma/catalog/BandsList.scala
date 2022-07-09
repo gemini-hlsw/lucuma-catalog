@@ -11,6 +11,12 @@ import lucuma.core.enums.Band
  */
 sealed trait BandsList {
   def bands: List[Band]
+
+  /**
+   * union operation
+   */
+  def ∪(that: BandsList): BandsList
+
 }
 
 object BandsList {
@@ -18,19 +24,12 @@ object BandsList {
   implicit val eqBandsList: Eq[BandsList] = Eq.by(_.bands)
 
   /**
-   * Extracts a single band from a target if available
-   */
-  case class SingleBand(band: Band) extends BandsList {
-    val bands = List(band)
-  }
-
-  /**
    * Extracts the first valid Gaia Band Magnitude if available
    */
   case object GaiaBandsList extends BandsList {
-    val instance = this
-
     val bands = List(Band.GaiaRP, Band.Gaia) // Order is important
+
+    def ∪(that: BandsList): BandsList = this
   }
 
 }
