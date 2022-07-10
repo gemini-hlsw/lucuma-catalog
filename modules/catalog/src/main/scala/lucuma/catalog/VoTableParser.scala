@@ -24,6 +24,7 @@ import lucuma.core.model.SourceProfile
 import lucuma.core.model.SpectralDefinition
 import lucuma.core.model.Target
 import lucuma.core.model.UnnormalizedSED
+import lucuma.refined._
 import monocle.Focus
 import monocle.Lens
 import monocle.function.Index.listIndex
@@ -60,10 +61,8 @@ object VoTableParser extends VoTableParser {
   val UCD_ANGSIZE_MAJ = Ucd.unsafeFromString("phys.angSize.smajAxis")
   val UCD_ANGSIZE_MIN = Ucd.unsafeFromString("phys.angSize.sminAxis")
 
-  val UCD_MAG: NonEmptyString  =
-    refineV[NonEmpty]("phot.mag").getOrElse(sys.error("Canot build ucd"))
-  val STAT_ERR: NonEmptyString =
-    refineV[NonEmpty]("stat.error").getOrElse(sys.error("Canot build ucd"))
+  val UCD_MAG: NonEmptyString  = "phot.mag".refined
+  val STAT_ERR: NonEmptyString = "stat.error".refined
 }
 
 trait VoTableParser {

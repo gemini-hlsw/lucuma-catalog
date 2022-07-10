@@ -12,8 +12,6 @@ import lucuma.catalog.CatalogProblem.FieldValueProblem
 import lucuma.core.syntax.string._
 
 package object catalog {
-  def refineMV[A](s: String): NonEmptyString =
-    refineV[NonEmpty](s).getOrElse(sys.error("Empty string"))
 
   def parseDoubleValue(
     ucd: Option[Ucd],

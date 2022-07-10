@@ -15,32 +15,32 @@ import lucuma.refined.*
 import munit.DisciplineSuite
 
 class UcdSuite extends munit.FunSuite with DisciplineSuite {
-  def refineMV[A](s: String): NonEmptyString =
-    refineV[NonEmpty](s).getOrElse(sys.error("Empty string"))
-
   checkAll("Ucd", EqTests[Ucd].eqv)
 
   test("detect if is a superset") {
     assert(
-      Ucd.unsafeFromString("stat.error;phot.mag;em.opt.i").includes(refineMV[NonEmpty]("phot.mag"))
+      Ucd.unsafeFromString("stat.error;phot.mag;em.opt.i").includes("phot.mag".refined)
     )
     assert(Ucd.unsafeFromString("stat.error;phot.mag;em.opt.i").matches("phot.mag".r))
     assert(Ucd.unsafeFromString("stat.error;phot.mag;em.opt.i").matches("em.opt.(\\w)".r))
   }
+
   test("parse single token ucds") {
-    assertEquals(Ucd.parseUcd("meta.code"), Ucd(refineMV[NonEmpty]("meta.code")).rightNec)
+    assertEquals(Ucd.parseUcd("meta.code"), Ucd("meta.code".refined[NonEmpty]).rightNec)
   }
+
   test("parse multi token ucds and preserve order") {
     assertEquals(
       Ucd.parseUcd("stat.error;phot.mag;em.opt.g"),
       Ucd(
-        NonEmptyList.of(refineMV[NonEmpty]("stat.error"),
-                        refineMV[NonEmpty]("phot.mag"),
-                        refineMV[NonEmpty]("em.opt.g")
+        NonEmptyList.of[NonEmptyString]("stat.error".refined,
+                                        "phot.mag".refined,
+                                        "em.opt.g".refined
         )
       ).rightNec
     )
   }
+
   test("parse be case-insensitive, converting to lower case") {
     assertEquals(Ucd.parseUcd("STAT.Error;EM.opt.G"), Ucd("stat.error;em.opt.g"))
   }

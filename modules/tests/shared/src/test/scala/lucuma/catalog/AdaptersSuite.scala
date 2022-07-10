@@ -36,8 +36,6 @@ import munit.CatsEffectSuite
 import scala.xml.Utility
 
 class AdaptersSuite extends CatsEffectSuite with VoTableParser with VoTableSamples {
-  def refineMV[A](s: String): NonEmptyString =
-    refineV[NonEmpty](s).getOrElse(sys.error("Empty string"))
 
   test("be able to parse a field definition") {
     Stream
@@ -50,7 +48,7 @@ class AdaptersSuite extends CatsEffectSuite with VoTableParser with VoTableSampl
       .lastOrError
       .map {
         case Right(CatalogTargetResult(t, _)) =>
-          assertEquals(t.name, refineMV[NonEmpty]("Gaia DR2 5500810326779190016"))
+          assertEquals(t.name, "Gaia DR2 5500810326779190016".refined[NonEmpty])
           assertEquals(t.tracking.epoch.some, Epoch.Julian.fromEpochYears(2015.5))
           assertEquals(
             t.catalogInfo,
@@ -106,7 +104,7 @@ class AdaptersSuite extends CatsEffectSuite with VoTableParser with VoTableSampl
       .lastOrError
       .map {
         case Right(t) =>
-          assertEquals(t.name, refineMV[NonEmpty]("Gaia DR2 6050423032358097664"))
+          assertEquals(t.name, "Gaia DR2 6050423032358097664".refined[NonEmpty])
           assertEquals(t.tracking.epoch.some, Epoch.Julian.fromEpochYears(2015.5))
           assertEquals(
             t.catalogInfo,
