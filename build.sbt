@@ -98,6 +98,7 @@ lazy val tests = crossProject(JVMPlatform, JSPlatform)
       new NodeJSEnv(NodeJSEnv.Config().withArgs(List("--experimental-fetch")))
     }
   )
+  .jsConfigure(_.enablePlugins(BundleMonPlugin))
   .jvmSettings(
     libraryDependencies ++= Seq(
       "co.fs2"     %% "fs2-io"                 % fs2Version,
