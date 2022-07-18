@@ -96,8 +96,7 @@ lazy val tests = crossProject(JVMPlatform, JSPlatform)
     jsEnv                           := {
       import org.scalajs.jsenv.nodejs.NodeJSEnv
       new NodeJSEnv(NodeJSEnv.Config().withArgs(List("--experimental-fetch")))
-    },
-    bundleMonCheckRun               := true
+    }
   )
   .jsConfigure(_.enablePlugins(BundleMonPlugin))
   .jvmSettings(
@@ -105,13 +104,6 @@ lazy val tests = crossProject(JVMPlatform, JSPlatform)
       "co.fs2"     %% "fs2-io"                 % fs2Version,
       "org.http4s" %% "http4s-jdk-http-client" % http4sJdkHttpClientVersion
     )
-  )
-
-ThisBuild / githubWorkflowBuild +=
-  WorkflowStep.Sbt(
-    List("testsJS/bundleMon"),
-    name = Some("Monitor bundle size"),
-    cond = Some("matrix.project == 'rootJS'")
   )
 
 lazy val benchmarks = project

@@ -88,13 +88,9 @@ jobs:
         if: matrix.java == 'temurin@17'
         run: sbt 'project ${{ matrix.project }}' '++${{ matrix.scala }}' mimaReportBinaryIssues
 
-      - name: Generate API documentation
-        if: matrix.java == 'temurin@17'
-        run: sbt 'project ${{ matrix.project }}' '++${{ matrix.scala }}' doc
-
       - name: Monitor bundle size
         if: matrix.project == 'rootJS'
-        run: sbt 'project ${{ matrix.project }}' '++${{ matrix.scala }}' testsJS/bundleMon
+        run: sbt 'project ${{ matrix.project }}' '++${{ matrix.scala }}' bundleMon
 
       - name: Aggregate coverage reports
         run: sbt 'project ${{ matrix.project }}' '++${{ matrix.scala }}' coverageReport coverageAggregate
