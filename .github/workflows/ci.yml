@@ -92,6 +92,10 @@ jobs:
         if: matrix.java == 'temurin@17'
         run: sbt 'project ${{ matrix.project }}' '++${{ matrix.scala }}' doc
 
+      - name: Monitor bundle size
+        if: matrix.project == 'rootJS'
+        run: sbt 'project ${{ matrix.project }}' '++${{ matrix.scala }}' testsJS/bundleMon
+
       - name: Aggregate coverage reports
         run: sbt 'project ${{ matrix.project }}' '++${{ matrix.scala }}' coverageReport coverageAggregate
 
