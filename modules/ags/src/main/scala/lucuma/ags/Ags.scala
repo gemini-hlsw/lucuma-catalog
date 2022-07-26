@@ -35,6 +35,8 @@ object Ags {
     val geoms = calcs.get(pos)
     if (!geoms.exists(_.isReachable(gsOffset)))
       AgsAnalysis.NotReachable(pos, params.probe, gsc)
+    else if (geoms.exists(_.overlapsScience(gsOffset)))
+      AgsAnalysis.VignettesScience(gsc)
     else
       magnitudeAnalysis(
         conditions,
