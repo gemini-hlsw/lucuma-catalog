@@ -1,10 +1,10 @@
-lazy val fs2Version                 = "3.2.10"
+lazy val fs2Version                 = "3.2.11"
 lazy val fs2DataVersion             = "1.4.1"
 lazy val catsVersion                = "2.8.0"
-lazy val catsEffectVersion          = "3.3.13"
+lazy val catsEffectVersion          = "3.3.14"
 lazy val kindProjectorVersion       = "0.13.2"
 lazy val pprintVersion              = "0.7.3"
-lazy val lucumaCoreVersion          = "0.45-e482287-SNAPSHOT"
+lazy val lucumaCoreVersion          = "0.46-3e17ca5-SNAPSHOT"
 lazy val lucumaRefinedVersion       = "0.1.0"
 lazy val monocleVersion             = "3.1.0"
 lazy val munitVersion               = "0.7.29"
@@ -14,7 +14,7 @@ lazy val betterMonadicForVersion    = "0.3.1"
 lazy val refinedVersion             = "0.10.1"
 lazy val catsScalacheckVersion      = "0.3.1"
 lazy val scalaXmlVersion            = "2.1.0"
-lazy val http4sVersion              = "0.23.13"
+lazy val http4sVersion              = "0.23.14"
 lazy val http4sJdkHttpClientVersion = "0.7.0"
 lazy val http4sDomVersion           = "0.2.3"
 lazy val refinedAlgebraVersion      = "0.0-7d9e39d-SNAPSHOT"
@@ -22,11 +22,11 @@ lazy val catsTimeVersion            = "0.5.0"
 
 Global / onChangedBuildSource := ReloadOnSourceChanges
 
-ThisBuild / tlBaseVersion       := "0.23"
+ThisBuild / tlBaseVersion       := "0.25"
 ThisBuild / tlCiReleaseBranches := Seq("master", "scala3")
 
-ThisBuild / scalaVersion       := "3.1.2"
-ThisBuild / crossScalaVersions := Seq("3.1.2")
+ThisBuild / scalaVersion       := "3.1.3"
+ThisBuild / crossScalaVersions := Seq("3.1.3")
 ThisBuild / scalacOptions ++= Seq(
   "-language:implicitConversions"
 )
@@ -112,6 +112,7 @@ lazy val tests = crossProject(JVMPlatform, JSPlatform)
       new NodeJSEnv(NodeJSEnv.Config().withArgs(List("--experimental-fetch")))
     }
   )
+  .jsConfigure(_.enablePlugins(BundleMonPlugin))
   .jvmSettings(
     libraryDependencies ++= Seq(
       "co.fs2"     %% "fs2-io"                 % fs2Version,

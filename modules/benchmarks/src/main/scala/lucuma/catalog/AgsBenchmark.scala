@@ -104,7 +104,6 @@ class AgsBenchmark extends AgsSelectionSample {
       items.head,
       geoms.get(pos).get.vignettingArea(_)
     )(limits)
-    // println(u)
     ()
   }
 }

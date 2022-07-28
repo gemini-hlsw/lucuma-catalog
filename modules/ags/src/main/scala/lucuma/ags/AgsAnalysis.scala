@@ -24,6 +24,11 @@ object AgsAnalysis {
       "Cannot calculate proper motion."
   }
 
+  final case class VignettesScience(target: GuideStarCandidate) extends AgsAnalysis {
+    override def message(withProbe: Boolean): String =
+      "The target overlaps with the science target"
+  }
+
   final case class NoGuideStarForProbe(guideProbe: GuideProbe, target: GuideStarCandidate)
       extends AgsAnalysis {
     override def message(withProbe: Boolean): String = {
