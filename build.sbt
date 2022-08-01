@@ -19,7 +19,7 @@ lazy val http4sDomVersion           = "0.2.3"
 
 Global / onChangedBuildSource := ReloadOnSourceChanges
 
-ThisBuild / tlBaseVersion       := "0.24"
+ThisBuild / tlBaseVersion       := "0.25"
 ThisBuild / tlCiReleaseBranches := Seq("master")
 
 lazy val root = tlCrossRootProject.aggregate(catalog, ags, testkit, tests)
