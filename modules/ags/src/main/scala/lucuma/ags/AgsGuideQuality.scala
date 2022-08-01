@@ -4,8 +4,9 @@
 package lucuma.ags
 
 import cats.Order
+import lucuma.core.util.Enumerated
 
-sealed trait AgsGuideQuality {
+sealed trait AgsGuideQuality extends Product with Serializable {
   def message: String
 }
 
@@ -34,4 +35,12 @@ object AgsGuideQuality {
   implicit val AgsGuideQualityOrder: Order[AgsGuideQuality] =
     Order.by(orderByIndex)
 
+  /** @group Typeclass Instances */
+  implicit val AgsGuideQualityEnumerated: Enumerated[AgsGuideQuality] =
+    Enumerated.of[AgsGuideQuality](DeliversRequestedIq,
+                                   PossibleIqDegradation,
+                                   IqDegradation,
+                                   PossiblyUnusable,
+                                   Unusable
+    )
 }
