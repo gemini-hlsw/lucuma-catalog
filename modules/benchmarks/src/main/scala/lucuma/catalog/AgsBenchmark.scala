@@ -95,7 +95,7 @@ class AgsBenchmark extends AgsSelectionSample {
 
   @Benchmark
   def magnitudeAnalysis: Unit = {
-    val geoms = params.posCalculations(List(pos))
+    val geoms  = params.posCalculations(List(pos))
     val limits = Ags.guideSpeedLimits(constraints, wavelength)
     Ags.magnitudeAnalysis(
       constraints,
