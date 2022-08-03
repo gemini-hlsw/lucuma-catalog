@@ -4,7 +4,8 @@ lazy val catsVersion                = "2.8.0"
 lazy val catsEffectVersion          = "3.3.14"
 lazy val kindProjectorVersion       = "0.13.2"
 lazy val pprintVersion              = "0.7.3"
-lazy val lucumaCoreVersion          = "0.45.0"
+lazy val lucumaCoreVersion          = "0.51.0"
+lazy val lucumaRefinedVersion       = "0.1.0"
 lazy val monocleVersion             = "3.1.0"
 lazy val munitVersion               = "0.7.29"
 lazy val munitDisciplineVersion     = "1.0.9"
@@ -16,11 +17,19 @@ lazy val scalaXmlVersion            = "2.1.0"
 lazy val http4sVersion              = "0.23.14"
 lazy val http4sJdkHttpClientVersion = "0.7.0"
 lazy val http4sDomVersion           = "0.2.3"
+lazy val refinedAlgebraVersion      = "0.1.0"
+lazy val catsTimeVersion            = "0.5.0"
 
 Global / onChangedBuildSource := ReloadOnSourceChanges
 
-ThisBuild / tlBaseVersion       := "0.25"
-ThisBuild / tlCiReleaseBranches := Seq("master")
+ThisBuild / tlBaseVersion       := "0.26"
+ThisBuild / tlCiReleaseBranches := Seq("master", "scala3")
+
+ThisBuild / scalaVersion       := "3.1.3"
+ThisBuild / crossScalaVersions := Seq("3.1.3")
+ThisBuild / scalacOptions ++= Seq(
+  "-language:implicitConversions"
+)
 
 lazy val root = tlCrossRootProject.aggregate(catalog, ags, testkit, tests)
 
@@ -30,15 +39,17 @@ lazy val catalog = crossProject(JVMPlatform, JSPlatform)
   .settings(
     name := "lucuma-catalog",
     libraryDependencies ++= Seq(
-      "co.fs2"        %%% "fs2-core"      % fs2Version,
-      "org.gnieh"     %%% "fs2-data-xml"  % fs2DataVersion,
-      "edu.gemini"    %%% "lucuma-core"   % lucumaCoreVersion,
-      "org.typelevel" %%% "cats-core"     % catsVersion,
-      "dev.optics"    %%% "monocle-core"  % monocleVersion,
-      "dev.optics"    %%% "monocle-state" % monocleVersion,
-      "eu.timepit"    %%% "refined"       % refinedVersion,
-      "eu.timepit"    %%% "refined-cats"  % refinedVersion,
-      "org.http4s"    %%% "http4s-core"   % http4sVersion
+      "co.fs2"        %%% "fs2-core"        % fs2Version,
+      "org.gnieh"     %%% "fs2-data-xml"    % fs2DataVersion,
+      "edu.gemini"    %%% "lucuma-core"     % lucumaCoreVersion,
+      "edu.gemini"    %%% "lucuma-refined"  % lucumaRefinedVersion,
+      "org.typelevel" %%% "cats-core"       % catsVersion,
+      "dev.optics"    %%% "monocle-core"    % monocleVersion,
+      "dev.optics"    %%% "monocle-state"   % monocleVersion,
+      "eu.timepit"    %%% "refined"         % refinedVersion,
+      "eu.timepit"    %%% "refined-cats"    % refinedVersion,
+      "org.http4s"    %%% "http4s-core"     % http4sVersion,
+      "edu.gemini"     %% "refined-algebra" % refinedAlgebraVersion
     ),
     scalacOptions ~= (_.filterNot(Set("-Vtype-diffs")))
   )
@@ -49,8 +60,9 @@ lazy val ags = crossProject(JVMPlatform, JSPlatform)
   .settings(
     name := "lucuma-ags",
     libraryDependencies ++= Seq(
-      "edu.gemini"    %%% "lucuma-core" % lucumaCoreVersion,
-      "org.typelevel" %%% "cats-core"   % catsVersion
+      "edu.gemini"    %%% "lucuma-core"    % lucumaCoreVersion,
+      "edu.gemini"    %%% "lucuma-refined" % lucumaRefinedVersion,
+      "org.typelevel" %%% "cats-core"      % catsVersion
     ),
     scalacOptions ~= (_.filterNot(Set("-Vtype-diffs")))
   )
@@ -79,12 +91,14 @@ lazy val tests = crossProject(JVMPlatform, JSPlatform)
   .settings(
     name := "lucuma-catalog-tests",
     libraryDependencies ++= Seq(
-      "org.typelevel" %%% "cats-effect"         % catsEffectVersion      % Test,
-      "org.scalameta" %%% "munit"               % munitVersion           % Test,
-      "org.typelevel" %%% "discipline-munit"    % munitDisciplineVersion % Test,
-      "org.typelevel" %%% "munit-cats-effect-3" % munitCatsEffectVersion % Test,
-      "org.http4s"    %%% "http4s-core"         % http4sVersion,
-      "com.lihaoyi"   %%% "pprint"              % pprintVersion
+      "org.typelevel"          %%% "cats-effect"         % catsEffectVersion      % Test,
+      "org.scalameta"          %%% "munit"               % munitVersion           % Test,
+      "org.typelevel"          %%% "discipline-munit"    % munitDisciplineVersion % Test,
+      "org.typelevel"          %%% "munit-cats-effect-3" % munitCatsEffectVersion % Test,
+      "org.scala-lang.modules" %%% "scala-xml"           % scalaXmlVersion        % Test,
+      "org.http4s"             %%% "http4s-core"         % http4sVersion,
+      "com.lihaoyi"            %%% "pprint"              % pprintVersion,
+      "org.typelevel"           %% "cats-time"           % catsTimeVersion
     )
   )
   .jsSettings(

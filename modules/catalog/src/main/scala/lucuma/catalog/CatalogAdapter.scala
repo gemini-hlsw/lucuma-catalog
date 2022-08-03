@@ -5,8 +5,8 @@ package lucuma.catalog
 
 import cats.data._
 import cats.syntax.all._
-import coulomb._
-import eu.timepit.refined.auto._
+import coulomb.policy.spire.standard.given
+import coulomb.syntax.*
 import lucuma.catalog.CatalogProblem._
 import lucuma.catalog._
 import lucuma.core.enums.Band
@@ -101,7 +101,7 @@ sealed trait CatalogAdapter {
   // Attempts to extract the radial velocity of a field
   def parseRadialVelocity(ucd: Ucd, v: String): EitherNec[CatalogProblem, RadialVelocity] =
     parseDoubleValue(ucd.some, v)
-      .map(v => RadialVelocity(v.withUnit[MetersPerSecond]))
+      .map(v => RadialVelocity(v.toLong.withUnit[MetersPerSecond]))
       .flatMap(Either.fromOption(_, NonEmptyChain.one(FieldValueProblem(ucd.some, v))))
 
   // Attempts to extract the angular velocity of a field
@@ -109,8 +109,12 @@ sealed trait CatalogAdapter {
     ucd: Ucd,
     v:   String
   ): EitherNec[CatalogProblem, AngularVelocityComponent[A]] =
-    parseDoubleValue(ucd.some, v)
-      .map(v => AngularVelocityComponent[A](v.withUnit[MilliArcSecondPerYear]))
+    parseBigDecimalValue(ucd.some, v)
+      .map(v =>
+        AngularVelocityComponent[A](
+          v.withUnit[MilliArcSecondPerYear].toUnit[MicroArcSecondPerYear].tToValue
+        )
+      )
 
   protected def parseProperMotion(
     pmra:  Option[String],

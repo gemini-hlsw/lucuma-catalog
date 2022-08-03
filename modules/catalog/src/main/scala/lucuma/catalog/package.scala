@@ -5,7 +5,11 @@ package lucuma
 
 import cats.data._
 import cats.syntax.all._
+import eu.timepit.refined._
+import eu.timepit.refined.collection.NonEmpty
+import eu.timepit.refined.types.string.NonEmptyString
 import lucuma.catalog.CatalogProblem.FieldValueProblem
+import lucuma.core.syntax.string._
 
 package object catalog {
 
@@ -14,8 +18,14 @@ package object catalog {
     s:   String
   ): EitherNec[CatalogProblem, Double] =
     Either
-      .catchNonFatal(s.toDouble)
-      .leftMap(_ => FieldValueProblem(ucd, s))
+      .fromOption(s.parseDoubleOption, FieldValueProblem(ucd, s))
       .toEitherNec
 
+  def parseBigDecimalValue(
+    ucd: Option[Ucd],
+    s:   String
+  ): EitherNec[CatalogProblem, BigDecimal] =
+    Either
+      .fromOption(s.parseBigDecimalOption, FieldValueProblem(ucd, s))
+      .toEitherNec
 }

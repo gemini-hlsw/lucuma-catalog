@@ -4,6 +4,10 @@
 package lucuma
 
 import cats.syntax.all._
+import coulomb.*
+import coulomb.policy.spire.standard.given
+import coulomb.syntax.*
+import coulomb.units.accepted.ArcSecond
 import lucuma.catalog.BandsList
 import lucuma.catalog.BrightnessConstraints
 import lucuma.catalog.FaintnessConstraint
@@ -13,10 +17,9 @@ import lucuma.core.enums.GuideSpeed
 import lucuma.core.enums.ImageQuality
 import lucuma.core.enums.SkyBackground
 import lucuma.core.math.Wavelength
+import lucuma.core.math.units.rationalPosIntConverter
 import lucuma.core.model.ConstraintSet
 import lucuma.core.util.Enumerated
-
-import scala.math
 
 package object ags {
   val baseFwhm = Wavelength.fromNanometers(500).get

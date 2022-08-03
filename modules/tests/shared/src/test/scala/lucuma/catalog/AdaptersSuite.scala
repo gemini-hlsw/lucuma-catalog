@@ -5,9 +5,15 @@ package lucuma.catalog
 
 import cats.effect._
 import cats.syntax.all._
-import coulomb._
+import coulomb.*
+import coulomb.ops.algebra.spire.all.given
+import coulomb.policy.spire.standard.given
+import coulomb.syntax.*
+import coulomb.units.si.*
+import coulomb.units.si.given
 import eu.timepit.refined._
 import eu.timepit.refined.collection.NonEmpty
+import eu.timepit.refined.types.string.NonEmptyString
 import fs2._
 import fs2.data.xml._
 import lucuma.catalog._
@@ -24,6 +30,7 @@ import lucuma.core.math.dimensional._
 import lucuma.core.math.units._
 import lucuma.core.model.CatalogInfo
 import lucuma.core.model.Target
+import lucuma.refined.*
 import munit.CatsEffectSuite
 
 import scala.xml.Utility
@@ -41,7 +48,7 @@ class AdaptersSuite extends CatsEffectSuite with VoTableParser with VoTableSampl
       .lastOrError
       .map {
         case Right(CatalogTargetResult(t, _)) =>
-          assertEquals(t.name, refineMV[NonEmpty]("Gaia DR2 5500810326779190016"))
+          assertEquals(t.name, "Gaia DR2 5500810326779190016".refined[NonEmpty])
           assertEquals(t.tracking.epoch.some, Epoch.Julian.fromEpochYears(2015.5))
           assertEquals(
             t.catalogInfo,
@@ -59,7 +66,9 @@ class AdaptersSuite extends CatsEffectSuite with VoTableParser with VoTableSampl
           // proper motions
           assertEquals(
             Target.properMotionRA.getOption(t),
-            ProperMotion.RA(6.456.withUnit[MilliArcSecondPerYear]).some
+            ProperMotion
+              .RA(6456.withUnit[MicroArcSecondPerYear])
+              .some
           )
           assertEquals(
             Target.properMotionDec.getOption(t),
@@ -95,7 +104,7 @@ class AdaptersSuite extends CatsEffectSuite with VoTableParser with VoTableSampl
       .lastOrError
       .map {
         case Right(t) =>
-          assertEquals(t.name, refineMV[NonEmpty]("Gaia DR2 6050423032358097664"))
+          assertEquals(t.name, "Gaia DR2 6050423032358097664".refined[NonEmpty])
           assertEquals(t.tracking.epoch.some, Epoch.Julian.fromEpochYears(2015.5))
           assertEquals(
             t.catalogInfo,

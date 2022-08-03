@@ -5,7 +5,12 @@ package lucuma.catalog
 
 import cats.effect._
 import cats.implicits._
-import coulomb._
+import coulomb.*
+import coulomb.ops.algebra.spire.all.given
+import coulomb.policy.spire.standard.given
+import coulomb.syntax.*
+import coulomb.units.si.*
+import coulomb.units.si.given
 import eu.timepit.refined._
 import eu.timepit.refined.collection.NonEmpty
 import fs2._
@@ -25,6 +30,7 @@ import lucuma.core.math.dimensional._
 import lucuma.core.math.units._
 import lucuma.core.model.CatalogInfo
 import lucuma.core.model.Target
+import lucuma.refined.*
 import munit.CatsEffectSuite
 
 class ParseSimbadFileSuite extends CatsEffectSuite with VoTableParser {
@@ -44,7 +50,7 @@ class ParseSimbadFileSuite extends CatsEffectSuite with VoTableParser {
         .map {
           case Right(CatalogTargetResult(t, _)) =>
             // id and search name
-            assertEquals(t.name, refineMV[NonEmpty]("Vega"))
+            assertEquals(t.name, "Vega".refined[NonEmpty])
             assertEquals(
               t.catalogInfo,
               CatalogInfo(CatalogName.Simbad, "* alf Lyr", "PulsV*delSct; A0Va")
@@ -61,7 +67,7 @@ class ParseSimbadFileSuite extends CatsEffectSuite with VoTableParser {
             // proper motions
             assertEquals(
               Target.properMotionRA.getOption(t),
-              ProperMotion.RA(200939.withUnit[MicroArcSecondPerYear]).some
+              ProperMotion.RA(200940.withUnit[MicroArcSecondPerYear]).some
             )
             assertEquals(
               Target.properMotionDec.getOption(t),
@@ -129,7 +135,7 @@ class ParseSimbadFileSuite extends CatsEffectSuite with VoTableParser {
         .map {
           case Right(CatalogTargetResult(t, angularSize)) =>
             // id and search name
-            assertEquals(t.name, refineMV[NonEmpty]("2MFGC6625"))
+            assertEquals(t.name, "2MFGC6625".refined[NonEmpty])
             assertEquals(t.catalogInfo, CatalogInfo(CatalogName.Simbad, "2MFGC 6625", "EmG; I"))
             // base coordinates
             assertEquals(
@@ -221,7 +227,7 @@ class ParseSimbadFileSuite extends CatsEffectSuite with VoTableParser {
         .map {
           case Right(CatalogTargetResult(t, _)) =>
             // id and search name
-            assertEquals(t.name, refineMV[NonEmpty]("2SLAQ J000008.13+001634.6"))
+            assertEquals(t.name, "2SLAQ J000008.13+001634.6".refined[NonEmpty])
             assertEquals(
               t.catalogInfo,
               CatalogInfo(CatalogName.Simbad, "2SLAQ J000008.13+001634.6", "QSO")
@@ -404,7 +410,7 @@ class ParseSimbadFileSuite extends CatsEffectSuite with VoTableParser {
         .map {
           case Right(CatalogTargetResult(t, angularSize)) =>
             // id and search name
-            assertEquals(t.name, refineMV[NonEmpty]("NGC 2438"))
+            assertEquals(t.name, "NGC 2438".refined[NonEmpty])
             assertEquals(t.catalogInfo, CatalogInfo(CatalogName.Simbad, "NGC  2438", "PN"))
             assert(t.tracking.properMotion.isEmpty)
             assertEquals(
@@ -467,7 +473,7 @@ class ParseSimbadFileSuite extends CatsEffectSuite with VoTableParser {
         .map {
           case Right(CatalogTargetResult(t, _)) =>
             // id and search name
-            assertEquals(t.name, refineMV[NonEmpty]("Vega"))
+            assertEquals(t.name, "Vega".refined[NonEmpty])
             assertEquals(
               t.catalogInfo,
               CatalogInfo(CatalogName.Simbad, "* alf Lyr", "PulsV*delSct; A0Va")
@@ -484,7 +490,7 @@ class ParseSimbadFileSuite extends CatsEffectSuite with VoTableParser {
             // proper motions
             assertEquals(
               Target.properMotionRA.getOption(t),
-              ProperMotion.RA(200939.withUnit[MicroArcSecondPerYear]).some
+              ProperMotion.RA(200940.withUnit[MicroArcSecondPerYear]).some
             )
             assertEquals(
               Target.properMotionDec.getOption(t),
