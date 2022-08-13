@@ -51,7 +51,7 @@ lazy val catalog = crossProject(JVMPlatform, JSPlatform)
       "eu.timepit"    %%% "refined-cats"    % refinedVersion,
       "org.http4s"    %%% "http4s-core"     % http4sVersion,
       "edu.gemini"    %%% "refined-algebra" % refinedAlgebraVersion,
-      "org.typelevel" %%% "kittens" % kittensVersion
+      "org.typelevel" %%% "kittens"         % kittensVersion
     ),
     scalacOptions ~= (_.filterNot(Set("-Vtype-diffs")))
   )
