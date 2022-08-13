@@ -10,7 +10,7 @@ import eu.timepit.refined._
 import eu.timepit.refined.collection._
 import eu.timepit.refined.types.string.NonEmptyString
 import lucuma.catalog._
-import lucuma.catalog.arb.all.given
+import lucuma.catalog.arb.ArbUcd._
 import lucuma.refined.*
 import munit.DisciplineSuite
 

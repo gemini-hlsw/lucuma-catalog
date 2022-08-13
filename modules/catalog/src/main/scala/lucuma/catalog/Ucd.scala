@@ -5,7 +5,6 @@ package lucuma.catalog
 
 import cats._
 import cats.data._
-import cats.derived.*
 import cats.implicits._
 import eu.timepit.refined._
 import eu.timepit.refined.cats._
@@ -15,14 +14,15 @@ import lucuma.catalog.CatalogProblem._
 
 import scala.util.matching.Regex
 
-final case class Ucd(tokens: NonEmptyList[NonEmptyString]) derives Eq:
+final case class Ucd(tokens: NonEmptyList[NonEmptyString]) {
   def includes(ucd: NonEmptyString): Boolean = tokens.exists(_ === ucd)
 
   def matches(r: Regex): Boolean = tokens.exists(t => r.findFirstIn(t.value).isDefined)
 
   override def toString = tokens.map(_.value).mkString_(", ")
+}
 
-object Ucd:
+object Ucd {
   def parseUcd(v: String): EitherNec[CatalogProblem, Ucd] =
     v.split(";").filter(_.nonEmpty).map(_.toLowerCase).toList match {
       case h :: tail =>
@@ -39,3 +39,6 @@ object Ucd:
   def apply(ucd: NonEmptyString): Ucd = Ucd(NonEmptyList.of(ucd))
 
   def unsafeFromString(ucd: String): Ucd = parseUcd(ucd).getOrElse(sys.error(s"Invalid ucd $ucd"))
+
+  implicit val eqUcd: Eq[Ucd] = Eq.by(_.tokens)
+}

@@ -4,7 +4,7 @@
 package lucuma.catalog
 
 import cats.kernel.laws.discipline.EqTests
-import lucuma.catalog.arb.all.given
+import lucuma.catalog.arb.all._
 
 class FieldsSuite extends munit.DisciplineSuite {
   checkAll("Eq[FieldId]", EqTests[FieldId].eqv)

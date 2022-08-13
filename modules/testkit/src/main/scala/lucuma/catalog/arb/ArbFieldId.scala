@@ -11,9 +11,9 @@ import org.scalacheck.Cogen
 import org.scalacheck._
 
 trait ArbFieldId {
-  import ArbUcd.given
+  import ArbUcd._
 
-  given Arbitrary[FieldId] =
+  implicit val arbFieldId: Arbitrary[FieldId] =
     Arbitrary {
       for {
         i <- arbitrary[NonEmptyString]
@@ -21,7 +21,7 @@ trait ArbFieldId {
       } yield FieldId(i, u)
     }
 
-  given Cogen[FieldId] =
+  implicit val cogenFieldId: Cogen[FieldId] =
     Cogen[(String, Option[Ucd])].contramap(x => (x.id.value, x.ucd))
 
 }

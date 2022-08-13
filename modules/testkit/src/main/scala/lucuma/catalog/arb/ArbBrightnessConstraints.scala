@@ -13,27 +13,27 @@ import org.scalacheck._
 
 trait ArbBrightnessConstraints {
 
-  given Arbitrary[FaintnessConstraint] =
+  implicit val arbFaintnessConstraints: Arbitrary[FaintnessConstraint] =
     Arbitrary {
       for {
         b <- arbitrary[BigDecimal]
       } yield FaintnessConstraint(b)
     }
 
-  given Cogen[FaintnessConstraint] =
+  implicit val cogFaintnessConstraints: Cogen[FaintnessConstraint] =
     Cogen[BigDecimal].contramap(_.brightness)
 
-  given Arbitrary[SaturationConstraint] =
+  implicit val arbSaturationConstraints: Arbitrary[SaturationConstraint] =
     Arbitrary {
       for {
         b <- arbitrary[BigDecimal]
       } yield SaturationConstraint(b)
     }
 
-  given Cogen[SaturationConstraint] =
+  implicit val cogSaturationConstraints: Cogen[SaturationConstraint] =
     Cogen[BigDecimal].contramap(_.brightness)
 
-  given Arbitrary[BrightnessConstraints] =
+  implicit val arbBrightnessConstraints: Arbitrary[BrightnessConstraints] =
     Arbitrary {
       for {
         f <- arbitrary[FaintnessConstraint]
@@ -41,7 +41,7 @@ trait ArbBrightnessConstraints {
       } yield BrightnessConstraints(BandsList.GaiaBandsList, f, l)
     }
 
-  given Cogen[BrightnessConstraints] =
+  implicit val cogBrightnessConstraints: Cogen[BrightnessConstraints] =
     Cogen[(FaintnessConstraint, Option[SaturationConstraint])].contramap(x =>
       (x.faintnessConstraint, x.saturationConstraint)
     )

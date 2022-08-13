@@ -13,9 +13,9 @@ import org.scalacheck._
 
 trait ArbCatalogTargetResult {
   import ArbTarget._
-  import ArbAngularSize.given
+  import ArbAngularSize._
 
-  given Arbitrary[CatalogTargetResult] =
+  implicit val arbCatalogTargetResult: Arbitrary[CatalogTargetResult] =
     Arbitrary {
       for {
         t <- arbitrary[Target.Sidereal]
@@ -23,7 +23,7 @@ trait ArbCatalogTargetResult {
       } yield CatalogTargetResult(t, s)
     }
 
-  given Cogen[CatalogTargetResult] =
+  implicit val cogCatalogTargetResult: Cogen[CatalogTargetResult] =
     Cogen[(Target.Sidereal, Option[AngularSize])].contramap(r => (r.target, r.angularSize))
 }
 

@@ -5,7 +5,6 @@ package lucuma.catalog
 
 import cats.Eq
 import cats.Show
-import cats.derived.*
 import lucuma.core.math.Angle
 import monocle.Focus
 import monocle.Lens
@@ -14,8 +13,17 @@ import monocle.Lens
  * Angular size of an object in the sky. The major axis is the longest one, but we don't enforce
  * this.
  */
-final case class AngularSize(majorAxis: Angle, minorAxis: Angle) derives Eq
+final case class AngularSize(majorAxis: Angle, minorAxis: Angle)
 
-object AngularSize:
+object AngularSize {
   val majorAxis: Lens[AngularSize, Angle] = Focus[AngularSize](_.majorAxis)
   val minorAxis: Lens[AngularSize, Angle] = Focus[AngularSize](_.minorAxis)
+
+  /** @group Typeclass Instances */
+  implicit val AngularSizeShow: Show[AngularSize] =
+    Show.fromToString
+
+  /** @group Typeclass Instances */
+  implicit val AngularSizeEqual: Eq[AngularSize] =
+    Eq.fromUniversalEquals
+}

@@ -5,7 +5,6 @@ package lucuma.catalog
 
 import cats._
 import cats.data._
-import cats.derived.*
 import cats.implicits._
 import eu.timepit.refined._
 import eu.timepit.refined.cats._
@@ -14,7 +13,7 @@ import eu.timepit.refined.types.string._
 import lucuma.catalog.CatalogProblem._
 
 /** Describes a field */
-case class FieldId(id: NonEmptyString, ucd: Option[Ucd]) derives Eq
+case class FieldId(id: NonEmptyString, ucd: Option[Ucd])
 
 object FieldId {
   def apply(id: String, ucd: Ucd): EitherNec[CatalogProblem, FieldId] =
@@ -34,6 +33,7 @@ object FieldId {
   def unsafeFrom(id: String, ucd: String): FieldId =
     Ucd(ucd).flatMap(apply(id, _)).getOrElse(sys.error(s"Invalid field id $id"))
 
+  implicit val eqFieldId: Eq[FieldId] = Eq.by(x => (x.id, x.ucd))
 }
 
 case class TableRowItem(field: FieldId, data: String)

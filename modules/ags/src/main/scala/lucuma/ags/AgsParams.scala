@@ -4,7 +4,6 @@
 package lucuma.ags
 
 import cats.Eq
-import cats.derived.*
 import cats.syntax.all._
 import lucuma.core.enums.GmosNorthFpu
 import lucuma.core.enums.GmosSouthFpu
@@ -19,7 +18,11 @@ import lucuma.core.math.Angle
 import lucuma.core.math.Offset
 import lucuma.core.math.syntax.int._
 
-final case class AgsPosition(posAngle: Angle, offsetPos: Offset) derives Eq
+final case class AgsPosition(posAngle: Angle, offsetPos: Offset)
+
+object AgsPosition {
+  implicit val agsPositionEq: Eq[AgsPosition] = Eq.by(x => (x.posAngle, x.offsetPos))
+}
 
 sealed trait AgsGeomCalc {
   // Indicates if the given offset is reachable
@@ -33,7 +36,7 @@ sealed trait AgsGeomCalc {
 
 }
 
-sealed trait AgsParams derives Eq {
+sealed trait AgsParams {
 
   def probe: GuideProbe
 
@@ -48,8 +51,7 @@ object AgsParams {
   final case class GmosAgsParams(
     fpu:  Option[Either[GmosNorthFpu, GmosSouthFpu]],
     port: PortDisposition
-  ) extends AgsParams
-      derives Eq {
+  ) extends AgsParams {
     val probe = GuideProbe.OIWFS
 
     def posCalculations(positions: List[AgsPosition]): Map[AgsPosition, AgsGeomCalc] =
@@ -87,6 +89,11 @@ object AgsParams {
         }
       }.toMap
 
+    implicit val gmosParamsEq: Eq[GmosAgsParams] = Eq.by(x => (x.fpu, x.port))
   }
 
+  implicit val agsParamsEq: Eq[AgsParams] = Eq.instance {
+    case (GmosAgsParams(f1, p1), GmosAgsParams(f2, p2)) => f1 === f2 && p1 === p2
+    case _                                              => false
+  }
 }
