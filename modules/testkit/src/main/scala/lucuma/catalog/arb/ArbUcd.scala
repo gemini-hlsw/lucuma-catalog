@@ -12,16 +12,16 @@ import org.scalacheck.Gen
 import org.scalacheck._
 
 trait ArbUcd {
-  val genNonEmptyString = implicitly[Arbitrary[NonEmptyString]].arbitrary
+  val genNonEmptyString = summon[Arbitrary[NonEmptyString]].arbitrary
 
-  implicit val arbUcd: Arbitrary[Ucd] =
+  given Arbitrary[Ucd] =
     Arbitrary {
       for {
         a <- Gen.nonEmptyListOf[NonEmptyString](genNonEmptyString)
       } yield Ucd(NonEmptyList.fromList(a).get)
     }
 
-  implicit val cogenUcd: Cogen[Ucd] =
+  given Cogen[Ucd] =
     Cogen[List[String]].contramap(_.tokens.map(_.value).toList)
 
 }

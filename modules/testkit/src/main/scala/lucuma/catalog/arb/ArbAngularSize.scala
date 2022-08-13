@@ -13,7 +13,7 @@ import org.scalacheck._
 trait ArbAngularSize {
   import ArbAngle._
 
-  implicit val arbAngularSize: Arbitrary[AngularSize] =
+  given Arbitrary[AngularSize] =
     Arbitrary {
       for {
         a <- arbitrary[Angle]
@@ -21,7 +21,7 @@ trait ArbAngularSize {
       } yield AngularSize(Angle.AngleOrder.max(a, b), Angle.AngleOrder.min(a, b))
     }
 
-  implicit val cogAngularSize: Cogen[AngularSize] =
+  given Cogen[AngularSize] =
     Cogen[(Angle, Angle)].contramap(a => (a.majorAxis, a.minorAxis))
 }
 

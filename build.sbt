@@ -19,6 +19,7 @@ lazy val http4sJdkHttpClientVersion = "0.7.0"
 lazy val http4sDomVersion           = "0.2.3"
 lazy val refinedAlgebraVersion      = "0.1.0"
 lazy val catsTimeVersion            = "0.5.0"
+lazy val kittensVersion             = "3.0.0-M4"
 
 Global / onChangedBuildSource := ReloadOnSourceChanges
 
@@ -49,7 +50,8 @@ lazy val catalog = crossProject(JVMPlatform, JSPlatform)
       "eu.timepit"    %%% "refined"         % refinedVersion,
       "eu.timepit"    %%% "refined-cats"    % refinedVersion,
       "org.http4s"    %%% "http4s-core"     % http4sVersion,
-      "edu.gemini"     %% "refined-algebra" % refinedAlgebraVersion
+      "edu.gemini"    %%% "refined-algebra" % refinedAlgebraVersion,
+      "org.typelevel" %%% "kittens" % kittensVersion
     ),
     scalacOptions ~= (_.filterNot(Set("-Vtype-diffs")))
   )

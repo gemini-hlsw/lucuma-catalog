@@ -4,12 +4,10 @@
 package lucuma.catalog
 
 import cats.kernel.laws.discipline._
-import lucuma.catalog.arb._
+import lucuma.catalog.arb.all.given
 import munit._
 
 class AngularSizeSuite extends DisciplineSuite {
-  import ArbAngularSize._
-
   // Laws
   checkAll("Eq[AngularSize]", EqTests[AngularSize].eqv)
 }
