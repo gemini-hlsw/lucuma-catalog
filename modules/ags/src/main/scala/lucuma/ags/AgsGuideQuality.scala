@@ -7,23 +7,29 @@ import cats.Order
 import lucuma.core.util.Enumerated
 
 sealed trait AgsGuideQuality extends Product with Serializable {
+  def tag: String
   def message: String
 }
 
 object AgsGuideQuality {
   case object DeliversRequestedIq   extends AgsGuideQuality {
+    override val tag     = "delivers_requested_id"
     override val message = "Delivers requested IQ."
   }
   case object PossibleIqDegradation extends AgsGuideQuality {
+    override val tag     = "possible_iq_degradation"
     override val message = "Slower guiding required; may not deliver requested IQ."
   }
   case object IqDegradation         extends AgsGuideQuality {
+    override val tag     = "iq_degradation"
     override val message = "Slower guiding required; will not deliver requested IQ."
   }
   case object PossiblyUnusable      extends AgsGuideQuality {
+    override val tag     = "possible_unusable"
     override val message = "May not be able to guide."
   }
   case object Unusable              extends AgsGuideQuality {
+    override val tag     = "unusable"
     override val message = "Unable to guide."
   }
 
@@ -32,15 +38,17 @@ object AgsGuideQuality {
 
   private val orderByIndex = All.zipWithIndex.toMap
 
-  implicit val AgsGuideQualityOrder: Order[AgsGuideQuality] =
+  /** @group Typeclass Instances */
+  given Order[AgsGuideQuality] =
     Order.by(orderByIndex)
 
-  /** @group Typeclass Instances */
-  implicit val AgsGuideQualityEnumerated: Enumerated[AgsGuideQuality] =
-    Enumerated.of[AgsGuideQuality](DeliversRequestedIq,
-                                   PossibleIqDegradation,
-                                   IqDegradation,
-                                   PossiblyUnusable,
-                                   Unusable
-    )
+  given Enumerated[AgsGuideQuality] =
+    Enumerated
+      .from[AgsGuideQuality](DeliversRequestedIq,
+                             PossibleIqDegradation,
+                             IqDegradation,
+                             PossiblyUnusable,
+                             Unusable
+      )
+      .withTag(_.tag)
 }
