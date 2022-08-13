@@ -10,7 +10,7 @@ import lucuma.core.optics.laws.discipline.SplitEpiTests
 import munit._
 
 class GuideStarCandidateSuite extends DisciplineSuite {
-  import ArbGuideStarCandidate.given
+  import ArbGuideStarCandidate._
   import ArbTarget._
 
   // Laws

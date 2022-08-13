@@ -4,10 +4,11 @@
 package lucuma.catalog
 
 import cats.kernel.laws.discipline._
-import lucuma.catalog.arb.all.given
+import lucuma.catalog.arb._
 import munit._
 
 class CatalogTargetResultSuite extends DisciplineSuite {
+  import ArbCatalogTargetResult._
 
   // Laws
   checkAll("Eq[CatalogTargetResultSuite]", EqTests[CatalogTargetResult].eqv)

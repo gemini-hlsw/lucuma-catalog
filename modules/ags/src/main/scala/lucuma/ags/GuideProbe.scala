@@ -8,6 +8,7 @@ import lucuma.core.util.Enumerated
 
 /**
  * Enumerated type for guide probe
+ * @group Enumerations (Generated)
  */
 sealed abstract class GuideProbe(val tag: String) extends Product with Serializable
 
@@ -22,8 +23,20 @@ object GuideProbe {
   /** @group Constructors */
   case object PWFS extends GuideProbe("PWFS")
 
+  /** All members of GuideProbe, in canonical order. */
+  val all: List[GuideProbe] =
+    List(AOWFS, OIWFS, PWFS)
+
+  /** Select the member of GuideProbe with the given tag, if any. */
+  def fromTag(s: String): Option[GuideProbe] =
+    all.find(_.tag === s)
+
+  /** Select the member of GuideProbe with the given tag, throwing if absent. */
+  def unsafeFromTag(s: String): GuideProbe =
+    fromTag(s).getOrElse(throw new NoSuchElementException(s"GuideProbe: Invalid tag: '$s'"))
+
   /** @group Typeclass Instances */
-  given Enumerated[GuideProbe] =
-    Enumerated.from[GuideProbe](AOWFS, OIWFS, PWFS).withTag(_.tag)
+  implicit val GuideProbeEnumerated: Enumerated[GuideProbe] =
+    Enumerated.of[GuideProbe](AOWFS, OIWFS, PWFS)
 
 }

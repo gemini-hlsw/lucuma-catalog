@@ -13,7 +13,7 @@ import org.scalacheck._
 trait ArbGuideStarCandidate {
   import ArbSiderealTracking._
 
-  given Arbitrary[GuideStarCandidate] =
+  implicit val arbGuideStarCandidate: Arbitrary[GuideStarCandidate] =
     Arbitrary {
       for {
         n <- arbitrary[Long]
@@ -22,7 +22,7 @@ trait ArbGuideStarCandidate {
       } yield GuideStarCandidate(n, t, g)
     }
 
-  given Cogen[GuideStarCandidate] =
+  implicit val cogGuideStarCandidate: Cogen[GuideStarCandidate] =
     Cogen[(Long, SiderealTracking, Option[BigDecimal])].contramap(r =>
       (r.id, r.tracking, r.gBrightness)
     )

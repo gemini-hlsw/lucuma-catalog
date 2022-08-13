@@ -4,11 +4,12 @@
 package lucuma.catalog
 
 import cats.kernel.laws.discipline._
-import lucuma.catalog.arb.all.given
+import lucuma.catalog.arb._
 import lucuma.core.enums.Band
 import munit._
 
 class BrightnessConstraintsSuite extends DisciplineSuite {
+  import ArbBrightnessConstraints._
 
   // Laws
   checkAll("Eq[BrightnessConstraints]", EqTests[BrightnessConstraints].eqv)

@@ -4,18 +4,19 @@
 package lucuma.catalog
 
 import cats.Eq
-import cats.derived.*
 import lucuma.core.model.Target
 import monocle.Focus
 import monocle.Lens
 
 /** Result of parsing target information from a catalog. */
 final case class CatalogTargetResult(target: Target.Sidereal, angularSize: Option[AngularSize])
-    derives Eq
 
-object CatalogTargetResult:
-  val target: Lens[CatalogTargetResult, Target.Sidereal] =
-    Focus[CatalogTargetResult](_.target)
-
+object CatalogTargetResult {
+  val target: Lens[CatalogTargetResult, Target.Sidereal]          = Focus[CatalogTargetResult](_.target)
   val angularSize: Lens[CatalogTargetResult, Option[AngularSize]] =
     Focus[CatalogTargetResult](_.angularSize)
+
+  /** @group Typeclass Instances */
+  implicit val CatalogTargetResultEqual: Eq[CatalogTargetResult] =
+    Eq.fromUniversalEquals
+}

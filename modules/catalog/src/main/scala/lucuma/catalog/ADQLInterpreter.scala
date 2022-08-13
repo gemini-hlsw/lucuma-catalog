@@ -27,7 +27,7 @@ trait ADQLInterpreter {
 object ADQLInterpreter {
 
   // Find the target closest to the base. Useful for debugging
-  def baseOnly(using gaia: CatalogAdapter.Gaia, si: ShapeInterpreter): ADQLInterpreter =
+  def baseOnly(implicit gaia: CatalogAdapter.Gaia, si: ShapeInterpreter): ADQLInterpreter =
     new ADQLInterpreter {
       val MaxCount         = 1
       val shapeInterpreter = si
@@ -44,13 +44,13 @@ object ADQLInterpreter {
     }
 
   // Find one target. Useful for debugging
-  def oneTarget(using CatalogAdapter.Gaia, ShapeInterpreter): ADQLInterpreter =
+  def oneTarget(implicit gaia: CatalogAdapter.Gaia, si: ShapeInterpreter): ADQLInterpreter =
     nTarget(1)
 
   // Find n targets around the base
   def nTarget(
-    count:      Int
-  )(using gaia: CatalogAdapter.Gaia, si: ShapeInterpreter): ADQLInterpreter =
+    count:         Int
+  )(implicit gaia: CatalogAdapter.Gaia, si: ShapeInterpreter): ADQLInterpreter =
     new ADQLInterpreter {
       val MaxCount                                  = count
       val shapeInterpreter                          = si
@@ -59,7 +59,7 @@ object ADQLInterpreter {
     }
 
   // Find n targets around the base
-  def pmCorrected(count: Int, epoch: Epoch)(using
+  def pmCorrected(count: Int, epoch: Epoch)(implicit
     gaia:                CatalogAdapter.Gaia,
     si:                  ShapeInterpreter
   ): ADQLInterpreter =

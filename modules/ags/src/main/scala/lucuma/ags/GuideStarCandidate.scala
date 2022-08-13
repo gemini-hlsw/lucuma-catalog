@@ -4,7 +4,6 @@
 package lucuma.ags
 
 import cats.Eq
-import cats.derived.*
 import cats.syntax.all._
 import coulomb.*
 import coulomb.ops.algebra.spire.all.given
@@ -44,7 +43,7 @@ final case class GuideStarCandidate(
   id:          Long,
   tracking:    SiderealTracking,
   gBrightness: Option[BigDecimal]
-) derives Eq {
+) {
   def name: NonEmptyString =
     refineV[NonEmpty](s"Gaia DR3 $id").getOrElse(sys.error("Cannot happen"))
 
@@ -65,6 +64,8 @@ final case class GuideStarCandidate(
 object GuideStarCandidate {
 
   val UTC = ZoneId.of("UTC")
+
+  implicit val eqGuideStar: Eq[GuideStarCandidate] = Eq.by(x => (x.name, x.tracking, x.gBrightness))
 
   val GaiaNameRegex = """Gaia DR3 (-?\d*)""".r
 
