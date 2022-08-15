@@ -9,21 +9,13 @@ import lucuma.core.util.Enumerated
 /**
  * Enumerated type for guide probe
  */
-sealed abstract class GuideProbe(val tag: String) extends Product with Serializable
+enum GuideProbe(private val tag: String):
+  case AOWFS extends GuideProbe("AOWFS")
 
-object GuideProbe {
+  case OIWFS extends GuideProbe("OIWFS")
 
-  /** @group Constructors */
-  case object AOWFS extends GuideProbe("AOWFS")
-
-  /** @group Constructors */
-  case object OIWFS extends GuideProbe("OIWFS")
-
-  /** @group Constructors */
-  case object PWFS extends GuideProbe("PWFS")
+  case PWFS extends GuideProbe("PWFS")
 
   /** @group Typeclass Instances */
   given Enumerated[GuideProbe] =
     Enumerated.from[GuideProbe](AOWFS, OIWFS, PWFS).withTag(_.tag)
-
-}
