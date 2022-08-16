@@ -6,41 +6,45 @@ package lucuma.ags
 import cats.Order
 import lucuma.core.util.Enumerated
 
-sealed trait AgsGuideQuality extends Product with Serializable {
-  def message: String
-}
+enum AgsGuideQuality(private val tag: String, val message: String):
 
-object AgsGuideQuality {
-  case object DeliversRequestedIq   extends AgsGuideQuality {
-    override val message = "Delivers requested IQ."
-  }
-  case object PossibleIqDegradation extends AgsGuideQuality {
-    override val message = "Slower guiding required; may not deliver requested IQ."
-  }
-  case object IqDegradation         extends AgsGuideQuality {
-    override val message = "Slower guiding required; will not deliver requested IQ."
-  }
-  case object PossiblyUnusable      extends AgsGuideQuality {
-    override val message = "May not be able to guide."
-  }
-  case object Unusable              extends AgsGuideQuality {
-    override val message = "Unable to guide."
-  }
+  case DeliversRequestedIq
+      extends AgsGuideQuality("delivers_requested_id", "Delivers requested IQ.")
 
-  val All: List[AgsGuideQuality] =
+  case PossibleIqDegradation
+      extends AgsGuideQuality("possible_iq_degradation",
+                              "Slower guiding required; may not deliver requested IQ."
+      )
+
+  case IqDegradation
+      extends AgsGuideQuality("iq_degradation",
+                              "Slower guiding required; will not deliver requested IQ."
+      )
+
+  case PossiblyUnusable extends AgsGuideQuality("possible_unusable", "May not be able to guide.")
+
+  case Unusable extends AgsGuideQuality("unusable", "Unable to guide.")
+
+end AgsGuideQuality
+
+object AgsGuideQuality:
+
+  private val All: List[AgsGuideQuality] =
     List(DeliversRequestedIq, PossibleIqDegradation, IqDegradation, PossiblyUnusable, Unusable)
 
   private val orderByIndex = All.zipWithIndex.toMap
 
-  implicit val AgsGuideQualityOrder: Order[AgsGuideQuality] =
+  /** @group Typeclass Instances */
+  given Order[AgsGuideQuality] =
     Order.by(orderByIndex)
 
-  /** @group Typeclass Instances */
-  implicit val AgsGuideQualityEnumerated: Enumerated[AgsGuideQuality] =
-    Enumerated.of[AgsGuideQuality](DeliversRequestedIq,
-                                   PossibleIqDegradation,
-                                   IqDegradation,
-                                   PossiblyUnusable,
-                                   Unusable
-    )
-}
+  given Enumerated[AgsGuideQuality] =
+    Enumerated
+      .from[AgsGuideQuality](DeliversRequestedIq,
+                             PossibleIqDegradation,
+                             IqDegradation,
+                             PossiblyUnusable,
+                             Unusable
+      )
+      .withTag(_.tag)
+end AgsGuideQuality
