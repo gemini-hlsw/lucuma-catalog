@@ -432,6 +432,5 @@ object CatalogAdapter {
     c match {
       case CatalogName.Simbad => Simbad.some
       case CatalogName.Gaia   => Gaia3.some
-      case _                  => none
     }
 }
