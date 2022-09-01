@@ -1,11 +1,12 @@
 // Copyright (c) 2016-2022 Association of Universities for Research in Astronomy, Inc. (AURA)
 // For license information see LICENSE or https://opensource.org/licenses/BSD-3-Clause
 
-package lucuma.catalog
+package lucuma.catalog.votable
 
 import cats.data._
 import cats.effect.Concurrent
 import fs2._
+import lucuma.catalog.*
 import org.http4s.Method._
 import org.http4s.Request
 import org.http4s.client.Client

@@ -1,11 +1,11 @@
 // Copyright (c) 2016-2022 Association of Universities for Research in Astronomy, Inc. (AURA)
 // For license information see LICENSE or https://opensource.org/licenses/BSD-3-Clause
 
-package lucuma.catalog.arb
+package lucuma.catalog.votable.arb
 
 import eu.timepit.refined.scalacheck.string._
 import eu.timepit.refined.types.string.NonEmptyString
-import lucuma.catalog._
+import lucuma.catalog.votable.*
 import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.Cogen
 import org.scalacheck._

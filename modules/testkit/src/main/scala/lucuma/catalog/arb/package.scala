@@ -3,9 +3,11 @@
 
 package lucuma.catalog.arb
 
+import lucuma.catalog.votable
+
 object all
-    extends ArbUcd
-    with ArbFieldId
+    extends votable.arb.ArbUcd
+    with votable.arb.ArbFieldId
     with ArbAngularSize
     with ArbBrightnessConstraints
     with ArbCatalogTargetResult

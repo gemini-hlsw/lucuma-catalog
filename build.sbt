@@ -23,7 +23,7 @@ lazy val kittensVersion             = "3.0.0-M4"
 
 Global / onChangedBuildSource := ReloadOnSourceChanges
 
-ThisBuild / tlBaseVersion       := "0.28"
+ThisBuild / tlBaseVersion       := "0.29"
 ThisBuild / tlCiReleaseBranches := Seq("master", "scala3")
 
 ThisBuild / scalaVersion       := "3.1.3"
@@ -42,6 +42,7 @@ lazy val catalog = crossProject(JVMPlatform, JSPlatform)
     libraryDependencies ++= Seq(
       "co.fs2"        %%% "fs2-core"        % fs2Version,
       "org.gnieh"     %%% "fs2-data-xml"    % fs2DataVersion,
+      "org.gnieh"     %%% "fs2-data-csv"    % fs2DataVersion,
       "edu.gemini"    %%% "lucuma-core"     % lucumaCoreVersion,
       "edu.gemini"    %%% "lucuma-refined"  % lucumaRefinedVersion,
       "org.typelevel" %%% "cats-core"       % catsVersion,

@@ -1,7 +1,7 @@
 // Copyright (c) 2016-2022 Association of Universities for Research in Astronomy, Inc. (AURA)
 // For license information see LICENSE or https://opensource.org/licenses/BSD-3-Clause
 
-package lucuma.catalog
+package lucuma.catalog.votable
 
 import cats.data._
 import cats.syntax.all._
@@ -13,8 +13,9 @@ import eu.timepit.refined.types.string.NonEmptyString
 import fs2._
 import fs2.data.xml.XmlEvent._
 import fs2.data.xml._
-import lucuma.catalog.CatalogProblem._
-import lucuma.catalog._
+import lucuma.catalog.*
+import lucuma.catalog.votable.CatalogProblem.*
+import lucuma.catalog.votable.*
 import lucuma.core.enums.StellarLibrarySpectrum
 import lucuma.core.math._
 import lucuma.core.math.units._

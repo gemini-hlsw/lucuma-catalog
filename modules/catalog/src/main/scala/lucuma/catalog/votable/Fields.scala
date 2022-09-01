@@ -1,7 +1,7 @@
 // Copyright (c) 2016-2022 Association of Universities for Research in Astronomy, Inc. (AURA)
 // For license information see LICENSE or https://opensource.org/licenses/BSD-3-Clause
 
-package lucuma.catalog
+package lucuma.catalog.votable
 
 import cats._
 import cats.data._
@@ -11,7 +11,7 @@ import eu.timepit.refined._
 import eu.timepit.refined.cats._
 import eu.timepit.refined.collection.NonEmpty
 import eu.timepit.refined.types.string._
-import lucuma.catalog.CatalogProblem._
+import lucuma.catalog.votable.CatalogProblem._
 
 /** Describes a field */
 case class FieldId(id: NonEmptyString, ucd: Option[Ucd]) derives Eq
