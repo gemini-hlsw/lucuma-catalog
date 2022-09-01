@@ -31,6 +31,7 @@ import lucuma.core.math.dimensional._
 import lucuma.core.math.units._
 import lucuma.core.model.CatalogInfo
 import lucuma.core.model.Target
+import lucuma.catalog.*
 import lucuma.refined.*
 import munit.CatsEffectSuite
 

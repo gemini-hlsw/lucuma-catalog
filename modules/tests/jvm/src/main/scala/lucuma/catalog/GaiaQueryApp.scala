@@ -15,6 +15,7 @@ import lucuma.core.math.Coordinates
 import lucuma.core.math.Declination
 import lucuma.core.math.Epoch
 import lucuma.core.math.RightAscension
+import lucuma.catalog.*
 import org.http4s.Method._
 import org.http4s.Request
 import org.http4s.client.Client

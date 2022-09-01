@@ -13,9 +13,9 @@ import eu.timepit.refined.types.string.NonEmptyString
 import fs2._
 import fs2.data.xml.XmlEvent._
 import fs2.data.xml._
-import lucuma.catalog.*
 import lucuma.catalog.votable.CatalogProblem.*
 import lucuma.catalog.votable.*
+import lucuma.catalog.*
 import lucuma.core.enums.StellarLibrarySpectrum
 import lucuma.core.math._
 import lucuma.core.math.units._

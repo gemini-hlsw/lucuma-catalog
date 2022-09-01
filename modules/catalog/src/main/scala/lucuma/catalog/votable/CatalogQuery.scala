@@ -17,6 +17,7 @@ import lucuma.core.math.Declination
 import lucuma.core.math.Offset
 import lucuma.core.math.RightAscension
 import lucuma.core.model.SiderealTracking
+import lucuma.catalog.*
 import org.http4s.Uri
 import spire.math.Bounded
 

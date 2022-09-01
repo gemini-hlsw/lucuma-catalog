@@ -5,6 +5,7 @@ package lucuma.catalog.votable
 
 import cats.data._
 import cats.effect.Concurrent
+import lucuma.catalog.*
 import fs2._
 import lucuma.catalog.*
 import org.http4s.Method._
