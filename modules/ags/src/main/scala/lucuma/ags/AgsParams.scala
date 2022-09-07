@@ -5,7 +5,7 @@ package lucuma.ags
 
 import cats.Eq
 import cats.derived.*
-import cats.syntax.all._
+import cats.syntax.all.*
 import lucuma.core.enums.GmosNorthFpu
 import lucuma.core.enums.GmosSouthFpu
 import lucuma.core.enums.PortDisposition
@@ -13,13 +13,13 @@ import lucuma.core.geom.Area
 import lucuma.core.geom.ShapeExpression
 import lucuma.core.geom.gmos.probeArm
 import lucuma.core.geom.gmos.scienceArea
-import lucuma.core.geom.jts.interpreter._
-import lucuma.core.geom.syntax.all._
+import lucuma.core.geom.jts.interpreter.*
+import lucuma.core.geom.syntax.all.*
 import lucuma.core.math.Angle
 import lucuma.core.math.Offset
-import lucuma.core.math.syntax.int._
+import lucuma.core.math.syntax.int.*
 
-final case class AgsPosition(posAngle: Angle, offsetPos: Offset) derives Eq
+case class AgsPosition(posAngle: Angle, offsetPos: Offset) derives Eq
 
 sealed trait AgsGeomCalc {
   // Indicates if the given offset is reachable
@@ -45,7 +45,7 @@ sealed trait AgsParams derives Eq {
 object AgsParams {
   val scienceRadius = 20.arcseconds
 
-  final case class GmosAgsParams(
+  case class GmosAgsParams(
     fpu:  Option[Either[GmosNorthFpu, GmosSouthFpu]],
     port: PortDisposition
   ) extends AgsParams

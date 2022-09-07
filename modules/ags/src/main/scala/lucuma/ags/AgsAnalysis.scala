@@ -4,7 +4,7 @@
 package lucuma.ags
 
 import cats.Order
-import cats.syntax.all._
+import cats.syntax.all.*
 import lucuma.catalog.BandsList
 import lucuma.core.enums.Band
 import lucuma.core.enums.GuideSpeed
