@@ -1,7 +1,7 @@
 // Copyright (c) 2016-2022 Association of Universities for Research in Astronomy, Inc. (AURA)
 // For license information see LICENSE or https://opensource.org/licenses/BSD-3-Clause
 
-package lucuma.catalog
+package lucuma.catalog.votable
 
 import cats.data._
 import fs2._
@@ -33,8 +33,8 @@ object CatalogSearch {
    * Takes a search query and builds a uri to query gaia
    */
   def gaiaSearchUri[F[_]](
-    query:         ADQLQuery
-  )(implicit gaia: CatalogAdapter.Gaia, ci: ADQLInterpreter): Uri = {
+    query: ADQLQuery
+  )(using CatalogAdapter.Gaia, ADQLInterpreter): Uri = {
     val esaUri = uri"https://gea.esac.esa.int/tap-server/tap/sync"
     val base   = query.proxy.fold(esaUri)(p =>
       Uri
@@ -45,7 +45,7 @@ object CatalogSearch {
       .withQueryParam("REQUEST", "doQuery")
       .withQueryParam("LANG", "ADQL")
       .withQueryParam("FORMAT", "votable_plain")
-      .withQueryParam("QUERY", ADQLGaiaQuery.adql(gaia, query))
+      .withQueryParam("QUERY", ADQLGaiaQuery.adql(summon[CatalogAdapter.Gaia], query))
   }
 
   /**

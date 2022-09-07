@@ -1,13 +1,14 @@
 // Copyright (c) 2016-2022 Association of Universities for Research in Astronomy, Inc. (AURA)
 // For license information see LICENSE or https://opensource.org/licenses/BSD-3-Clause
 
-package lucuma.catalog
+package lucuma.catalog.votable
 
 import cats.effect.IO
 import cats.effect.IOApp
 import cats.effect.Sync
 import cats.syntax.all._
 import fs2.text
+import lucuma.catalog.*
 import lucuma.core.geom.gmos.all.candidatesArea
 import lucuma.core.geom.jts.interpreter._
 import lucuma.core.math.Coordinates

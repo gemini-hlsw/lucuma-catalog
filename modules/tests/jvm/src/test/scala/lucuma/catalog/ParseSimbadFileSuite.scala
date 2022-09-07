@@ -1,7 +1,7 @@
 // Copyright (c) 2016-2022 Association of Universities for Research in Astronomy, Inc. (AURA)
 // For license information see LICENSE or https://opensource.org/licenses/BSD-3-Clause
 
-package lucuma.catalog
+package lucuma.catalog.votable
 
 import cats.effect._
 import cats.implicits._
@@ -16,6 +16,7 @@ import eu.timepit.refined.collection.NonEmpty
 import fs2._
 import fs2.io.file.Files
 import fs2.io.file.Path
+import lucuma.catalog.*
 import lucuma.core.enums.Band
 import lucuma.core.enums.CatalogName
 import lucuma.core.math.Angle
