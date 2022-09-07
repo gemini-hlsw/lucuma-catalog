@@ -3,10 +3,10 @@
 
 package lucuma.ags
 
-import cats.syntax.all._
-import fs2._
-import lucuma.ags.AgsAnalysis._
-import lucuma.ags.AgsGuideQuality._
+import cats.syntax.all.*
+import fs2.*
+import lucuma.ags.AgsAnalysis.*
+import lucuma.ags.AgsGuideQuality.*
 import lucuma.catalog.BrightnessConstraints
 import lucuma.core.enums.Band
 import lucuma.core.enums.GuideSpeed
@@ -110,11 +110,7 @@ object Ags {
     instant:   Instant,
     gsc:       GuideStarCandidate
   ): List[Offset] =
-    scienceAt
-      .map(s => offsetAt(s, instant, gsc))
-      .collect { case Some(x) =>
-        x
-      }
+    scienceAt.map(s => offsetAt(s, instant, gsc)).flatten
 
   /**
    * FS2 pipe to do analysis of a stream of Candidate Guide Stars The base coordinates and
