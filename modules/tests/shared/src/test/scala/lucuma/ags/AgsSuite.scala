@@ -31,6 +31,7 @@ class AgsSuite extends munit.FunSuite {
           constraints,
           wavelength,
           Coordinates.Zero,
+          List(Coordinates.Zero),
           AgsPosition(Angle.Angle0, Offset.Zero),
           AgsParams.GmosAgsParams(GmosNorthFpu.LongSlit_5_00.asLeft.some, PortDisposition.Bottom),
           List(gs)
@@ -56,6 +57,7 @@ class AgsSuite extends munit.FunSuite {
           constraints,
           wavelength,
           Coordinates.Zero,
+          Nil,
           AgsPosition(Angle.Angle0, Offset.Zero),
           AgsParams.GmosAgsParams(GmosNorthFpu.LongSlit_5_00.asLeft.some, PortDisposition.Bottom),
           List(gsOffset)

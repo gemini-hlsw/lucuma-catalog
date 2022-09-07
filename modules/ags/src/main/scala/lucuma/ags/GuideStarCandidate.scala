@@ -5,24 +5,24 @@ package lucuma.ags
 
 import cats.Eq
 import cats.derived.*
-import cats.syntax.all._
+import cats.syntax.all.*
 import coulomb.*
 import coulomb.ops.algebra.spire.all.given
 import coulomb.policy.spire.standard.given
 import coulomb.syntax.*
 import coulomb.units.si.*
 import coulomb.units.si.given
-import eu.timepit.refined._
-import eu.timepit.refined.cats._
+import eu.timepit.refined.*
+import eu.timepit.refined.cats.*
 import eu.timepit.refined.collection.NonEmpty
 import eu.timepit.refined.types.string.NonEmptyString
 import lucuma.catalog.BandsList
 import lucuma.core.enums.Band
 import lucuma.core.enums.StellarLibrarySpectrum
-import lucuma.core.math.BrightnessUnits._
+import lucuma.core.math.BrightnessUnits.*
 import lucuma.core.math.Epoch
-import lucuma.core.math.dimensional._
-import lucuma.core.math.units._
+import lucuma.core.math.dimensional.*
+import lucuma.core.math.units.*
 import lucuma.core.model.SiderealTracking
 import lucuma.core.model.SourceProfile
 import lucuma.core.model.SpectralDefinition
@@ -40,7 +40,7 @@ import scala.collection.immutable.SortedMap
 /**
  * Poors' man Target.Sidereal with a single G brightness and no extra metadata
  */
-final case class GuideStarCandidate(
+case class GuideStarCandidate(
   id:          Long,
   tracking:    SiderealTracking,
   gBrightness: Option[BigDecimal]
@@ -68,8 +68,12 @@ object GuideStarCandidate {
 
   val GaiaNameRegex = """Gaia DR3 (-?\d*)""".r
 
-  val id: Lens[GuideStarCandidate, Long]                        = Focus[GuideStarCandidate](_.id)
-  val tracking: Lens[GuideStarCandidate, SiderealTracking]      = Focus[GuideStarCandidate](_.tracking)
+  val id: Lens[GuideStarCandidate, Long] =
+    Focus[GuideStarCandidate](_.id)
+
+  val tracking: Lens[GuideStarCandidate, SiderealTracking] =
+    Focus[GuideStarCandidate](_.tracking)
+
   val gBrightness: Lens[GuideStarCandidate, Option[BigDecimal]] =
     Focus[GuideStarCandidate](_.gBrightness)
 

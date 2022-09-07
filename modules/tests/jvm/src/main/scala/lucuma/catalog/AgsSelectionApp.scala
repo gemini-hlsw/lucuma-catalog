@@ -83,7 +83,8 @@ object AgsSelectionSampleApp extends IOApp.Simple with AgsSelectionSample {
             Ags.agsAnalysisStreamPM[IO](
               constraints,
               wavelength,
-              SiderealTracking.const(coords),
+              (t: Instant) => SiderealTracking.const(coords).at(t),
+              List((t: Instant) => SiderealTracking.const(coords).at(t)),
               AgsPosition(Angle.Angle0, Offset.Zero),
               AgsParams.GmosAgsParams(
                 GmosNorthFpu.LongSlit_5_00.asLeft.some,
