@@ -26,7 +26,7 @@ object CatalogSearch {
 
     base
       .withQueryParam("output.format", "VOTable")
-      .withQueryParam("Ident", query.id)
+      .withQueryParam("Ident", query.id.value)
   }
 
   /**

@@ -9,13 +9,13 @@ import cats.effect.Sync
 import cats.syntax.all._
 import fs2.text
 import lucuma.catalog.*
+import lucuma.catalog.*
 import lucuma.core.geom.gmos.all.candidatesArea
 import lucuma.core.geom.jts.interpreter._
 import lucuma.core.math.Coordinates
 import lucuma.core.math.Declination
 import lucuma.core.math.Epoch
 import lucuma.core.math.RightAscension
-import lucuma.catalog.*
 import org.http4s.Method._
 import org.http4s.Request
 import org.http4s.client.Client

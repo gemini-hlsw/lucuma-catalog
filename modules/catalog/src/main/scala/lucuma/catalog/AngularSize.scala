@@ -14,7 +14,7 @@ import monocle.Lens
  * Angular size of an object in the sky. The major axis is the longest one, but we don't enforce
  * this.
  */
-final case class AngularSize(majorAxis: Angle, minorAxis: Angle) derives Eq
+case class AngularSize(majorAxis: Angle, minorAxis: Angle) derives Eq
 
 object AngularSize:
   val majorAxis: Lens[AngularSize, Angle] = Focus[AngularSize](_.majorAxis)

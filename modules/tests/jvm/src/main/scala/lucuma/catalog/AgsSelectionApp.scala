@@ -6,10 +6,10 @@ package lucuma.catalog.votable
 import cats.effect.IO
 import cats.effect.IOApp
 import cats.effect.Sync
-import cats.syntax.all._
-import fs2._
+import cats.syntax.all.*
+import fs2.*
 import fs2.text
-import lucuma.ags._
+import lucuma.ags.*
 import lucuma.core.enums.CloudExtinction
 import lucuma.core.enums.GmosNorthFpu
 import lucuma.core.enums.GmosSouthFpu
@@ -18,7 +18,7 @@ import lucuma.core.enums.PortDisposition
 import lucuma.core.enums.SkyBackground
 import lucuma.core.enums.WaterVapor
 import lucuma.core.geom.gmos.all.candidatesArea
-import lucuma.core.geom.jts.interpreter._
+import lucuma.core.geom.jts.interpreter.*
 import lucuma.core.math.Angle
 import lucuma.core.math.Coordinates
 import lucuma.core.math.Declination
@@ -31,7 +31,7 @@ import lucuma.core.model.ElevationRange.AirMass
 import lucuma.core.model.ElevationRange.AirMass.DecimalValue
 import lucuma.core.model.SiderealTracking
 import lucuma.core.model.Target
-import org.http4s.Method._
+import org.http4s.Method.*
 import org.http4s.Request
 import org.http4s.client.Client
 import org.http4s.jdkhttpclient.JdkHttpClient

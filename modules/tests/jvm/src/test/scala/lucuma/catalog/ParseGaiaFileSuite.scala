@@ -3,8 +3,8 @@
 
 package lucuma.catalog.votable
 
-import cats.effect._
-import fs2._
+import cats.effect.*
+import fs2.*
 import fs2.io.file.Files
 import fs2.io.file.Path
 import munit.CatsEffectSuite
