@@ -175,7 +175,7 @@ object Ags {
       in.filter(c => c.gBrightness.exists(g => bc.exists(_.contains(Band.Gaia, g))))
         .map { gsc =>
           val offset         = baseCoordinates.diff(gsc.tracking.baseCoordinates).offset
-          val scienceOffsets = scienceCoordinates.map(t => baseCoordinates.diff(t).offset)
+          val scienceOffsets = scienceCoordinates.map(_.diff(gsc.tracking.baseCoordinates).offset)
           runAnalysis(constraints, offset, scienceOffsets, position, params, gsc)(guideSpeeds,
                                                                                   calcs
           )
@@ -254,7 +254,7 @@ object Ags {
       .filter(c => c.gBrightness.exists(g => bc.exists(_.contains(Band.Gaia, g))))
       .map { gsc =>
         val offset         = baseCoordinates.diff(gsc.tracking.baseCoordinates).offset
-        val scienceOffsets = scienceCoordinates.map(t => baseCoordinates.diff(t).offset)
+        val scienceOffsets = scienceCoordinates.map(_.diff(gsc.tracking.baseCoordinates).offset)
         runAnalysis(constraints, offset, scienceOffsets, position, params, gsc)(guideSpeeds, calcs)
       }
   }
