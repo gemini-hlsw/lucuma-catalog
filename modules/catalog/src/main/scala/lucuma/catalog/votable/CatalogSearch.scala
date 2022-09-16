@@ -3,13 +3,13 @@
 
 package lucuma.catalog.votable
 
-import cats.data._
-import fs2._
-import fs2.data.xml._
-import lucuma.catalog._
+import cats.data.*
+import fs2.*
+import fs2.data.xml.*
+import lucuma.catalog.*
 import lucuma.core.model.Target
 import org.http4s.Uri
-import org.http4s.syntax.all._
+import org.http4s.syntax.all.*
 
 object CatalogSearch {
 
