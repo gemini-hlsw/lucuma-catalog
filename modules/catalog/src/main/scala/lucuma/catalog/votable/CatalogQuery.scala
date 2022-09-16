@@ -3,20 +3,25 @@
 
 package lucuma.catalog.votable
 
-import cats.syntax.all._
+import cats.data.NonEmptyList
+import cats.syntax.all.*
 import lucuma.catalog.*
 import lucuma.core.enums.Band
 import lucuma.core.enums.CatalogName
 import lucuma.core.geom.ShapeExpression
-import lucuma.core.geom.syntax.all._
+import lucuma.core.geom.ShapeInterpreter
+import lucuma.core.geom.syntax.all.*
 import lucuma.core.math.Angle
 import lucuma.core.math.Coordinates
+import lucuma.core.math.Declination
 import lucuma.core.math.Offset
+import lucuma.core.math.RightAscension
 import lucuma.core.model.SiderealTracking
 import org.http4s.Uri
 import spire.math.Bounded
 
 import java.time.Instant
+import scala.math.*
 
 /**
  * Represents a query on a catalog
@@ -75,7 +80,7 @@ trait GaiaBrightnessADQL extends CatalogQuery {
  */
 sealed trait ADQLQuery {
   def base: Coordinates
-  def adqlGeom(implicit ev: ADQLInterpreter): String
+  def adqlGeom(using ADQLInterpreter): String
   def adqlBrightness: List[String]
   def proxy: Option[Uri]
 }
@@ -83,7 +88,7 @@ sealed trait ADQLQuery {
 /**
  * Query based on ADQL with a given geometry around base coordinates
  */
-final case class QueryByADQL(
+case class QueryByADQL(
   base:                  Coordinates,
   shapeConstraint:       ShapeExpression,
   brightnessConstraints: Option[BrightnessConstraints],
@@ -93,7 +98,7 @@ final case class QueryByADQL(
     with GaiaBrightnessADQL {
   def adqlBrightness: List[String] = adqlBrightness(brightnessConstraints)
 
-  def adqlGeom(implicit ev: ADQLInterpreter): String = {
+  def adqlGeom(using ev: ADQLInterpreter): String = {
     implicit val si = ev.shapeInterpreter
 
     val r = shapeConstraint.maxSide.bisect
@@ -108,7 +113,7 @@ final case class QueryByADQL(
  *
  * See: https://github.com/gemini-hlsw/lucuma-catalog/wiki/time-range
  */
-final case class TimeRangeQueryByADQL(
+case class TimeRangeQueryByADQL(
   tracking:              SiderealTracking,
   timeRange:             Bounded[Instant],
   shapeConstraint:       ShapeExpression,
@@ -121,8 +126,8 @@ final case class TimeRangeQueryByADQL(
 
   def adqlBrightness: List[String] = adqlBrightness(brightnessConstraints)
 
-  def adqlGeom(implicit ev: ADQLInterpreter): String = {
-    implicit val si = ev.shapeInterpreter
+  def adqlGeom(using ev: ADQLInterpreter): String = {
+    given ShapeInterpreter = ev.shapeInterpreter
 
     // Coordinates at the start and of the time range
     val start = tracking.at(timeRange.lowerBound.a)
@@ -148,5 +153,34 @@ final case class TimeRangeQueryByADQL(
     val r              = (shapeConstraint ∪ (shapeConstraint ↗ offset)).maxSide.bisect
 
     circleQuery(base, r)
+  }
+}
+
+/**
+ * Query based on ADQL with a given geometry and two coordinates typically at two time points.
+ *
+ * It is essentially a TimeRangeQuery with precalculated positions See:
+ * https://github.com/gemini-hlsw/lucuma-catalog/wiki/time-range
+ */
+case class CoordinatesRangeQueryByADQL(
+  coords:                NonEmptyList[Coordinates],
+  shapeConstraint:       ShapeExpression,
+  brightnessConstraints: Option[BrightnessConstraints],
+  proxy:                 Option[Uri] = None
+) extends CatalogQuery
+    with ADQLQuery
+    with GaiaBrightnessADQL {
+  val base = Coordinates.centerOf(coords)
+
+  def adqlBrightness: List[String] = adqlBrightness(brightnessConstraints)
+
+  def adqlGeom(using ev: ADQLInterpreter): String = {
+    given ShapeInterpreter = ev.shapeInterpreter
+
+    val r: ShapeExpression = coords
+      .map(_.diff(base).offset)
+      .foldLeft(shapeConstraint)((prev, offset) => prev ∪ (shapeConstraint ↗ offset))
+
+    circleQuery(base, r.maxSide.bisect)
   }
 }
