@@ -103,9 +103,7 @@ object AgsAnalysis {
 
   object Usable {
     val rankingOrder: Order[Usable] =
-      Order.by(u =>
-        (u.guideSpeed, u.quality, u.vignettingArea, u.target.gBrightness.map(-_), u.target.id)
-      )
+      Order.by(u => (u.guideSpeed, u.quality, u.vignettingArea, u.target.gBrightness, u.target.id))
   }
 
   val rankingOrder: Order[AgsAnalysis] =

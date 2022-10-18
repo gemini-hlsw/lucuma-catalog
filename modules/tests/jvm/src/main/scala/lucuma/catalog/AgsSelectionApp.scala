@@ -85,24 +85,27 @@ object AgsSelectionSampleApp extends IOApp.Simple with AgsSelectionSample {
       .use(
         gaiaQuery[IO](_)
           .map(GuideStarCandidate.siderealTarget.get)
-          .through(
-            Ags.agsAnalysisStreamPM[IO](
-              constraints,
-              wavelength,
-              (t: Instant) => SiderealTracking.const(coords).at(t),
-              List((t: Instant) => SiderealTracking.const(coords).at(t)),
-              AgsPosition(Angle.Angle0, Offset.Zero),
-              AgsParams.GmosAgsParams(
-                GmosNorthFpu.LongSlit_5_00.asLeft.some,
-                PortDisposition.Bottom
-              ),
-              Instant.now()
-            )
-          )
           .compile
           .toList
+          .map(candidates =>
+            Ags
+              .agsAnalysis(
+                constraints,
+                wavelength,
+                coords,
+                List(coords),
+                AgsPosition(Angle.fromDoubleDegrees(120), Offset.Zero),
+                AgsParams.GmosAgsParams(
+                  GmosNorthFpu.LongSlit_1_00.asLeft.some,
+                  PortDisposition.Side
+                ),
+                candidates
+              )
+              .sorted(AgsAnalysis.rankingOrdering)
+          )
       )
       .flatTap(x => IO.println(x.length))
-      // .flatMap(x => x.traverse(u => IO(pprint.pprintln(u))))
+      // .flatMap(x => IO.println(x.head))
+      .flatMap(x => x.filter(_.isUsable).traverse(u => IO(pprint.pprintln(u))))
       .void
 }
