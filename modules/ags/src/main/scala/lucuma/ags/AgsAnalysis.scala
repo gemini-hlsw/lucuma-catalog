@@ -19,17 +19,17 @@ sealed trait AgsAnalysis {
 
 object AgsAnalysis {
 
-  final case class ProperMotionNotAvailable(target: GuideStarCandidate) extends AgsAnalysis {
+  case class ProperMotionNotAvailable(target: GuideStarCandidate) extends AgsAnalysis {
     override def message(withProbe: Boolean): String =
       "Cannot calculate proper motion."
   }
 
-  final case class VignettesScience(target: GuideStarCandidate) extends AgsAnalysis {
+  case class VignettesScience(target: GuideStarCandidate) extends AgsAnalysis {
     override def message(withProbe: Boolean): String =
       "The target overlaps with the science target"
   }
 
-  final case class NoGuideStarForProbe(guideProbe: GuideProbe, target: GuideStarCandidate)
+  case class NoGuideStarForProbe(guideProbe: GuideProbe, target: GuideStarCandidate)
       extends AgsAnalysis {
     override def message(withProbe: Boolean): String = {
       val p = if (withProbe) s"$guideProbe " else ""
@@ -37,7 +37,7 @@ object AgsAnalysis {
     }
   }
 
-  final case class MagnitudeTooFaint(
+  case class MagnitudeTooFaint(
     guideProbe:     GuideProbe,
     target:         GuideStarCandidate,
     showGuideSpeed: Boolean
@@ -49,7 +49,7 @@ object AgsAnalysis {
     }
   }
 
-  final case class MagnitudeTooBright(guideProbe: GuideProbe, target: GuideStarCandidate)
+  case class MagnitudeTooBright(guideProbe: GuideProbe, target: GuideStarCandidate)
       extends AgsAnalysis {
     override def message(withProbe: Boolean): String = {
       val p = if (withProbe) s"$guideProbe g" else "G"
@@ -57,7 +57,7 @@ object AgsAnalysis {
     }
   }
 
-  final case class NotReachable(
+  case class NotReachable(
     position:   AgsPosition,
     guideProbe: GuideProbe,
     target:     GuideStarCandidate
@@ -68,7 +68,7 @@ object AgsAnalysis {
     }
   }
 
-  final case class NoMagnitudeForBand(guideProbe: GuideProbe, target: GuideStarCandidate)
+  case class NoMagnitudeForBand(guideProbe: GuideProbe, target: GuideStarCandidate)
       extends AgsAnalysis {
     private val probeBands: List[Band]               = BandsList.GaiaBandsList.bands
     override def message(withProbe: Boolean): String = {
@@ -82,7 +82,7 @@ object AgsAnalysis {
     override val quality: AgsGuideQuality            = AgsGuideQuality.PossiblyUnusable
   }
 
-  final case class Usable(
+  case class Usable(
     guideProbe:           GuideProbe,
     target:               GuideStarCandidate,
     guideSpeed:           Option[GuideSpeed],
@@ -103,7 +103,9 @@ object AgsAnalysis {
 
   object Usable {
     val rankingOrder: Order[Usable] =
-      Order.by(u => (u.guideSpeed, u.quality, u.vignettingArea, u.target.id))
+      Order.by(u =>
+        (u.guideSpeed, u.quality, u.vignettingArea, u.target.gBrightness.map(-_), u.target.id)
+      )
   }
 
   val rankingOrder: Order[AgsAnalysis] =
