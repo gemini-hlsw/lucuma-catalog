@@ -244,11 +244,12 @@ object Ags {
   ): List[AgsAnalysis] = {
     // Cache the limits for different speeds
     val guideSpeeds = guideSpeedLimits(constraints, wavelength)
-    // This is essentially a cache of geometries avoiding calculatting them
+
+    // This is essentially a cache of geometries avoiding calculating them
     // over and over again as they don't change for different positions
-    val calcs       = params.posCalculations(List(position))
+    val calcs = params.posCalculations(List(position))
     // use constraints to calculate all guide speeds
-    val bc          = constraintsFor(guideSpeeds)
+    val bc    = constraintsFor(guideSpeeds)
 
     candidates
       .filter(c => c.gBrightness.exists(g => bc.exists(_.contains(Band.Gaia, g))))
