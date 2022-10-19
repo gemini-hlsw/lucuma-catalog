@@ -52,9 +52,9 @@ object ADQLInterpreter {
     count:      Int
   )(using gaia: CatalogAdapter.Gaia, si: ShapeInterpreter): ADQLInterpreter =
     new ADQLInterpreter {
-      val MaxCount                                  = count
-      val shapeInterpreter                          = si
-      def allFields: List[FieldId]                  = gaia.allFields
+      val MaxCount                 = count
+      val shapeInterpreter         = si
+      def allFields: List[FieldId] = gaia.allFields
       def extraFields(c: Coordinates): List[String] = Nil
     }
 
