@@ -16,81 +16,76 @@ import lucuma.catalog.csv.*
 import lucuma.core.math.Declination
 import lucuma.core.math.RightAscension
 import munit.CatsEffectSuite
+import org.http4s.jdkhttpclient.JdkHttpClient
 import org.typelevel.ci.*
 
 class TargetImportFileSuite extends CatsEffectSuite:
 
-  // test("parse sample pit file") {
-  //   val xmlFile = "/PIT_sidereal.csv"
-  //   val file    = getClass().getResource(xmlFile)
-  //   Resource.unit[IO].use { _ =>
-  //     Files[IO]
-  //       .readAll(Path(file.getPath()))
-  //       .through(text.utf8.decode)
-  //       .through(decodeUsingHeaders[TargetCsvRow]())
-  //       .compile
-  //       .toList
-  //       .flatTap(x => IO(pprint.pprintln(x)))
-  //       .map { l =>
-  //         assertEquals(l.length, 5)
-  //       }
-  //   }
-  // }
-  //
-  // test("parse stars sample file".ignore) {
-  //   val xmlFile = "/stars.csv"
-  //   val file    = getClass().getResource(xmlFile)
-  //   Resource.unit[IO].use { _ =>
-  //     Files[IO]
-  //       .readAll(Path(file.getPath()))
-  //       .through(text.utf8.decode)
-  //       .through(text.lines)
-  //       .map(s => s.split(",").map(_.trim()).mkString("", ",", "\n"))
-  //       .through(lowlevel.rows[IO, String]())
-  //       .through(lowlevel.headers[IO, CIString])
-  //       .through(lowlevel.decodeRow[IO, CIString, TargetCsvRow])
-  //       .compile
-  //       .toList
-  //       .flatTap(x => IO(pprint.pprintln(x)))
-  //       .map { l =>
-  //         assertEquals(l.length, 20)
-  //         assertEquals(l.count(_.bare), 0)
-  //       }
-  //   }
-  // }
-  //
-  // test("parse stars sample file") {
-  //   val xmlFile = "/random.csv"
-  //   val file    = getClass().getResource(xmlFile)
-  //   Resource.unit[IO].use { _ =>
-  //     Files[IO]
-  //       .readAll(Path(file.getPath()))
-  //       .through(text.utf8.decode)
-  //       // .through(text.lines)
-  //       .through(decodeUsingHeaders[TargetCsvRow]())
-  //       .compile
-  //       .toList
-  //       .flatTap(x => IO(pprint.pprintln(x)))
-  //       .map { l =>
-  //         assertEquals(l.length, 1000)
-  //         assertEquals(l.count(_.bare), 0)
-  //       }
-  //   }
-  // }
-
-  test("parse names file with lookup") {
-    val xmlFile = "/target_names.csv"
+  test("parse sample pit file".ignore) {
+    val xmlFile = "/PIT_sidereal.csv"
     val file    = getClass().getResource(xmlFile)
     Resource.unit[IO].use { _ =>
       Files[IO]
         .readAll(Path(file.getPath()))
         .through(text.utf8.decode)
-        .through(decodeUsingHeaders[TargetCsvRow]())
+        .through(TargetImport.csv2targets)
         .compile
         .toList
-        .flatTap(x => IO(pprint.pprintln(x)))
         .map { l =>
           assertEquals(l.length, 5)
         }
     }
+  }
+
+  test("parse stars sample file") {
+    val xmlFile = "/stars.csv"
+    val file    = getClass().getResource(xmlFile)
+    Resource.unit[IO].use { _ =>
+      Files[IO]
+        .readAll(Path(file.getPath()))
+        .through(text.utf8.decode)
+        .through(TargetImport.csv2targets)
+        .compile
+        .toList
+        .map { l =>
+          assertEquals(l.length, 20)
+          assertEquals(l.count(_.isRight), 20)
+        }
+    }
+  }
+
+  test("parse stars random file") {
+    val xmlFile = "/random.csv"
+    val file    = getClass().getResource(xmlFile)
+    Resource.unit[IO].use { _ =>
+      Files[IO]
+        .readAll(Path(file.getPath()))
+        .through(text.utf8.decode)
+        .through(TargetImport.csv2targets)
+        .compile
+        .toList
+        .map { l =>
+          assertEquals(l.length, 1000)
+          assertEquals(l.count(_.isRight), 1000)
+        }
+    }
+  }
+
+  test("parse names file with lookup") {
+    val xmlFile = "/target_names.csv"
+    val file    = getClass().getResource(xmlFile)
+    JdkHttpClient
+      .simple[IO]
+      .use { client =>
+        Files[IO]
+          .readAll(Path(file.getPath()))
+          .through(text.utf8.decode)
+          .through(TargetImport.csv2targetsAndLookup(client))
+          .compile
+          .toList
+          .flatTap(x => IO(pprint.pprintln(x)))
+          .map { l =>
+            assertEquals(l.length, 5)
+          }
+      }
   }

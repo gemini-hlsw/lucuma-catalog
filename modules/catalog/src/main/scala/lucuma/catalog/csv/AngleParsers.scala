@@ -48,13 +48,13 @@ trait AngleParsers:
         )
       }
 
-  val HMSParser1 =
+  private val HMSParser1 =
     (HourParser ~ colonOrSpace.void ~ MinuteParser ~ colonOrSpace.void ~ SecondsParser).map {
       case ((((h, _), m), _), (s, ms, µs)) =>
         HourAngle.fromHMS(h, m, s, ms.toInt, µs.toInt)
     }
 
-  val HMSParser2 =
+  private val HMSParser2 =
     (HourParser ~ (char('h') ~ sp.?).void ~
       MinuteParser ~ (char('m') ~ sp.?).void ~
       SecondsParser ~ char('s'))
@@ -74,12 +74,22 @@ trait AngleParsers:
     .string
     .map(_.toInt)
 
-  val DMSParser =
+  private val DMSParser1 =
     (neg ~ DegreesParser ~ colonOrSpace ~ MinuteParser ~ colonOrSpace ~ SecondsParser).map {
       case (((((neg, h), _), m), _), (s, ms, µs)) =>
         val r = Angle.fromDMS(h, m, s, ms.toInt, µs.toInt)
         if (neg) -r else r
     }
+
+  private val DMSParser2 =
+    (neg ~ DegreesParser ~ (char('°') ~ sp.?).void ~
+      MinuteParser ~ (char('′') ~ sp.?).void ~
+      SecondsParser ~ char('″').void).map { case ((((((neg, h), _), m), _), (s, ms, µs)), _) =>
+      val r = Angle.fromDMS(h, m, s, ms.toInt, µs.toInt)
+      if (neg) -r else r
+    }
+
+  val DMSParser = DMSParser1.backtrack | DMSParser2
 
   val lenientFromStringHMS: Format[String, RightAscension] =
     Format[String, RightAscension](

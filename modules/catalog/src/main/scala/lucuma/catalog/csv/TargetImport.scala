@@ -14,6 +14,7 @@ import eu.timepit.refined.types.string.NonEmptyString
 import fs2.*
 import fs2.data.csv.*
 import fs2.data.csv.generic.semiauto.*
+import fs2.text
 import lucuma.catalog.*
 import lucuma.catalog.votable.CatalogAdapter
 import lucuma.catalog.votable.CatalogSearch
@@ -75,6 +76,46 @@ object TargetImport extends AngleParsers:
         bare  = ra.isEmpty || dec.isEmpty
       } yield TargetCsvRow(name, bare, ra, dec)
 
+  val DefaultSourceProfile = SourceProfile.Point(
+    SpectralDefinition.BandNormalized(
+      UnnormalizedSED.StellarLibrary(StellarLibrarySpectrum.O5V),
+      SortedMap.empty
+    )
+  )
+
+  def csv2targets[F[_]: RaiseThrowable]
+    : Pipe[F, String, EitherNec[ImportProblem, Target.Sidereal]] =
+    in =>
+      in
+        .through(text.lines)
+        .map(s => s.split(",").map(_.trim()).mkString("", ",", "\n"))
+        .through(lowlevel.rows[F, String]())
+        .through(lowlevel.headers[F, CIString])
+        .through(lowlevel.decodeRow[F, CIString, TargetCsvRow])
+        .map(t =>
+          Target
+            .Sidereal(name = t.name,
+                      tracking = SiderealTracking.const(
+                        (t.ra, t.dec).mapN(Coordinates.apply).getOrElse(Coordinates.Zero)
+                      ),
+                      sourceProfile = DefaultSourceProfile,
+                      None
+            )
+            .asRight
+        )
+
+  def csv2targetsAndLookup[F[_]: Concurrent](
+    client: Client[F]
+  ): Pipe[F, String, EitherNec[ImportProblem, Target.Sidereal]] =
+    in =>
+      in
+        .through(text.lines)
+        .map(s => s.split(",").map(_.trim()).mkString("", ",", "\n"))
+        .through(lowlevel.rows[F, String]())
+        .through(lowlevel.headers[F, CIString])
+        .through(lowlevel.decodeRow[F, CIString, TargetCsvRow])
+        .evalMap(_.toSiderealTarget[F](client))
+
   extension (t: TargetCsvRow)
     def toSiderealTarget[F[_]: Concurrent](
       client: Client[F]
@@ -85,12 +126,7 @@ object TargetImport extends AngleParsers:
             Target.Sidereal(
               name = t.name,
               tracking = SiderealTracking.const(Coordinates(ra, dec)),
-              sourceProfile = SourceProfile.Point(
-                SpectralDefinition.BandNormalized(
-                  UnnormalizedSED.StellarLibrary(StellarLibrarySpectrum.O5V),
-                  SortedMap.empty
-                )
-              ),
+              sourceProfile = DefaultSourceProfile,
               None
             )
           )

@@ -53,8 +53,11 @@ class AngleParsersSuite extends DisciplineSuite with AngleParsers {
   assert(neg.parseAll("").isRight)
   assert(DMSParser.parseAll("14:29:42").isRight)
   assert(DMSParser.parseAll("-16:27:46.522175847").isRight)
-  println(DMSParser.parseAll("-16:27:46.522175847").map(Declination.fromAngle.getOption))
+  assert(DMSParser.parseAll("-16 27 46.522175847").isRight)
+  assert(DMSParser.parseAll("+16 27 46.522175847").isRight)
+  assert(DMSParser.parseAll("-16° 27′ 46.522175847″").isRight)
 
   // Laws
+  checkAll("fromStringHMS", FormatTests(lenientFromStringHMS).formatWith(ArbAngle.stringsHMS))
   checkAll("fromStringHMS", FormatTests(lenientFromStringHMS).formatWith(ArbAngle.stringsHMS))
 }
