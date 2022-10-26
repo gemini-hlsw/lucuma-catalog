@@ -19,6 +19,7 @@ lazy val http4sJdkHttpClientVersion = "0.7.0"
 lazy val http4sDomVersion           = "0.2.3"
 lazy val refinedAlgebraVersion      = "0.1.0"
 lazy val catsTimeVersion            = "0.5.0"
+lazy val catsParseVersion           = "0.3.7"
 lazy val kittensVersion             = "3.0.0"
 
 Global / onChangedBuildSource := ReloadOnSourceChanges
@@ -40,19 +41,22 @@ lazy val catalog = crossProject(JVMPlatform, JSPlatform)
   .settings(
     name := "lucuma-catalog",
     libraryDependencies ++= Seq(
-      "co.fs2"        %%% "fs2-core"        % fs2Version,
-      "org.gnieh"     %%% "fs2-data-xml"    % fs2DataVersion,
-      "org.gnieh"     %%% "fs2-data-csv"    % fs2DataVersion,
-      "edu.gemini"    %%% "lucuma-core"     % lucumaCoreVersion,
-      "edu.gemini"    %%% "lucuma-refined"  % lucumaRefinedVersion,
-      "org.typelevel" %%% "cats-core"       % catsVersion,
-      "dev.optics"    %%% "monocle-core"    % monocleVersion,
-      "dev.optics"    %%% "monocle-state"   % monocleVersion,
-      "eu.timepit"    %%% "refined"         % refinedVersion,
-      "eu.timepit"    %%% "refined-cats"    % refinedVersion,
-      "org.http4s"    %%% "http4s-core"     % http4sVersion,
-      "edu.gemini"    %%% "refined-algebra" % refinedAlgebraVersion,
-      "org.typelevel" %%% "kittens"         % kittensVersion
+      "co.fs2"        %%% "fs2-core"             % fs2Version,
+      "org.gnieh"     %%% "fs2-data-xml"         % fs2DataVersion,
+      "org.gnieh"     %%% "fs2-data-csv"         % fs2DataVersion,
+      "org.gnieh"     %%% "fs2-data-csv-generic" % fs2DataVersion,
+      "edu.gemini"    %%% "lucuma-core"          % lucumaCoreVersion,
+      "edu.gemini"    %%% "lucuma-refined"       % lucumaRefinedVersion,
+      "org.typelevel" %%% "cats-core"            % catsVersion,
+      "dev.optics"    %%% "monocle-core"         % monocleVersion,
+      "dev.optics"    %%% "monocle-state"        % monocleVersion,
+      "eu.timepit"    %%% "refined"              % refinedVersion,
+      "eu.timepit"    %%% "refined-cats"         % refinedVersion,
+      "org.http4s"    %%% "http4s-core"          % http4sVersion,
+      "org.http4s"    %%% "http4s-client"        % http4sVersion,
+      "edu.gemini"    %%% "refined-algebra"      % refinedAlgebraVersion,
+      "org.typelevel" %%% "cats-parse"           % catsParseVersion,
+      "org.typelevel" %%% "kittens"              % kittensVersion
     ),
     scalacOptions ~= (_.filterNot(Set("-Vtype-diffs")))
   )

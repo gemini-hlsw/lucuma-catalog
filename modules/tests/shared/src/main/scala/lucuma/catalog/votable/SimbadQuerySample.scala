@@ -3,11 +3,13 @@
 
 package lucuma.catalog.votable
 
-import cats.data._
+import cats.data.*
 import cats.effect.Concurrent
-import fs2._
+import fs2.*
 import lucuma.catalog.*
-import org.http4s.Method._
+import lucuma.catalog.*
+import lucuma.refined.*
+import org.http4s.Method.*
 import org.http4s.Request
 import org.http4s.client.Client
 
@@ -16,7 +18,7 @@ trait SimbadQuerySample {
   def simbadQuery[F[_]: Concurrent](
     client: Client[F]
   ): F[List[EitherNec[CatalogProblem, CatalogTargetResult]]] = {
-    val request = Request[F](GET, CatalogSearch.simbadSearchQuery(QueryByName("Vega")))
+    val request = Request[F](GET, CatalogSearch.simbadSearchQuery(QueryByName("Vega".refined)))
     client
       .stream(request)
       .flatMap(

@@ -9,6 +9,7 @@ import cats.effect.Sync
 import cats.syntax.all._
 import fs2.text
 import lucuma.catalog.*
+import lucuma.catalog.*
 import lucuma.core.geom.gmos.all.candidatesArea
 import lucuma.core.geom.jts.interpreter._
 import lucuma.core.math.Coordinates

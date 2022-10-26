@@ -5,6 +5,8 @@ package lucuma.catalog.votable
 
 import cats.data.NonEmptyList
 import cats.syntax.all.*
+import eu.timepit.refined.types.string.NonEmptyString
+import lucuma.catalog.*
 import lucuma.catalog.*
 import lucuma.core.enums.Band
 import lucuma.core.enums.CatalogName
@@ -42,7 +44,7 @@ sealed trait CatalogQuery {
 /**
  * Name based query, e.g. Simbad
  */
-case class QueryByName(id: String, proxy: Option[Uri] = None) extends CatalogQuery {
+case class QueryByName(id: NonEmptyString, proxy: Option[Uri] = None) extends CatalogQuery {
   override val catalog = CatalogName.Simbad
 }
 
