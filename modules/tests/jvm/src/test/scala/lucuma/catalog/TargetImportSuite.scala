@@ -54,6 +54,25 @@ class TargetImportFileSuite extends CatsEffectSuite:
     }
   }
 
+  test("parse stars sample file with errors") {
+    val xmlFile = "/stars_with_errors.csv"
+    val file    = getClass().getResource(xmlFile)
+    Resource.unit[IO].use { _ =>
+      Files[IO]
+        .readAll(Path(file.getPath()))
+        .through(text.utf8.decode)
+        .through(TargetImport.csv2targets)
+        .compile
+        .toList
+        .flatTap(x => IO(pprint.pprintln(x)))
+        .map { l =>
+          assertEquals(l.length, 20)
+          assertEquals(l.count(_.isRight), 19)
+          assertEquals(l.count(_.isLeft), 1)
+        }
+    }
+  }
+
   test("parse stars random file") {
     val xmlFile = "/random.csv"
     val file    = getClass().getResource(xmlFile)
@@ -83,7 +102,7 @@ class TargetImportFileSuite extends CatsEffectSuite:
           .through(TargetImport.csv2targetsAndLookup(client))
           .compile
           .toList
-          .flatTap(x => IO(pprint.pprintln(x)))
+          // .flatTap(x => IO(pprint.pprintln(x)))
           .map { l =>
             assertEquals(l.length, 5)
           }

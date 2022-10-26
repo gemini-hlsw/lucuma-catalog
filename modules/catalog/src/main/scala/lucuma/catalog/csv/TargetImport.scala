@@ -93,15 +93,19 @@ object TargetImport extends AngleParsers:
         .through(lowlevel.headers[F, CIString])
         .through(lowlevel.decodeRow[F, CIString, TargetCsvRow])
         .map(t =>
-          Target
-            .Sidereal(name = t.name,
-                      tracking = SiderealTracking.const(
-                        (t.ra, t.dec).mapN(Coordinates.apply).getOrElse(Coordinates.Zero)
-                      ),
-                      sourceProfile = DefaultSourceProfile,
-                      None
+          (t.ra, t.dec)
+            .mapN((ra, dec) =>
+              Target
+                .Sidereal(name = t.name,
+                          tracking = SiderealTracking.const(Coordinates(ra, dec)),
+                          sourceProfile = DefaultSourceProfile,
+                          None
+                )
             )
-            .asRight
+            .toRight(
+              NonEmptyChain
+                .of(ImportProblem.GenericError(s"Error extracting coordinates for '${t.name}'"))
+            )
         )
 
   def csv2targetsAndLookup[F[_]: Concurrent](
