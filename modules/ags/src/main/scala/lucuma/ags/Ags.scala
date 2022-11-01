@@ -35,7 +35,14 @@ object Ags {
   ): AgsAnalysis = {
     val geoms = calcs.get(pos)
     if (!geoms.exists(_.isReachable(gsOffset)))
-      AgsAnalysis.NotReachable(pos, params.probe, gsc)
+      // Do we have a g magnitude
+      val guideSpeed: Option[GuideSpeed] = gsc.gBrightness
+        .flatMap { g =>
+          speeds
+            .find(_._2.contains(Band.Gaia, g))
+            .map(_._1)
+        }
+      AgsAnalysis.NotReachableAtPosition(pos, params.probe, guideSpeed, gsc)
     else if (geoms.exists(g => scienceOffsets.exists(g.overlapsScience(_))))
       AgsAnalysis.VignettesScience(gsc)
     else
