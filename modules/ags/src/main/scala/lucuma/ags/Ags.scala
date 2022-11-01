@@ -22,6 +22,16 @@ import java.time.Instant
 
 object Ags {
 
+  private def guideSpeedFor(
+    speeds: List[(GuideSpeed, BrightnessConstraints)],
+    gsc:    GuideStarCandidate
+  ): Option[GuideSpeed] = gsc.gBrightness
+    .flatMap { g =>
+      speeds
+        .find(_._2.contains(Band.Gaia, g))
+        .map(_._1)
+    }
+
   def runAnalysis(
     conditions:     ConstraintSet,
     gsOffset:       Offset,
@@ -35,7 +45,9 @@ object Ags {
   ): AgsAnalysis = {
     val geoms = calcs.get(pos)
     if (!geoms.exists(_.isReachable(gsOffset)))
-      AgsAnalysis.NotReachable(pos, params.probe, gsc)
+      // Do we have a g magnitude
+      val guideSpeed = guideSpeedFor(speeds, gsc)
+      AgsAnalysis.NotReachableAtPosition(pos, params.probe, guideSpeed, gsc)
     else if (geoms.exists(g => scienceOffsets.exists(g.overlapsScience(_))))
       AgsAnalysis.VignettesScience(gsc)
     else
@@ -88,10 +100,9 @@ object Ags {
 
     // Do we have a g magnitude
     guideStar.gBrightness
-      .map { g =>
-        speeds
-          .find(_._2.contains(Band.Gaia, g))
-          .map(u => usable(u._1))
+      .map { _ =>
+        guideSpeedFor(speeds, guideStar)
+          .map(usable)
           .getOrElse(NoGuideStarForProbe(guideProbe, guideStar))
       }
       .getOrElse(NoMagnitudeForBand(guideProbe, guideStar))

@@ -57,14 +57,15 @@ object AgsAnalysis {
     }
   }
 
-  case class NotReachable(
+  case class NotReachableAtPosition(
     position:   AgsPosition,
     guideProbe: GuideProbe,
+    guideSpeed: Option[GuideSpeed],
     target:     GuideStarCandidate
   ) extends AgsAnalysis {
     override def message(withProbe: Boolean): String = {
       val p = if (withProbe) s"with ${guideProbe} " else ""
-      s"The star is not reachable ${p}at all positions."
+      s"The star is not reachable ${p}at $position."
     }
   }
 
