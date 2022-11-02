@@ -43,7 +43,7 @@ case class TargetCsvRow(
   dec:  Option[Declination]
 )
 
-object TargetImport extends AngleParsers:
+object TargetImport:
 
   given CellDecoder[NonEmptyString] =
     CellDecoder.stringDecoder.emap(r =>
@@ -55,14 +55,14 @@ object TargetImport extends AngleParsers:
 
   given CellDecoder[Declination] =
     CellDecoder.stringDecoder.emap { r =>
-      lenientFromStringDMS
+      Declination.fromStringSignedDMS
         .getOption(r.trim)
         .liftTo[DecoderResult](new DecoderError("Unknown Dec"))
     }
 
   given CellDecoder[RightAscension] =
     CellDecoder.stringDecoder.emap { r =>
-      lenientFromStringHMS
+      RightAscension.fromStringHMS
         .getOption(r.trim)
         .liftTo[DecoderResult](new DecoderError("Cannot parse RA"))
     }

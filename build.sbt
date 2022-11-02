@@ -4,7 +4,7 @@ lazy val catsVersion                = "2.8.0"
 lazy val catsEffectVersion          = "3.3.14"
 lazy val kindProjectorVersion       = "0.13.2"
 lazy val pprintVersion              = "0.8.0"
-lazy val lucumaCoreVersion          = "0.57.0"
+lazy val lucumaCoreVersion          = "0.58.0"
 lazy val lucumaRefinedVersion       = "0.1.1"
 lazy val monocleVersion             = "3.1.0"
 lazy val munitVersion               = "0.7.29"
@@ -24,7 +24,7 @@ lazy val kittensVersion             = "3.0.0"
 
 Global / onChangedBuildSource := ReloadOnSourceChanges
 
-ThisBuild / tlBaseVersion       := "0.30"
+ThisBuild / tlBaseVersion       := "0.31"
 ThisBuild / tlCiReleaseBranches := Seq("master", "scala3")
 
 ThisBuild / scalaVersion       := "3.2.0"
