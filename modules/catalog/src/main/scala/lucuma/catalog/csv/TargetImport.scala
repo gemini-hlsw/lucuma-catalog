@@ -6,6 +6,7 @@ package lucuma.catalog.csv
 import cats.*
 import cats.data.*
 import cats.effect.Concurrent
+import cats.effect.IO
 import cats.syntax.all.*
 import eu.timepit.refined.*
 import eu.timepit.refined.api.*
@@ -22,13 +23,19 @@ import lucuma.catalog.votable.QueryByName
 import lucuma.core.enums.StellarLibrarySpectrum
 import lucuma.core.math.Coordinates
 import lucuma.core.math.Declination
+import lucuma.core.math.Epoch
+import lucuma.core.math.ProperMotion
+import lucuma.core.math.ProperMotion.AngularVelocityComponent
 import lucuma.core.math.RightAscension
+import lucuma.core.math.VelocityAxis
+import lucuma.core.math.parser.AngleParsers
 import lucuma.core.model.SiderealTracking
 import lucuma.core.model.SiderealTracking.apply
 import lucuma.core.model.SourceProfile
 import lucuma.core.model.SpectralDefinition
 import lucuma.core.model.Target
 import lucuma.core.model.UnnormalizedSED
+import lucuma.core.syntax.string.*
 import org.http4s.Method.*
 import org.http4s.Request
 import org.http4s.client.Client
@@ -36,11 +43,13 @@ import org.typelevel.ci.*
 
 import scala.collection.immutable.SortedMap
 
-case class TargetCsvRow(
-  name: NonEmptyString,
-  bare: Boolean,
-  ra:   Option[RightAscension],
-  dec:  Option[Declination]
+private case class TargetCsvRow(
+  name:  NonEmptyString,
+  bare:  Boolean,
+  ra:    Option[RightAscension],
+  dec:   Option[Declination],
+  pmRA:  Option[ProperMotion.AngularVelocityComponent[VelocityAxis.RA]],
+  pmDec: Option[ProperMotion.AngularVelocityComponent[VelocityAxis.Dec]]
 )
 
 object TargetImport:
@@ -51,7 +60,7 @@ object TargetImport:
     )
 
   given ParseableHeader[CIString] =
-    _.map(CIString(_)).asRight
+    _.map(x => CIString(x.trim)).asRight
 
   given CellDecoder[Declination] =
     CellDecoder.stringDecoder.emap { r =>
@@ -67,14 +76,32 @@ object TargetImport:
         .liftTo[DecoderResult](new DecoderError("Cannot parse RA"))
     }
 
+  given angularVelocity[A]: CellDecoder[ProperMotion.AngularVelocityComponent[A]] =
+    CellDecoder.stringDecoder.emap { r =>
+      r.trim.parseBigDecimalOption
+        .map(r =>
+          ProperMotion.AngularVelocityComponent.milliarcsecondsPerYear
+            .reverseGet(r)
+        )
+        .liftTo[DecoderResult](new DecoderError("Cannot parse angular velocity"))
+    }
+
   given CsvRowDecoder[TargetCsvRow, CIString] =
     (row: CsvRow[CIString]) =>
       for {
-        name <- row.as[NonEmptyString](ci"Name")
-        ra   <- row.as[RightAscension](ci"RAJ2000").map(Some(_)).leftFlatMap(r => Right(None))
-        dec  <- row.as[Declination](ci"DecJ2000").map(Some(_)).leftFlatMap(_ => Right(None))
-        bare  = ra.isEmpty || dec.isEmpty
-      } yield TargetCsvRow(name, bare, ra, dec)
+        name  <- row.as[NonEmptyString](ci"Name")
+        ra    <- row.as[RightAscension](ci"RAJ2000").map(Some(_)).leftFlatMap(r => Right(None))
+        dec   <- row.as[Declination](ci"DecJ2000").map(Some(_)).leftFlatMap(_ => Right(None))
+        pmRa  <- row
+                   .as[ProperMotion.AngularVelocityComponent[VelocityAxis.RA]](ci"pmRa")
+                   .map(Some(_))
+                   .leftFlatMap(x => Right(None))
+        pmDec <- row
+                   .as[ProperMotion.AngularVelocityComponent[VelocityAxis.Dec]](ci"pmDec")
+                   .map(Some(_))
+                   .leftFlatMap(_ => Right(None))
+        bare   = ra.isEmpty || dec.isEmpty
+      } yield TargetCsvRow(name, bare, ra, dec, pmRa, pmDec)
 
   val DefaultSourceProfile = SourceProfile.Point(
     SpectralDefinition.BandNormalized(
@@ -83,12 +110,19 @@ object TargetImport:
     )
   )
 
+  private def tracking(t: TargetCsvRow, ra: RightAscension, dec: Declination): SiderealTracking =
+    val base = Coordinates(ra, dec)
+    val pm   = (t.pmRA, t.pmDec) match
+      case (Some(ra), Some(dec)) => ProperMotion(ra, dec).some
+      case (Some(ra), None)      => ProperMotion(ra, ProperMotion.Dec.Zero).some
+      case (None, Some(dec))     => ProperMotion(ProperMotion.RA.Zero, dec).some
+      case _                     => None
+    SiderealTracking(base, Epoch.J2000, pm, none, none)
+
   def csv2targets[F[_]: RaiseThrowable]
     : Pipe[F, String, EitherNec[ImportProblem, Target.Sidereal]] =
     in =>
       in
-        .through(text.lines)
-        .map(s => s.split(",").map(_.trim()).mkString("", ",", "\n"))
         .through(lowlevel.rows[F, String]())
         .through(lowlevel.headers[F, CIString])
         .through(lowlevel.decodeRow[F, CIString, TargetCsvRow])
@@ -97,7 +131,7 @@ object TargetImport:
             .mapN((ra, dec) =>
               Target
                 .Sidereal(name = t.name,
-                          tracking = SiderealTracking.const(Coordinates(ra, dec)),
+                          tracking = tracking(t, ra, dec),
                           sourceProfile = DefaultSourceProfile,
                           None
                 )
@@ -114,7 +148,7 @@ object TargetImport:
     in =>
       in
         .through(text.lines)
-        .map(s => s.split(",").map(_.trim()).mkString("", ",", "\n"))
+        .map(s => s.split(",", -1).map(_.trim()).mkString("", ",", "\n"))
         .through(lowlevel.rows[F, String]())
         .through(lowlevel.headers[F, CIString])
         .through(lowlevel.decodeRow[F, CIString, TargetCsvRow])
