@@ -21,7 +21,7 @@ import org.typelevel.ci.*
 
 class TargetImportFileSuite extends CatsEffectSuite:
 
-  test("parse sample pit file".ignore) {
+  test("parse sample pit file") {
     val xmlFile = "/PIT_sidereal.csv"
     val file    = getClass().getResource(xmlFile)
     Resource.unit[IO].use { _ =>
@@ -54,6 +54,24 @@ class TargetImportFileSuite extends CatsEffectSuite:
     }
   }
 
+  test("parse stars with pm file") {
+    val xmlFile = "/stars_pm.csv"
+    val file    = getClass().getResource(xmlFile)
+    Resource.unit[IO].use { _ =>
+      Files[IO]
+        .readAll(Path(file.getPath()))
+        .through(text.utf8.decode)
+        .through(TargetImport.csv2targets)
+        .compile
+        .toList
+        .map { l =>
+          assertEquals(l.length, 19)
+          assertEquals(l.count(_.isRight), 19)
+          assertEquals(l.count(_.exists(_.tracking.properMotion.isDefined)), 5)
+        }
+    }
+  }
+
   test("parse stars sample file with errors") {
     val xmlFile = "/stars_with_errors.csv"
     val file    = getClass().getResource(xmlFile)
@@ -64,7 +82,6 @@ class TargetImportFileSuite extends CatsEffectSuite:
         .through(TargetImport.csv2targets)
         .compile
         .toList
-        .flatTap(x => IO(pprint.pprintln(x)))
         .map { l =>
           assertEquals(l.length, 20)
           assertEquals(l.count(_.isRight), 19)
