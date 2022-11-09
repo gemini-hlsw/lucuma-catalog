@@ -14,6 +14,7 @@ import lucuma.catalog.*
 import lucuma.catalog.csv.TargetImport.given
 import lucuma.catalog.csv.*
 import lucuma.core.math.Declination
+import lucuma.core.math.Epoch
 import lucuma.core.math.RightAscension
 import munit.CatsEffectSuite
 import org.http4s.jdkhttpclient.JdkHttpClient
@@ -68,6 +69,25 @@ class TargetImportFileSuite extends CatsEffectSuite:
           assertEquals(l.length, 19)
           assertEquals(l.count(_.isRight), 19)
           assertEquals(l.count(_.exists(_.tracking.properMotion.isDefined)), 5)
+        }
+    }
+  }
+
+  test("parse stars with pm and epoch file") {
+    val xmlFile = "/stars_pm_epoch.csv"
+    val file    = getClass().getResource(xmlFile)
+    Resource.unit[IO].use { _ =>
+      Files[IO]
+        .readAll(Path(file.getPath()))
+        .through(text.utf8.decode)
+        .through(TargetImport.csv2targets)
+        .compile
+        .toList
+        .map { l =>
+          assertEquals(l.length, 19)
+          assertEquals(l.count(_.isRight), 19)
+          assertEquals(l.count(_.exists(_.tracking.properMotion.isDefined)), 5)
+          assertEquals(l.count(_.exists(_.tracking.epoch =!= Epoch.J2000)), 6)
         }
     }
   }
