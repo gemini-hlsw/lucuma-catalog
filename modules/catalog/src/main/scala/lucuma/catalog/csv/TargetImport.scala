@@ -7,6 +7,7 @@ import cats.*
 import cats.data.*
 import cats.effect.Concurrent
 import cats.effect.IO
+import cats.parse.Parser
 import cats.syntax.all.*
 import eu.timepit.refined.*
 import eu.timepit.refined.api.*
@@ -29,12 +30,15 @@ import lucuma.core.math.ProperMotion.AngularVelocityComponent
 import lucuma.core.math.RightAscension
 import lucuma.core.math.VelocityAxis
 import lucuma.core.math.parser.AngleParsers
+import lucuma.core.math.parser.EpochParsers
 import lucuma.core.model.SiderealTracking
 import lucuma.core.model.SiderealTracking.apply
 import lucuma.core.model.SourceProfile
 import lucuma.core.model.SpectralDefinition
 import lucuma.core.model.Target
 import lucuma.core.model.UnnormalizedSED
+import lucuma.core.parser.MiscParsers
+import lucuma.core.parser.TimeParsers
 import lucuma.core.syntax.string.*
 import org.http4s.Method.*
 import org.http4s.Request
@@ -49,7 +53,8 @@ private case class TargetCsvRow(
   ra:    Option[RightAscension],
   dec:   Option[Declination],
   pmRA:  Option[ProperMotion.AngularVelocityComponent[VelocityAxis.RA]],
-  pmDec: Option[ProperMotion.AngularVelocityComponent[VelocityAxis.Dec]]
+  pmDec: Option[ProperMotion.AngularVelocityComponent[VelocityAxis.Dec]],
+  epoch: Option[Epoch]
 )
 
 object TargetImport:
@@ -67,6 +72,22 @@ object TargetImport:
       Declination.fromStringSignedDMS
         .getOption(r.trim)
         .liftTo[DecoderResult](new DecoderError("Unknown Dec"))
+    }
+
+  // Move to lucuma-core
+  val plainNumberEpoch: Parser[Epoch] =
+    TimeParsers.year4.mapFilter(y =>
+      if (y.getValue() >= 1900 && y.getValue() <= 3000)
+        Epoch.Julian.fromIntMilliyears(y.getValue())
+      else None
+    )
+
+  val epochParser =
+    EpochParsers.epoch | EpochParsers.epochLenientNoScheme | plainNumberEpoch
+
+  given CellDecoder[Epoch] =
+    CellDecoder.stringDecoder.emap { r =>
+      epochParser.parseAll(r.trim()).leftMap(_ => new DecoderError(s"Unknown Epoch value '$r'"))
     }
 
   given CellDecoder[RightAscension] =
@@ -100,8 +121,9 @@ object TargetImport:
                    .as[ProperMotion.AngularVelocityComponent[VelocityAxis.Dec]](ci"pmDec")
                    .map(Some(_))
                    .leftFlatMap(_ => Right(None))
+        epoch <- row.as[Epoch](ci"epoch").map(Some(_)).leftFlatMap(_ => Right(None))
         bare   = ra.isEmpty || dec.isEmpty
-      } yield TargetCsvRow(name, bare, ra, dec, pmRa, pmDec)
+      } yield TargetCsvRow(name, bare, ra, dec, pmRa, pmDec, epoch)
 
   val DefaultSourceProfile = SourceProfile.Point(
     SpectralDefinition.BandNormalized(
@@ -117,7 +139,7 @@ object TargetImport:
       case (Some(ra), None)      => ProperMotion(ra, ProperMotion.Dec.Zero).some
       case (None, Some(dec))     => ProperMotion(ProperMotion.RA.Zero, dec).some
       case _                     => None
-    SiderealTracking(base, Epoch.J2000, pm, none, none)
+    SiderealTracking(base, t.epoch.getOrElse(Epoch.J2000), pm, none, none)
 
   def csv2targets[F[_]: RaiseThrowable]
     : Pipe[F, String, EitherNec[ImportProblem, Target.Sidereal]] =
