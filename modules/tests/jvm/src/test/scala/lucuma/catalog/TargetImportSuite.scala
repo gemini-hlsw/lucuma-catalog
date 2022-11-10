@@ -48,6 +48,7 @@ class TargetImportFileSuite extends CatsEffectSuite:
         .through(TargetImport.csv2targets)
         .compile
         .toList
+        // .flatTap(x => IO(pprint.pprintln(x)))
         .map { l =>
           assertEquals(l.length, 20)
           assertEquals(l.count(_.isRight), 20)
@@ -65,6 +66,7 @@ class TargetImportFileSuite extends CatsEffectSuite:
         .through(TargetImport.csv2targets)
         .compile
         .toList
+        // .flatTap(x => IO(pprint.pprintln(x)))
         .map { l =>
           assertEquals(l.length, 19)
           assertEquals(l.count(_.isRight), 19)
@@ -83,11 +85,19 @@ class TargetImportFileSuite extends CatsEffectSuite:
         .through(TargetImport.csv2targets)
         .compile
         .toList
+        // .flatTap(x => IO(pprint.pprintln(x)))
         .map { l =>
           assertEquals(l.length, 19)
-          assertEquals(l.count(_.isRight), 19)
+          assertEquals(l.count(_.isRight), 18)
           assertEquals(l.count(_.exists(_.tracking.properMotion.isDefined)), 5)
           assertEquals(l.count(_.exists(_.tracking.epoch =!= Epoch.J2000)), 6)
+          assertEquals(l.count(_.isLeft), 1)
+          assertEquals(
+            l.find(_.isLeft).map(_.leftMap(_.toList)),
+            List(
+              ImportProblem.CsvParsingError("Invalid epoch value 'J123' in line 17", 17L.some)
+            ).asLeft.some
+          )
         }
     }
   }
@@ -106,6 +116,12 @@ class TargetImportFileSuite extends CatsEffectSuite:
           assertEquals(l.length, 20)
           assertEquals(l.count(_.isRight), 19)
           assertEquals(l.count(_.isLeft), 1)
+          assertEquals(
+            l.find(_.isLeft).map(_.leftMap(_.toList)),
+            List(
+              ImportProblem.CsvParsingError("Invalid RA value '    a' in line 21", 21L.some)
+            ).asLeft.some
+          )
         }
     }
   }
@@ -141,7 +157,9 @@ class TargetImportFileSuite extends CatsEffectSuite:
           .toList
           // .flatTap(x => IO(pprint.pprintln(x)))
           .map { l =>
-            assertEquals(l.length, 5)
+            assertEquals(l.length, 7)
+            assertEquals(l.count(_.isRight), 4)
+            assertEquals(l.count(_.isLeft), 3)
           }
       }
   }

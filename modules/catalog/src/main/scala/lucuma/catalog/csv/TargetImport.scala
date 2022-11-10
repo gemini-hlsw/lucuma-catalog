@@ -42,12 +42,14 @@ import lucuma.core.parser.TimeParsers
 import lucuma.core.syntax.string.*
 import org.http4s.Method.*
 import org.http4s.Request
+import org.http4s.Uri
 import org.http4s.client.Client
 import org.typelevel.ci.*
 
 import scala.collection.immutable.SortedMap
 
 private case class TargetCsvRow(
+  line:  Option[Long],
   name:  NonEmptyString,
   bare:  Boolean,
   ra:    Option[RightAscension],
@@ -67,11 +69,26 @@ object TargetImport:
   given ParseableHeader[CIString] =
     _.map(x => CIString(x.trim)).asRight
 
-  given CellDecoder[Declination] =
+  given decDecoder: CellDecoder[Option[Declination]] =
     CellDecoder.stringDecoder.emap { r =>
-      Declination.fromStringSignedDMS
-        .getOption(r.trim)
-        .liftTo[DecoderResult](new DecoderError("Unknown Dec"))
+      val t = r.trim()
+      if (t.isEmpty) Right(None)
+      else
+        Declination.fromStringSignedDMS
+          .getOption(r.trim)
+          .map(Some(_))
+          .toRight(new DecoderError(s"Invalid Dec value '$r'"))
+    }
+
+  given raDecoder: CellDecoder[Option[RightAscension]] =
+    CellDecoder.stringDecoder.emap { r =>
+      val t = r.trim()
+      if (t.isEmpty) Right(None)
+      else
+        RightAscension.lenientFromStringHMS
+          .getOption(r.trim)
+          .map(Some(_))
+          .toRight(new DecoderError(s"Invalid RA value '$r'"))
     }
 
   // Move to lucuma-core
@@ -82,48 +99,54 @@ object TargetImport:
       else None
     )
 
-  val epochParser =
+  val epochParser: Parser[Epoch] =
     EpochParsers.epoch | EpochParsers.epochLenientNoScheme | plainNumberEpoch
 
-  given CellDecoder[Epoch] =
+  given CellDecoder[Option[Epoch]] =
     CellDecoder.stringDecoder.emap { r =>
-      epochParser.parseAll(r.trim()).leftMap(_ => new DecoderError(s"Unknown Epoch value '$r'"))
+      if (r.trim().isEmpty) Right(Epoch.J2000.some)
+      else
+        epochParser
+          .parseAll(r.trim())
+          .map(Some(_))
+          .leftMap(_ => new DecoderError(s"Invalid epoch value '$r'"))
     }
 
-  given CellDecoder[RightAscension] =
+  given angularVelocityOpt[A]: CellDecoder[Option[ProperMotion.AngularVelocityComponent[A]]] =
     CellDecoder.stringDecoder.emap { r =>
-      RightAscension.fromStringHMS
-        .getOption(r.trim)
-        .liftTo[DecoderResult](new DecoderError("Cannot parse RA"))
+      val t = r.trim()
+      if (t.isEmpty) Right(None)
+      else
+        t.parseBigDecimalOption
+          .map(r =>
+            ProperMotion.AngularVelocityComponent.milliarcsecondsPerYear
+              .reverseGet(r)
+              .some
+          )
+          .toRight(new DecoderError(r))
     }
 
-  given angularVelocity[A]: CellDecoder[ProperMotion.AngularVelocityComponent[A]] =
-    CellDecoder.stringDecoder.emap { r =>
-      r.trim.parseBigDecimalOption
-        .map(r =>
-          ProperMotion.AngularVelocityComponent.milliarcsecondsPerYear
-            .reverseGet(r)
-        )
-        .liftTo[DecoderResult](new DecoderError("Cannot parse angular velocity"))
-    }
+  extension [A](r: DecoderResult[Option[A]])
+    def defaultToNone[B](row: CsvRow[B]): DecoderResult[Option[A]] = r match
+      case a @ Right(_)                                          => a
+      case Left(d) if d.getMessage().startsWith("unknown field") => Right(None)
+      case Left(d)                                               => d.withLine(row.line).asLeft
 
   given CsvRowDecoder[TargetCsvRow, CIString] =
     (row: CsvRow[CIString]) =>
       for {
         name  <- row.as[NonEmptyString](ci"Name")
-        ra    <- row.as[RightAscension](ci"RAJ2000").map(Some(_)).leftFlatMap(r => Right(None))
-        dec   <- row.as[Declination](ci"DecJ2000").map(Some(_)).leftFlatMap(_ => Right(None))
+        ra    <- row.as[Option[RightAscension]](ci"RAJ2000").defaultToNone(row)
+        dec   <- row.as[Option[Declination]](ci"DecJ2000").defaultToNone(row)
         pmRa  <- row
-                   .as[ProperMotion.AngularVelocityComponent[VelocityAxis.RA]](ci"pmRa")
-                   .map(Some(_))
-                   .leftFlatMap(x => Right(None))
+                   .as[Option[ProperMotion.AngularVelocityComponent[VelocityAxis.RA]]](ci"pmRa")
+                   .defaultToNone(row)
         pmDec <- row
-                   .as[ProperMotion.AngularVelocityComponent[VelocityAxis.Dec]](ci"pmDec")
-                   .map(Some(_))
-                   .leftFlatMap(_ => Right(None))
-        epoch <- row.as[Epoch](ci"epoch").map(Some(_)).leftFlatMap(_ => Right(None))
+                   .as[Option[ProperMotion.AngularVelocityComponent[VelocityAxis.Dec]]](ci"pmDec")
+                   .defaultToNone(row)
+        epoch <- row.as[Option[Epoch]](ci"epoch").defaultToNone(row)
         bare   = ra.isEmpty || dec.isEmpty
-      } yield TargetCsvRow(name, bare, ra, dec, pmRa, pmDec, epoch)
+      } yield TargetCsvRow(row.line, name, bare, ra, dec, pmRa, pmDec, epoch)
 
   val DefaultSourceProfile = SourceProfile.Point(
     SpectralDefinition.BandNormalized(
@@ -141,83 +164,105 @@ object TargetImport:
       case _                     => None
     SiderealTracking(base, t.epoch.getOrElse(Epoch.J2000), pm, none, none)
 
-  def csv2targets[F[_]: RaiseThrowable]
-    : Pipe[F, String, EitherNec[ImportProblem, Target.Sidereal]] =
+  private def csv2targetsRows[F[_]: RaiseThrowable]: Pipe[F, String, DecoderResult[TargetCsvRow]] =
     in =>
       in
         .through(lowlevel.rows[F, String]())
         .through(lowlevel.headers[F, CIString])
-        .through(lowlevel.decodeRow[F, CIString, TargetCsvRow])
-        .map(t =>
+        .through(lowlevel.attemptDecodeRow[F, CIString, TargetCsvRow])
+
+  def csv2targets[F[_]: RaiseThrowable]
+    : Pipe[F, String, EitherNec[ImportProblem, Target.Sidereal]] =
+    csv2targetsRows.andThen(
+      _.map(t =>
+        t.leftMap(e => ImportProblem.CsvParsingError(e.getMessage, e.line))
+          .map(t =>
+            (t.ra, t.dec)
+              .mapN((ra, dec) =>
+                Target
+                  .Sidereal(name = t.name,
+                            tracking = tracking(t, ra, dec),
+                            sourceProfile = DefaultSourceProfile,
+                            None
+                  )
+              )
+              .getOrElse(
+                Target.Sidereal(t.name,
+                                tracking = SiderealTracking.const(Coordinates.Zero),
+                                sourceProfile = DefaultSourceProfile,
+                                None
+                )
+              )
+          )
+          .toEitherNec
+      )
+    )
+
+  def csv2targetsAndLookup[F[_]: Concurrent](
+    client: Client[F],
+    proxy:  Option[Uri] = None
+  ): Pipe[F, String, EitherNec[ImportProblem, Target.Sidereal]] =
+    csv2targetsRows.andThen { t =>
+      t.evalMap {
+        case Left(e)  =>
+          ImportProblem
+            .CsvParsingError(e.getMessage, e.line)
+            .asLeft[Target.Sidereal]
+            .toEitherNec[ImportProblem]
+            .pure[F]
+        case Right(t) =>
           (t.ra, t.dec)
             .mapN((ra, dec) =>
+              // If ra/dec are defined just parse
               Target
                 .Sidereal(name = t.name,
                           tracking = tracking(t, ra, dec),
                           sourceProfile = DefaultSourceProfile,
                           None
                 )
+                .rightNec
+                .pure[F]
             )
-            .toRight(
-              NonEmptyChain
-                .of(ImportProblem.GenericError(s"Error extracting coordinates for '${t.name}'"))
-            )
-        )
+            .getOrElse {
+              // If only there is name do a lookup
+              val queryUri = CatalogSearch.simbadSearchQuery(QueryByName(t.name, proxy))
+              val request  = Request[F](GET, queryUri)
 
-  def csv2targetsAndLookup[F[_]: Concurrent](
-    client: Client[F]
-  ): Pipe[F, String, EitherNec[ImportProblem, Target.Sidereal]] =
-    in =>
-      in
-        .through(text.lines)
-        .map(s => s.split(",", -1).map(_.trim()).mkString("", ",", "\n"))
-        .through(lowlevel.rows[F, String]())
-        .through(lowlevel.headers[F, CIString])
-        .through(lowlevel.decodeRow[F, CIString, TargetCsvRow])
-        .evalMap(_.toSiderealTarget[F](client))
+              client
+                .stream(request)
+                .flatMap(
+                  _.body
+                    .through(text.utf8.decode)
+                    .through(CatalogSearch.siderealTargets[F](CatalogAdapter.Simbad))
+                )
+                .compile
+                .toList
+                // Convert catalog errors to import errors
+                .map(
+                  _.map(
+                    _.leftMap(e => ImportProblem.LookupError(e.foldMap(_.displayValue), t.line))
+                      .leftWiden[ImportProblem]
+                  )
+                )
+                .map(imports =>
+                  // Fail if there is more than one result
+                  val result: EitherNec[ImportProblem, Target.Sidereal] =
+                    if (imports.length === 1) imports.head.map(_.target).toEitherNec
+                    else
+                      ImportProblem
+                        .LookupError(s"Multiple or no matches for ${t.name}", t.line)
+                        .leftNec
+                  result
+                )
+                // Handle general errors
+                .handleError { e =>
+                  e.printStackTrace()
+                  ImportProblem
+                    .LookupError(e.getMessage, t.line)
+                    .asLeft[Target.Sidereal]
+                    .toEitherNec
+                }
+            }
 
-  extension (t: TargetCsvRow)
-    def toSiderealTarget[F[_]: Concurrent](
-      client: Client[F]
-    ): F[EitherNec[ImportProblem, Target.Sidereal]] =
-      if (!t.bare) {
-        (t.ra, t.dec)
-          .mapN((ra, dec) =>
-            Target.Sidereal(
-              name = t.name,
-              tracking = SiderealTracking.const(Coordinates(ra, dec)),
-              sourceProfile = DefaultSourceProfile,
-              None
-            )
-          )
-          .map(_.rightNec)
-          .getOrElse(ImportProblem.MissingCoordinates.leftNec)
-          .pure[F]
-      } else {
-        val queryUri = CatalogSearch.simbadSearchQuery(QueryByName(t.name))
-        val request  = Request[F](GET, queryUri)
-        client
-          .stream(request)
-          .flatMap(
-            _.body
-              .through(text.utf8.decode)
-              .through(CatalogSearch.siderealTargets[F](CatalogAdapter.Simbad))
-          )
-          .compile
-          .toList
-          .map(
-            _.map(
-              _.leftMap(e => ImportProblem.LookupError(e.foldMap(_.displayValue)))
-                .leftWiden[ImportProblem]
-            )
-          )
-          .map(imports =>
-            val result: EitherNec[ImportProblem, Target.Sidereal] =
-              if (imports.length === 1) imports.head.map(_.target).toEitherNec
-              else
-                ImportProblem
-                  .LookupError(s"Multiple matches for ${t.name}")
-                  .leftNec
-            result
-          )
       }
+    }

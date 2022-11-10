@@ -15,17 +15,20 @@ sealed trait ImportProblem extends Throwable with Product with Serializable {
 }
 
 object ImportProblem {
-  case object MissingCoordinates       extends ImportProblem {
+  case object MissingCoordinates                              extends ImportProblem {
     val displayValue = "Either Right Ascension or Declination are missing"
   }
-  case object UnknownCatalog           extends ImportProblem {
+  case object UnknownCatalog                                  extends ImportProblem {
     val displayValue = s"Requested an unknown catalog"
   }
-  case class GenericError(msg: String) extends ImportProblem {
+  case class GenericError(msg: String)                        extends ImportProblem {
     val displayValue = msg
   }
-  case class LookupError(msg: String)  extends ImportProblem {
+  case class CsvParsingError(msg: String, line: Option[Long]) extends ImportProblem {
     val displayValue = msg
+  }
+  case class LookupError(msg: String, line: Option[Long])     extends ImportProblem {
+    val displayValue = s"$msg on line ${line.getOrElse(-1)}"
   }
 
   case class CatalogException(problems: List[ImportProblem])
