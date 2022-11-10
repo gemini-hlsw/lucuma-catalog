@@ -27,8 +27,8 @@ object ImportProblem {
   case class CsvParsingError(msg: String, line: Option[Long]) extends ImportProblem {
     val displayValue = msg
   }
-  case class LookupError(msg: String)                         extends ImportProblem {
-    val displayValue = msg
+  case class LookupError(msg: String, line: Option[Long])     extends ImportProblem {
+    val displayValue = s"$msg on line ${line.getOrElse(-1)}"
   }
 
   case class CatalogException(problems: List[ImportProblem])

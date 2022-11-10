@@ -42,6 +42,7 @@ import lucuma.core.parser.TimeParsers
 import lucuma.core.syntax.string.*
 import org.http4s.Method.*
 import org.http4s.Request
+import org.http4s.Uri
 import org.http4s.client.Client
 import org.typelevel.ci.*
 
@@ -197,14 +198,12 @@ object TargetImport:
       )
     )
 
-  // val m: Either[Int, Either[Long, String]] = ???
-  // val n: Either[Double, String]            = m.leftMap(_.toDouble).flat(_.sequence)
-
   def csv2targetsAndLookup[F[_]: Concurrent](
-    client: Client[F]
+    client: Client[F],
+    proxy:  Option[Uri] = None
   ): Pipe[F, String, EitherNec[ImportProblem, Target.Sidereal]] =
     csv2targetsRows.andThen { t =>
-      t.evalMap { // t =>
+      t.evalMap {
         case Left(e)  =>
           ImportProblem
             .CsvParsingError(e.getMessage, e.line)
@@ -226,8 +225,9 @@ object TargetImport:
             )
             .getOrElse {
               // If only there is name do a lookup
-              val queryUri = CatalogSearch.simbadSearchQuery(QueryByName(t.name))
+              val queryUri = CatalogSearch.simbadSearchQuery(QueryByName(t.name, proxy))
               val request  = Request[F](GET, queryUri)
+
               client
                 .stream(request)
                 .flatMap(
@@ -240,7 +240,7 @@ object TargetImport:
                 // Convert catalog errors to import errors
                 .map(
                   _.map(
-                    _.leftMap(e => ImportProblem.LookupError(e.foldMap(_.displayValue)))
+                    _.leftMap(e => ImportProblem.LookupError(e.foldMap(_.displayValue), t.line))
                       .leftWiden[ImportProblem]
                   )
                 )
@@ -250,14 +250,18 @@ object TargetImport:
                     if (imports.length === 1) imports.head.map(_.target).toEitherNec
                     else
                       ImportProblem
-                        .LookupError(s"Multiple or no matches for ${t.name}")
+                        .LookupError(s"Multiple or no matches for ${t.name}", t.line)
                         .leftNec
                   result
                 )
                 // Handle general errors
-                .handleError(e =>
-                  ImportProblem.LookupError(e.getMessage).asLeft[Target.Sidereal].toEitherNec
-                )
+                .handleError { e =>
+                  e.printStackTrace()
+                  ImportProblem
+                    .LookupError(e.getMessage, t.line)
+                    .asLeft[Target.Sidereal]
+                    .toEitherNec
+                }
             }
 
       }

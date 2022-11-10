@@ -24,7 +24,7 @@ lazy val kittensVersion             = "3.0.0"
 
 Global / onChangedBuildSource := ReloadOnSourceChanges
 
-ThisBuild / tlBaseVersion       := "0.32"
+ThisBuild / tlBaseVersion       := "0.33"
 ThisBuild / tlCiReleaseBranches := Seq("master", "scala3")
 
 ThisBuild / scalaVersion       := "3.2.1"
