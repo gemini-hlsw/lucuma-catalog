@@ -163,84 +163,102 @@ object TargetImport:
       case _                     => None
     SiderealTracking(base, t.epoch.getOrElse(Epoch.J2000), pm, none, none)
 
-  def csv2targets[F[_]: RaiseThrowable]
-    : Pipe[F, String, EitherNec[ImportProblem, Target.Sidereal]] =
+  private def csv2targetsRows[F[_]: RaiseThrowable]: Pipe[F, String, DecoderResult[TargetCsvRow]] =
     in =>
       in
         .through(lowlevel.rows[F, String]())
         .through(lowlevel.headers[F, CIString])
         .through(lowlevel.attemptDecodeRow[F, CIString, TargetCsvRow])
-        .map(t =>
-          t.leftFlatMap(e => ImportProblem.CsvParsingError(e.getMessage, e.line).leftNec)
-            .flatMap(t =>
-              (t.ra, t.dec)
-                .mapN((ra, dec) =>
-                  Target
-                    .Sidereal(name = t.name,
-                              tracking = tracking(t, ra, dec),
-                              sourceProfile = DefaultSourceProfile,
-                              None
-                    )
+
+  def csv2targets[F[_]: RaiseThrowable]
+    : Pipe[F, String, EitherNec[ImportProblem, Target.Sidereal]] =
+    csv2targetsRows.andThen(
+      _.map(t =>
+        t.leftMap(e => ImportProblem.CsvParsingError(e.getMessage, e.line))
+          .map(t =>
+            (t.ra, t.dec)
+              .mapN((ra, dec) =>
+                Target
+                  .Sidereal(name = t.name,
+                            tracking = tracking(t, ra, dec),
+                            sourceProfile = DefaultSourceProfile,
+                            None
+                  )
+              )
+              .getOrElse(
+                Target.Sidereal(t.name,
+                                tracking = SiderealTracking.const(Coordinates.Zero),
+                                sourceProfile = DefaultSourceProfile,
+                                None
                 )
-                .toRight(
-                  NonEmptyChain
-                    .of(ImportProblem.GenericError(s"Error extracting coordinates for '${t.name}'"))
-                )
-            )
-        )
+              )
+          )
+          .toEitherNec
+      )
+    )
+
+  // val m: Either[Int, Either[Long, String]] = ???
+  // val n: Either[Double, String]            = m.leftMap(_.toDouble).flat(_.sequence)
 
   def csv2targetsAndLookup[F[_]: Concurrent](
     client: Client[F]
   ): Pipe[F, String, EitherNec[ImportProblem, Target.Sidereal]] =
-    in =>
-      in
-        .through(lowlevel.rows[F, String]())
-        .through(lowlevel.headers[F, CIString])
-        .through(lowlevel.decodeRow[F, CIString, TargetCsvRow])
-        .evalMap(_.toSiderealTarget[F](client))
+    csv2targetsRows.andThen { t =>
+      t.evalMap { // t =>
+        case Left(e)  =>
+          ImportProblem
+            .CsvParsingError(e.getMessage, e.line)
+            .asLeft[Target.Sidereal]
+            .toEitherNec[ImportProblem]
+            .pure[F]
+        case Right(t) =>
+          (t.ra, t.dec)
+            .mapN((ra, dec) =>
+              // If ra/dec are defined just parse
+              Target
+                .Sidereal(name = t.name,
+                          tracking = tracking(t, ra, dec),
+                          sourceProfile = DefaultSourceProfile,
+                          None
+                )
+                .rightNec
+                .pure[F]
+            )
+            .getOrElse {
+              // If only there is name do a lookup
+              val queryUri = CatalogSearch.simbadSearchQuery(QueryByName(t.name))
+              val request  = Request[F](GET, queryUri)
+              client
+                .stream(request)
+                .flatMap(
+                  _.body
+                    .through(text.utf8.decode)
+                    .through(CatalogSearch.siderealTargets[F](CatalogAdapter.Simbad))
+                )
+                .compile
+                .toList
+                // Convert catalog errors to import errors
+                .map(
+                  _.map(
+                    _.leftMap(e => ImportProblem.LookupError(e.foldMap(_.displayValue)))
+                      .leftWiden[ImportProblem]
+                  )
+                )
+                .map(imports =>
+                  // Fail if there is more than one result
+                  val result: EitherNec[ImportProblem, Target.Sidereal] =
+                    if (imports.length === 1) imports.head.map(_.target).toEitherNec
+                    else
+                      ImportProblem
+                        .LookupError(s"Multiple or no matches for ${t.name}")
+                        .leftNec
+                  result
+                )
+                // Handle general errors
+                .handleError(e =>
+                  ImportProblem.LookupError(e.getMessage).asLeft[Target.Sidereal].toEitherNec
+                )
+            }
 
-  extension (t: TargetCsvRow)
-    def toSiderealTarget[F[_]: Concurrent](
-      client: Client[F]
-    ): F[EitherNec[ImportProblem, Target.Sidereal]] =
-      if (!t.bare) {
-        (t.ra, t.dec)
-          .mapN((ra, dec) =>
-            Target.Sidereal(
-              name = t.name,
-              tracking = SiderealTracking.const(Coordinates(ra, dec)),
-              sourceProfile = DefaultSourceProfile,
-              None
-            )
-          )
-          .map(_.rightNec)
-          .getOrElse(ImportProblem.MissingCoordinates.leftNec)
-          .pure[F]
-      } else {
-        val queryUri = CatalogSearch.simbadSearchQuery(QueryByName(t.name))
-        val request  = Request[F](GET, queryUri)
-        client
-          .stream(request)
-          .flatMap(
-            _.body
-              .through(text.utf8.decode)
-              .through(CatalogSearch.siderealTargets[F](CatalogAdapter.Simbad))
-          )
-          .compile
-          .toList
-          .map(
-            _.map(
-              _.leftMap(e => ImportProblem.LookupError(e.foldMap(_.displayValue)))
-                .leftWiden[ImportProblem]
-            )
-          )
-          .map(imports =>
-            val result: EitherNec[ImportProblem, Target.Sidereal] =
-              if (imports.length === 1) imports.head.map(_.target).toEitherNec
-              else
-                ImportProblem
-                  .LookupError(s"Multiple matches for ${t.name}")
-                  .leftNec
-            result
-          )
       }
+    }
