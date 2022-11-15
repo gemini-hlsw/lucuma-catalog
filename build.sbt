@@ -105,7 +105,7 @@ lazy val tests = crossProject(JVMPlatform, JSPlatform)
       "org.scala-lang.modules" %%% "scala-xml"           % scalaXmlVersion        % Test,
       "org.http4s"             %%% "http4s-core"         % http4sVersion,
       "com.lihaoyi"            %%% "pprint"              % pprintVersion,
-      "org.typelevel"           %% "cats-time"           % catsTimeVersion
+      "org.typelevel"          %%% "cats-time"           % catsTimeVersion
     )
   )
   .jsSettings(
