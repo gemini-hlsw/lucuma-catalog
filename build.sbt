@@ -1,6 +1,6 @@
 lazy val fs2Version                 = "3.3.0"
 lazy val fs2DataVersion             = "1.6.0"
-lazy val catsVersion                = "2.8.0"
+lazy val catsVersion                = "2.9.0"
 lazy val catsEffectVersion          = "3.3.14"
 lazy val kindProjectorVersion       = "0.13.2"
 lazy val pprintVersion              = "0.8.0"
@@ -105,7 +105,7 @@ lazy val tests = crossProject(JVMPlatform, JSPlatform)
       "org.scala-lang.modules" %%% "scala-xml"           % scalaXmlVersion        % Test,
       "org.http4s"             %%% "http4s-core"         % http4sVersion,
       "com.lihaoyi"            %%% "pprint"              % pprintVersion,
-      "org.typelevel"           %% "cats-time"           % catsTimeVersion
+      "org.typelevel"          %%% "cats-time"           % catsTimeVersion
     )
   )
   .jsSettings(
