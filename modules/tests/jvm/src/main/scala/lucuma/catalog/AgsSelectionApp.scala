@@ -82,7 +82,7 @@ object AgsSelectionSampleApp extends IOApp.Simple with AgsSelectionSample {
   def run =
     JdkHttpClient
       .simple[IO]
-      .use(
+      .flatMap(
         gaiaQuery[IO](_)
           .map(GuideStarCandidate.siderealTarget.get)
           .compile
