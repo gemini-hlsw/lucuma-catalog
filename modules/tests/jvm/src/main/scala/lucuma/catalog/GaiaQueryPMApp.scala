@@ -87,6 +87,6 @@ object GaiaQueryPMApp extends IOApp.Simple with GaiaQueryPMSample {
   def run =
     JdkHttpClient
       .simple[IO]
-      .use(gaiaQuery[IO])
+      .flatMap(gaiaQuery[IO])
       .flatMap(x => IO.println(pprint.apply(x)))
 }
