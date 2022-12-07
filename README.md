@@ -53,6 +53,5 @@ Each example will query [Simbad](http://simbad.u-strasbg.fr/simbad/) using [sttp
 
 ## fs2-data-xml
 
-To stream parse xml we are using [fs2-data-xml](https://github.com/satabin/fs2-data), however
-the project is not yet available for both JVM/JS.
+To stream parse xml we are using [fs2-data-xml](https://github.com/satabin/fs2-data) and [fs2-data-csv](https://github.com/satabin/fs2-data)
 

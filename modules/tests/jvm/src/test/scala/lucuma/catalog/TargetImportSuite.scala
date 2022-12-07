@@ -19,6 +19,8 @@ import lucuma.core.math.RightAscension
 import munit.CatsEffectSuite
 import org.http4s.jdkhttpclient.JdkHttpClient
 import org.typelevel.ci.*
+import lucuma.core.model.Target
+import lucuma.core.model.SourceProfile
 
 class TargetImportFileSuite extends CatsEffectSuite:
 
@@ -32,8 +34,38 @@ class TargetImportFileSuite extends CatsEffectSuite:
         .through(TargetImport.csv2targets)
         .compile
         .toList
+        // .flatTap(x => IO(pprint.pprintln(x)))
         .map { l =>
-          assertEquals(l.length, 5)
+          assertEquals(l.length, 6)
+          assertEquals(l.count {
+                         case Right(Target.Sidereal(_, _, SourceProfile.Uniform(_), _)) => true
+                         case _                                                         => false
+                       },
+                       1
+          )
+        }
+    }
+  }
+
+  test("parse sample pit file with mixed units") {
+    val xmlFile = "/PIT_sidereal_mixed_units.csv"
+    val file    = getClass().getResource(xmlFile)
+    Resource.unit[IO].use { _ =>
+      Files[IO]
+        .readAll(Path(file.getPath()))
+        .through(text.utf8.decode)
+        .through(TargetImport.csv2targets)
+        .compile
+        .toList
+        // .flatTap(x => IO(pprint.pprintln(x)))
+        .map { l =>
+          assertEquals(l.length, 1)
+          assertEquals(l.count {
+                         case Left(_) => true
+                         case _       => false
+                       },
+                       1
+          )
         }
     }
   }
