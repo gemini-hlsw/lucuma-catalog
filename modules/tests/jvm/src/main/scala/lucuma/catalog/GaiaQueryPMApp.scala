@@ -42,9 +42,7 @@ trait GaiaQueryPMSample {
   val start = Coordinates.fromHmsDms.getOption("16:17:15.580490 -23:02:42.794440").get
   val end   = Coordinates.fromHmsDms.getOption("16:16:49.269782 -22:54:25.255776").get
 
-  val pm = ProperMotion(ProperMotion.RA.milliarcsecondsPerYear.reverseGet(-6060),
-                        ProperMotion.Dec.milliarcsecondsPerYear.reverseGet(8298)
-  )
+  val pm = ProperMotion(ProperMotion.μasyRA(-6060), ProperMotion.μasyDec(8298))
 
   val tracking = SiderealTracking(m81Coords, Epoch.J2000, pm.some, none, none)
 

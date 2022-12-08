@@ -3,23 +3,25 @@
 
 package lucuma.catalog.votable
 
-import cats.data._
-import cats.syntax.all._
+import cats.data.*
+import cats.syntax.all.*
 import coulomb.policy.spire.standard.given
 import coulomb.syntax.*
-import lucuma.catalog.votable.CatalogProblem._
+import lucuma.catalog.votable.CatalogProblem.*
 import lucuma.catalog.votable.*
 import lucuma.core.enums.Band
 import lucuma.core.enums.CatalogName
-import lucuma.core.math.BrightnessUnits._
+import lucuma.core.math.BrightnessUnits.*
 import lucuma.core.math.Epoch
 import lucuma.core.math.ProperMotion
-import lucuma.core.math.ProperMotion.AngularVelocityComponent
+import lucuma.core.math.ProperMotion.AngularVelocity
 import lucuma.core.math.RadialVelocity
 import lucuma.core.math.VelocityAxis
-import lucuma.core.math.dimensional._
-import lucuma.core.math.units._
-import lucuma.core.syntax.string._
+import lucuma.core.math.dimensional.*
+import lucuma.core.math.dimensional.*
+import lucuma.core.math.units.*
+import lucuma.core.syntax.string.*
+import lucuma.core.util.*
 
 import scala.math.BigDecimal
 
@@ -108,11 +110,13 @@ sealed trait CatalogAdapter {
   protected def parseAngularVelocity[A](
     ucd: Ucd,
     v:   String
-  ): EitherNec[CatalogProblem, AngularVelocityComponent[A]] =
+  ): EitherNec[CatalogProblem, AngularVelocity Of A] =
     parseBigDecimalValue(ucd.some, v)
       .map(v =>
-        AngularVelocityComponent[A](
-          v.withUnit[MilliArcSecondPerYear].toUnit[MicroArcSecondPerYear].tToValue
+        tag[A](
+          AngularVelocity(
+            v.withUnit[MilliArcSecondPerYear].toUnit[MicroArcSecondPerYear].tToValue
+          )
         )
       )
 
@@ -432,5 +436,6 @@ object CatalogAdapter {
     c match {
       case CatalogName.Simbad => Simbad.some
       case CatalogName.Gaia   => Gaia3.some
+      case CatalogName.Import => Gaia3.some
     }
 }

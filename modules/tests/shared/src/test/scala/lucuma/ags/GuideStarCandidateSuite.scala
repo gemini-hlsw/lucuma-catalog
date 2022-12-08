@@ -3,15 +3,15 @@
 
 package lucuma.ags
 
-import cats.kernel.laws.discipline._
-import lucuma.ags.arb._
-import lucuma.core.model.arb._
+import cats.kernel.laws.discipline.*
+import lucuma.ags.arb.*
+import lucuma.core.model.arb.*
 import lucuma.core.optics.laws.discipline.SplitEpiTests
-import munit._
+import munit.*
 
 class GuideStarCandidateSuite extends DisciplineSuite {
   import ArbGuideStarCandidate.given
-  import ArbTarget._
+  import ArbTarget.given
 
   // Laws
   checkAll("Eq[GuideStarCandidate]", EqTests[GuideStarCandidate].eqv)

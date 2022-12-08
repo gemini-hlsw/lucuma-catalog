@@ -26,9 +26,10 @@ import lucuma.core.math.Coordinates
 import lucuma.core.math.Declination
 import lucuma.core.math.Epoch
 import lucuma.core.math.ProperMotion
-import lucuma.core.math.ProperMotion.AngularVelocityComponent
+import lucuma.core.math.ProperMotion.AngularVelocity
 import lucuma.core.math.RightAscension
 import lucuma.core.math.VelocityAxis
+import lucuma.core.math.dimensional.*
 import lucuma.core.math.parser.AngleParsers
 import lucuma.core.math.parser.EpochParsers
 import lucuma.core.model.SiderealTracking
@@ -40,6 +41,7 @@ import lucuma.core.model.UnnormalizedSED
 import lucuma.core.parser.MiscParsers
 import lucuma.core.parser.TimeParsers
 import lucuma.core.syntax.string.*
+import lucuma.core.util.*
 import org.http4s.Method.*
 import org.http4s.Request
 import org.http4s.Uri
@@ -54,8 +56,8 @@ private case class TargetCsvRow(
   bare:  Boolean,
   ra:    Option[RightAscension],
   dec:   Option[Declination],
-  pmRA:  Option[ProperMotion.AngularVelocityComponent[VelocityAxis.RA]],
-  pmDec: Option[ProperMotion.AngularVelocityComponent[VelocityAxis.Dec]],
+  pmRA:  Option[ProperMotion.RA],
+  pmDec: Option[ProperMotion.Dec],
   epoch: Option[Epoch]
 )
 
@@ -112,14 +114,28 @@ object TargetImport:
           .leftMap(_ => new DecoderError(s"Invalid epoch value '$r'"))
     }
 
-  given angularVelocityOpt[A]: CellDecoder[Option[ProperMotion.AngularVelocityComponent[A]]] =
+  given pmRADecoder: CellDecoder[Option[ProperMotion.RA]] =
     CellDecoder.stringDecoder.emap { r =>
       val t = r.trim()
       if (t.isEmpty) Right(None)
       else
         t.parseBigDecimalOption
           .map(r =>
-            ProperMotion.AngularVelocityComponent.milliarcsecondsPerYear
+            ProperMotion.RA.milliarcsecondsPerYear
+              .reverseGet(r)
+              .some
+          )
+          .toRight(new DecoderError(r))
+    }
+
+  given pmDecDecoder: CellDecoder[Option[ProperMotion.Dec]] =
+    CellDecoder.stringDecoder.emap { r =>
+      val t = r.trim()
+      if (t.isEmpty) Right(None)
+      else
+        t.parseBigDecimalOption
+          .map(r =>
+            ProperMotion.Dec.milliarcsecondsPerYear
               .reverseGet(r)
               .some
           )
@@ -139,10 +155,10 @@ object TargetImport:
         ra    <- row.as[Option[RightAscension]](ci"RAJ2000").defaultToNone(row)
         dec   <- row.as[Option[Declination]](ci"DecJ2000").defaultToNone(row)
         pmRa  <- row
-                   .as[Option[ProperMotion.AngularVelocityComponent[VelocityAxis.RA]]](ci"pmRa")
+                   .as[Option[ProperMotion.RA]](ci"pmRa")
                    .defaultToNone(row)
         pmDec <- row
-                   .as[Option[ProperMotion.AngularVelocityComponent[VelocityAxis.Dec]]](ci"pmDec")
+                   .as[Option[ProperMotion.Dec]](ci"pmDec")
                    .defaultToNone(row)
         epoch <- row.as[Option[Epoch]](ci"epoch").defaultToNone(row)
         bare   = ra.isEmpty || dec.isEmpty
@@ -150,7 +166,7 @@ object TargetImport:
 
   val DefaultSourceProfile = SourceProfile.Point(
     SpectralDefinition.BandNormalized(
-      UnnormalizedSED.StellarLibrary(StellarLibrarySpectrum.O5V),
+      None,
       SortedMap.empty
     )
   )
@@ -159,8 +175,8 @@ object TargetImport:
     val base = Coordinates(ra, dec)
     val pm   = (t.pmRA, t.pmDec) match
       case (Some(ra), Some(dec)) => ProperMotion(ra, dec).some
-      case (Some(ra), None)      => ProperMotion(ra, ProperMotion.Dec.Zero).some
-      case (None, Some(dec))     => ProperMotion(ProperMotion.RA.Zero, dec).some
+      case (Some(ra), None)      => ProperMotion(ra, ProperMotion.ZeroDecVelocity).some
+      case (None, Some(dec))     => ProperMotion(ProperMotion.ZeroRAVelocity, dec).some
       case _                     => None
     SiderealTracking(base, t.epoch.getOrElse(Epoch.J2000), pm, none, none)
 
