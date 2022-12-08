@@ -114,33 +114,21 @@ object TargetImport:
           .leftMap(_ => new DecoderError(s"Invalid epoch value '$r'"))
     }
 
-  given pmRADecoder: CellDecoder[Option[ProperMotion.RA]] =
+  private def angularVelocityComponentDecoder[T](build: BigDecimal => T): CellDecoder[Option[T]] =
     CellDecoder.stringDecoder.emap { r =>
       val t = r.trim()
       if (t.isEmpty) Right(None)
       else
         t.parseBigDecimalOption
-          .map(r =>
-            ProperMotion.RA.milliarcsecondsPerYear
-              .reverseGet(r)
-              .some
-          )
+          .map(r => build(r).some)
           .toRight(new DecoderError(r))
     }
 
+  given pmRADecoder: CellDecoder[Option[ProperMotion.RA]] =
+    angularVelocityComponentDecoder(ProperMotion.RA.milliarcsecondsPerYear.reverseGet)
+
   given pmDecDecoder: CellDecoder[Option[ProperMotion.Dec]] =
-    CellDecoder.stringDecoder.emap { r =>
-      val t = r.trim()
-      if (t.isEmpty) Right(None)
-      else
-        t.parseBigDecimalOption
-          .map(r =>
-            ProperMotion.Dec.milliarcsecondsPerYear
-              .reverseGet(r)
-              .some
-          )
-          .toRight(new DecoderError(r))
-    }
+    angularVelocityComponentDecoder(ProperMotion.Dec.milliarcsecondsPerYear.reverseGet)
 
   extension [A](r: DecoderResult[Option[A]])
     def defaultToNone[B](row: CsvRow[B]): DecoderResult[Option[A]] = r match
