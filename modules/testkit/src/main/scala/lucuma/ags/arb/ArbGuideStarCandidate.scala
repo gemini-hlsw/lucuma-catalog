@@ -7,11 +7,11 @@ import lucuma.ags.GuideStarCandidate
 import lucuma.core.model.SiderealTracking
 import lucuma.core.model.arb.ArbSiderealTracking
 import org.scalacheck.Arbitrary.arbitrary
-import org.scalacheck.Cogen._
-import org.scalacheck._
+import org.scalacheck.Cogen.*
+import org.scalacheck.*
 
 trait ArbGuideStarCandidate {
-  import ArbSiderealTracking._
+  import ArbSiderealTracking.given
 
   given Arbitrary[GuideStarCandidate] =
     Arbitrary {

@@ -3,31 +3,32 @@
 
 package lucuma.catalog.votable
 
-import cats.effect._
-import cats.syntax.all._
+import cats.effect.*
+import cats.syntax.all.*
 import coulomb.*
 import coulomb.ops.algebra.spire.all.given
 import coulomb.policy.spire.standard.given
 import coulomb.syntax.*
 import coulomb.units.si.*
 import coulomb.units.si.given
-import eu.timepit.refined._
+import eu.timepit.refined.*
 import eu.timepit.refined.collection.NonEmpty
 import eu.timepit.refined.types.string.NonEmptyString
-import fs2._
-import fs2.data.xml._
-import lucuma.catalog._
+import fs2.*
+import fs2.data.xml.*
+import lucuma.catalog.*
 import lucuma.core.enums.Band
 import lucuma.core.enums.CatalogName
-import lucuma.core.math.BrightnessUnits._
+import lucuma.core.math.BrightnessUnits.*
 import lucuma.core.math.Declination
 import lucuma.core.math.Epoch
 import lucuma.core.math.Parallax
 import lucuma.core.math.ProperMotion
 import lucuma.core.math.RadialVelocity
 import lucuma.core.math.RightAscension
-import lucuma.core.math.dimensional._
-import lucuma.core.math.units._
+import lucuma.core.math.VelocityAxis
+import lucuma.core.math.dimensional.*
+import lucuma.core.math.units.*
 import lucuma.core.model.CatalogInfo
 import lucuma.core.model.Target
 import lucuma.refined.*
@@ -66,13 +67,11 @@ class AdaptersSuite extends CatsEffectSuite with VoTableParser with VoTableSampl
           // proper motions
           assertEquals(
             Target.properMotionRA.getOption(t),
-            ProperMotion
-              .RA(6456.withUnit[MicroArcSecondPerYear])
-              .some
+            ProperMotion.μasyRA(6456).some
           )
           assertEquals(
             Target.properMotionDec.getOption(t),
-            ProperMotion.Dec(22438.withUnit[MicroArcSecondPerYear]).some
+            ProperMotion.μasyDec(22438).some
           )
           assertEquals(
             Target.integratedBrightnessIn(Band.Gaia).headOption(t),

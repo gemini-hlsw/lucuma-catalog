@@ -3,16 +3,18 @@
 
 package lucuma.catalog.votable
 
-import cats.effect._
+import cats.effect.*
 import cats.effect.unsafe.implicits.global
-import cats.syntax.all._
-import org.openjdk.jmh.annotations._
+import cats.syntax.all.*
+import org.openjdk.jmh.annotations.*
 
 import java.util.concurrent.TimeUnit
-import lucuma.ags._
+import lucuma.ags.*
 import lucuma.core.model.ConstraintSet
-import lucuma.core.enums._
+import lucuma.core.enums.*
 import lucuma.core.math.Wavelength
+import lucuma.core.math.Wavelength
+import lucuma.core.util.*
 import lucuma.core.model.ElevationRange
 import org.http4s.jdkhttpclient.JdkHttpClient
 import lucuma.core.math.Angle
@@ -35,7 +37,7 @@ class AgsBenchmark extends AgsSelectionSample {
   def simpleRun: Unit =
     items = JdkHttpClient
       .simple[IO]
-      .use(
+      .flatMap(
         gaiaQuery[IO](_)
           .map(GuideStarCandidate.siderealTarget.get)
           .compile
@@ -66,6 +68,7 @@ class AgsBenchmark extends AgsSelectionSample {
       constraints,
       wavelength,
       coords,
+      List(coords),
       AgsPosition(Angle.Angle0, Offset.Zero),
       AgsParams.GmosAgsParams(
         GmosNorthFpu.LongSlit_5_00.asLeft.some,
@@ -81,7 +84,8 @@ class AgsBenchmark extends AgsSelectionSample {
     Ags.agsAnalysisPM(
       constraints,
       wavelength,
-      SiderealTracking.const(coords),
+      _ => coords.some,
+      List(_ => coords.some),
       AgsPosition(Angle.Angle0, Offset.Zero),
       AgsParams.GmosAgsParams(
         GmosNorthFpu.LongSlit_5_00.asLeft.some,

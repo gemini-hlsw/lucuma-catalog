@@ -104,7 +104,7 @@ object GuideStarCandidate {
           g.tracking,
           SourceProfile.Point(
             SpectralDefinition.BandNormalized(
-              UnnormalizedSED.StellarLibrary(StellarLibrarySpectrum.O5V),
+              None,
               SortedMap.from(
                 g.gBrightness
                   .foldMap(g => List(Band.Gaia -> g.withUnit[VegaMagnitude].toMeasureTagged))

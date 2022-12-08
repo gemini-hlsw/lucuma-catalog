@@ -276,10 +276,7 @@ trait VoTableParser {
               // We set arbitrary values for `sourceProfile`, `spectralDefinition`, `sed` and  `librarySpectrum`: the first in each ADT.
               // In the future we will attempt to infer some or all of these from the catalog info.
               SourceProfile.Point(
-                SpectralDefinition.BandNormalized(
-                  UnnormalizedSED.StellarLibrary(StellarLibrarySpectrum.O5V),
-                  SortedMap.from(brightnesses)
-                )
+                SpectralDefinition.BandNormalized(None, SortedMap.from(brightnesses))
               ),
               info
             ),
@@ -321,10 +318,7 @@ trait VoTableParser {
             // We set arbitrary values for `sourceProfile`, `spectralDefinition`, `sed` and  `librarySpectrum`: the first in each ADT.
             // In the future we will attempt to infer some or all of these from the catalog info.
             SourceProfile.Point(
-              SpectralDefinition.BandNormalized(
-                UnnormalizedSED.StellarLibrary(StellarLibrarySpectrum.O5V),
-                SortedMap.from(brightnesses)
-              )
+              SpectralDefinition.BandNormalized(None, SortedMap.from(brightnesses))
             ),
             none
           )

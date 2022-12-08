@@ -69,11 +69,11 @@ class ParseSimbadFileSuite extends CatsEffectSuite with VoTableParser {
             // proper motions
             assertEquals(
               Target.properMotionRA.getOption(t),
-              ProperMotion.RA(200940.withUnit[MicroArcSecondPerYear]).some
+              ProperMotion.μasyRA(200940).some
             )
             assertEquals(
               Target.properMotionDec.getOption(t),
-              ProperMotion.Dec(286230.withUnit[MicroArcSecondPerYear]).some
+              ProperMotion.μasyDec(286230).some
             )
             // brightnesses
             assertEquals(
@@ -449,11 +449,11 @@ class ParseSimbadFileSuite extends CatsEffectSuite with VoTableParser {
             // proper motions
             assertEquals(
               Target.properMotionRA.getOption(t),
-              ProperMotion.RA.Zero.some
+              ProperMotion.ZeroRAVelocity.some
             )
             assertEquals(
               Target.properMotionDec.getOption(t),
-              ProperMotion.Dec(286230.withUnit[MicroArcSecondPerYear]).some
+              ProperMotion.μasyDec(286230).some
             )
           case Left(_)                          => fail(s"VOTable xml $xmlFile cannot be parsed")
         }
@@ -492,11 +492,11 @@ class ParseSimbadFileSuite extends CatsEffectSuite with VoTableParser {
             // proper motions
             assertEquals(
               Target.properMotionRA.getOption(t),
-              ProperMotion.RA(200940.withUnit[MicroArcSecondPerYear]).some
+              ProperMotion.μasyRA(200940).some
             )
             assertEquals(
               Target.properMotionDec.getOption(t),
-              ProperMotion.Dec(286230.withUnit[MicroArcSecondPerYear]).some
+              ProperMotion.μasyDec(286230).some
             )
             // band brightnesses
             assertEquals(
