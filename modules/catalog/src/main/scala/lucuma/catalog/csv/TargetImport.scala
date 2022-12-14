@@ -14,15 +14,17 @@ import eu.timepit.refined.api.*
 import eu.timepit.refined.collection.NonEmpty
 import eu.timepit.refined.types.string.NonEmptyString
 import fs2.*
-import fs2.data.csv.*
 import fs2.data.csv.CellDecoder.doubleDecoder
+import fs2.data.csv.*
 import fs2.data.csv.generic.semiauto.*
 import fs2.text
 import lucuma.catalog.*
 import lucuma.catalog.votable.CatalogAdapter
 import lucuma.catalog.votable.CatalogSearch
 import lucuma.catalog.votable.QueryByName
+import lucuma.core.enums.Band
 import lucuma.core.enums.StellarLibrarySpectrum
+import lucuma.core.math.BrightnessUnits.*
 import lucuma.core.math.Coordinates
 import lucuma.core.math.Declination
 import lucuma.core.math.Epoch
@@ -47,11 +49,8 @@ import org.http4s.Method.*
 import org.http4s.Request
 import org.http4s.Uri
 import org.http4s.client.Client
-import org.typelevel.ci.*
 
 import scala.collection.immutable.SortedMap
-import lucuma.core.enums.Band
-import lucuma.core.math.BrightnessUnits.*
 
 private case class TargetCsvRow(
   line:            Option[Long],
@@ -115,32 +114,22 @@ object TargetImport:
       refineV[NonEmpty](r).leftMap(_ => new DecoderError("Empty name"))
     )
 
-  given ParseableHeader[CIString] =
-    _.map(x => CIString(x.trim)).asRight
-
   given ParseableHeader[String] =
     _.map(_.trim).asRight
 
-  given decDecoder: CellDecoder[Option[Declination]] =
+  given decDecoder: CellDecoder[Declination] =
     CellDecoder.stringDecoder.emap { r =>
       val t = r.trim()
-      if (t.isEmpty) Right(None)
-      else
-        Declination.fromStringSignedDMS
-          .getOption(r.trim)
-          .map(Some(_))
-          .toRight(new DecoderError(s"Invalid Dec value '$r'"))
+      Declination.fromStringSignedDMS
+        .getOption(r.trim)
+        .toRight(new DecoderError(s"Invalid Dec value '$r'"))
     }
 
-  given raDecoder: CellDecoder[Option[RightAscension]] =
+  given raDecoder: CellDecoder[RightAscension] =
     CellDecoder.stringDecoder.emap { r =>
-      val t = r.trim()
-      if (t.isEmpty) Right(None)
-      else
-        RightAscension.lenientFromStringHMS
-          .getOption(r.trim)
-          .map(Some(_))
-          .toRight(new DecoderError(s"Invalid RA value '$r'"))
+      RightAscension.lenientFromStringHMS
+        .getOption(r.trim)
+        .toRight(new DecoderError(s"Invalid RA value '$r'"))
     }
 
   // Move to lucuma-core
@@ -164,25 +153,24 @@ object TargetImport:
           .leftMap(_ => new DecoderError(s"Invalid epoch value '$r'"))
     }
 
-  private def angularVelocityComponentDecoder[T](build: BigDecimal => T): CellDecoder[Option[T]] =
+  private def angularVelocityComponentDecoder[T](build: BigDecimal => T): CellDecoder[T] =
     CellDecoder.stringDecoder.emap { r =>
       val t = r.trim()
-      if (t.isEmpty) Right(None)
-      else
-        t.parseBigDecimalOption
-          .map(r => build(r).some)
-          .toRight(new DecoderError(r))
+      t.parseBigDecimalOption
+        .map(r => build(r))
+        .toRight(new DecoderError(r))
     }
 
-  given pmRADecoder: CellDecoder[Option[ProperMotion.RA]] =
+  given pmRADecoder: CellDecoder[ProperMotion.RA] =
     angularVelocityComponentDecoder(ProperMotion.RA.milliarcsecondsPerYear.reverseGet)
 
-  given pmDecDecoder: CellDecoder[Option[ProperMotion.Dec]] =
+  given pmDecDecoder: CellDecoder[ProperMotion.Dec] =
     angularVelocityComponentDecoder(ProperMotion.Dec.milliarcsecondsPerYear.reverseGet)
 
   def unitAbbv[A](using enumerated: Enumerated[Units Of Brightness[A]]) =
     enumerated.all.map(u => u.abbv -> u).toMap
 
+  // Add some well knwon synonyms
   val integratedUnits: Map[String, Units Of Brightness[Integrated]] =
     unitAbbv[Integrated] ++ Map("Vega" -> VegaMagnitudeIsIntegratedBrightnessUnit.unit,
                                 "AB"   -> ABMagnitudeIsIntegratedBrightnessUnit.unit,

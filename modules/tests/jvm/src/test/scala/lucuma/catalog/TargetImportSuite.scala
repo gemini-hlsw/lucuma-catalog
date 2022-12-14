@@ -16,11 +16,11 @@ import lucuma.catalog.csv.*
 import lucuma.core.math.Declination
 import lucuma.core.math.Epoch
 import lucuma.core.math.RightAscension
+import lucuma.core.model.SourceProfile
+import lucuma.core.model.Target
 import munit.CatsEffectSuite
 import org.http4s.jdkhttpclient.JdkHttpClient
 import org.typelevel.ci.*
-import lucuma.core.model.Target
-import lucuma.core.model.SourceProfile
 
 class TargetImportFileSuite extends CatsEffectSuite:
 
