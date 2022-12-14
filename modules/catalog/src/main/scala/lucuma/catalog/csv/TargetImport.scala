@@ -92,14 +92,14 @@ private case class TargetCsvRow(
     if (surfaceUnits.nonEmpty)
       SourceProfile.Uniform(
         SpectralDefinition.BandNormalized(
-          None,
+          UnnormalizedSED.StellarLibrary(StellarLibrarySpectrum.O5V).some,
           SortedMap(surfaceBrightness: _*)
         )
       )
     else
       SourceProfile.Point(
         SpectralDefinition.BandNormalized(
-          None,
+          UnnormalizedSED.StellarLibrary(StellarLibrarySpectrum.O5V).some,
           SortedMap(integratedBrightness: _*)
         )
       )
@@ -283,14 +283,14 @@ object TargetImport:
         t.leftMap(e => ImportProblem.CsvParsingError(e.getMessage, e.line))
           .map(t =>
             (t.ra, t.dec)
-              .mapN { (ra, dec) =>
+              .mapN((ra, dec) =>
                 Target
                   .Sidereal(name = t.name,
                             tracking = tracking(t, ra, dec),
                             sourceProfile = t.sourceProfile,
                             None
                   )
-              }
+              )
               .getOrElse(
                 Target.Sidereal(t.name,
                                 tracking = SiderealTracking.const(Coordinates.Zero),
