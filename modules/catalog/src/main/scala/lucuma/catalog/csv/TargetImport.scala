@@ -14,6 +14,7 @@ import eu.timepit.refined.api.*
 import eu.timepit.refined.collection.NonEmpty
 import eu.timepit.refined.types.string.NonEmptyString
 import fs2.*
+import fs2.data.csv.CellDecoder.doubleDecoder
 import fs2.data.csv.*
 import fs2.data.csv.generic.semiauto.*
 import fs2.text
@@ -21,7 +22,9 @@ import lucuma.catalog.*
 import lucuma.catalog.votable.CatalogAdapter
 import lucuma.catalog.votable.CatalogSearch
 import lucuma.catalog.votable.QueryByName
+import lucuma.core.enums.Band
 import lucuma.core.enums.StellarLibrarySpectrum
+import lucuma.core.math.BrightnessUnits.*
 import lucuma.core.math.Coordinates
 import lucuma.core.math.Declination
 import lucuma.core.math.Epoch
@@ -46,51 +49,87 @@ import org.http4s.Method.*
 import org.http4s.Request
 import org.http4s.Uri
 import org.http4s.client.Client
-import org.typelevel.ci.*
 
 import scala.collection.immutable.SortedMap
 
 private case class TargetCsvRow(
-  line:  Option[Long],
-  name:  NonEmptyString,
-  bare:  Boolean,
-  ra:    Option[RightAscension],
-  dec:   Option[Declination],
-  pmRA:  Option[ProperMotion.RA],
-  pmDec: Option[ProperMotion.Dec],
-  epoch: Option[Epoch]
-)
+  line:            Option[Long],
+  name:            NonEmptyString,
+  bare:            Boolean,
+  ra:              Option[RightAscension],
+  dec:             Option[Declination],
+  pmRA:            Option[ProperMotion.RA],
+  pmDec:           Option[ProperMotion.Dec],
+  epoch:           Option[Epoch],
+  brightnesses:    Map[Band, BigDecimal],
+  integratedUnits: Map[Band, Units Of Brightness[Integrated]],
+  surfaceUnits:    Map[Band, Units Of Brightness[Surface]]
+) {
+
+  private def brightnessAndUnit[A](
+    brightnesses: Map[Band, BigDecimal],
+    units:        Map[Band, Units Of Brightness[A]],
+    defaultUnit:  Units Of Brightness[A]
+  ): List[(Band, Measure[BigDecimal] Of Brightness[A])] =
+    brightnesses.map { b =>
+      b._1 ->
+        units
+          .getOrElse(b._1, defaultUnit)
+          .withValueTagged(b._2)
+    }.toList
+
+  private lazy val integratedBrightness
+    : List[(Band, Measure[BigDecimal] Of Brightness[Integrated])] =
+    brightnessAndUnit(brightnesses, integratedUnits, VegaMagnitudeIsIntegratedBrightnessUnit.unit)
+
+  private lazy val surfaceBrightness: List[(Band, Measure[BigDecimal] Of Brightness[Surface])] =
+    brightnessAndUnit(brightnesses,
+                      surfaceUnits,
+                      VegaMagnitudePerArcsec2IsSurfaceBrightnessUnit.unit
+    )
+
+  val sourceProfile: SourceProfile =
+    if (surfaceUnits.nonEmpty)
+      SourceProfile.Uniform(
+        SpectralDefinition.BandNormalized(
+          None,
+          SortedMap(surfaceBrightness: _*)
+        )
+      )
+    else
+      SourceProfile.Point(
+        SpectralDefinition.BandNormalized(
+          None,
+          SortedMap(integratedBrightness: _*)
+        )
+      )
+}
 
 object TargetImport:
+  given liftCellDecoder[A: CellDecoder]: CellDecoder[Option[A]] = s =>
+    s.nonEmpty.guard[Option].traverse(_ => CellDecoder[A].apply(s))
 
   given CellDecoder[NonEmptyString] =
     CellDecoder.stringDecoder.emap(r =>
       refineV[NonEmpty](r).leftMap(_ => new DecoderError("Empty name"))
     )
 
-  given ParseableHeader[CIString] =
-    _.map(x => CIString(x.trim)).asRight
+  given ParseableHeader[String] =
+    _.map(_.trim).asRight
 
-  given decDecoder: CellDecoder[Option[Declination]] =
+  given decDecoder: CellDecoder[Declination] =
     CellDecoder.stringDecoder.emap { r =>
       val t = r.trim()
-      if (t.isEmpty) Right(None)
-      else
-        Declination.fromStringSignedDMS
-          .getOption(r.trim)
-          .map(Some(_))
-          .toRight(new DecoderError(s"Invalid Dec value '$r'"))
+      Declination.fromStringSignedDMS
+        .getOption(r.trim)
+        .toRight(new DecoderError(s"Invalid Dec value '$r'"))
     }
 
-  given raDecoder: CellDecoder[Option[RightAscension]] =
+  given raDecoder: CellDecoder[RightAscension] =
     CellDecoder.stringDecoder.emap { r =>
-      val t = r.trim()
-      if (t.isEmpty) Right(None)
-      else
-        RightAscension.lenientFromStringHMS
-          .getOption(r.trim)
-          .map(Some(_))
-          .toRight(new DecoderError(s"Invalid RA value '$r'"))
+      RightAscension.lenientFromStringHMS
+        .getOption(r.trim)
+        .toRight(new DecoderError(s"Invalid RA value '$r'"))
     }
 
   // Move to lucuma-core
@@ -114,50 +153,112 @@ object TargetImport:
           .leftMap(_ => new DecoderError(s"Invalid epoch value '$r'"))
     }
 
-  private def angularVelocityComponentDecoder[T](build: BigDecimal => T): CellDecoder[Option[T]] =
+  private def angularVelocityComponentDecoder[T](build: BigDecimal => T): CellDecoder[T] =
     CellDecoder.stringDecoder.emap { r =>
       val t = r.trim()
-      if (t.isEmpty) Right(None)
-      else
-        t.parseBigDecimalOption
-          .map(r => build(r).some)
-          .toRight(new DecoderError(r))
+      t.parseBigDecimalOption
+        .map(r => build(r))
+        .toRight(new DecoderError(r))
     }
 
-  given pmRADecoder: CellDecoder[Option[ProperMotion.RA]] =
+  given pmRADecoder: CellDecoder[ProperMotion.RA] =
     angularVelocityComponentDecoder(ProperMotion.RA.milliarcsecondsPerYear.reverseGet)
 
-  given pmDecDecoder: CellDecoder[Option[ProperMotion.Dec]] =
+  given pmDecDecoder: CellDecoder[ProperMotion.Dec] =
     angularVelocityComponentDecoder(ProperMotion.Dec.milliarcsecondsPerYear.reverseGet)
+
+  def unitAbbv[A](using enumerated: Enumerated[Units Of Brightness[A]]) =
+    enumerated.all.map(u => u.abbv -> u).toMap
+
+  // Add some well knwon synonyms
+  val integratedUnits: Map[String, Units Of Brightness[Integrated]] =
+    unitAbbv[Integrated] ++ Map("Vega" -> VegaMagnitudeIsIntegratedBrightnessUnit.unit,
+                                "AB"   -> ABMagnitudeIsIntegratedBrightnessUnit.unit,
+                                "Jy"   -> JanskyIsIntegratedBrightnessUnit.unit
+    )
+
+  val surfaceUnits: Map[String, Units Of Brightness[Surface]] = unitAbbv[Surface]
+
+  given integratedDecoder: CellDecoder[Units Of Brightness[Integrated]] =
+    CellDecoder.stringDecoder.emap(s =>
+      integratedUnits.get(s).toRight(DecoderError(s"Unknown units $s"))
+    )
+
+  given surfaceDecoder: CellDecoder[Units Of Brightness[Surface]] =
+    CellDecoder.stringDecoder.emap(s =>
+      surfaceUnits.get(s).toRight(DecoderError(s"Unknown units $s"))
+    )
 
   extension [A](r: DecoderResult[Option[A]])
     def defaultToNone[B](row: CsvRow[B]): DecoderResult[Option[A]] = r match
       case a @ Right(_)                                          => a
       case Left(d) if d.getMessage().startsWith("unknown field") => Right(None)
-      case Left(d)                                               => d.withLine(row.line).asLeft
+      case Left(d)                                               =>
+        d.withLine(row.line).asLeft
 
-  given CsvRowDecoder[TargetCsvRow, CIString] =
-    (row: CsvRow[CIString]) =>
-      for {
-        name  <- row.as[NonEmptyString](ci"Name")
-        ra    <- row.as[Option[RightAscension]](ci"RAJ2000").defaultToNone(row)
-        dec   <- row.as[Option[Declination]](ci"DecJ2000").defaultToNone(row)
-        pmRa  <- row
-                   .as[Option[ProperMotion.RA]](ci"pmRa")
-                   .defaultToNone(row)
-        pmDec <- row
-                   .as[Option[ProperMotion.Dec]](ci"pmDec")
-                   .defaultToNone(row)
-        epoch <- row.as[Option[Epoch]](ci"epoch").defaultToNone(row)
-        bare   = ra.isEmpty || dec.isEmpty
-      } yield TargetCsvRow(row.line, name, bare, ra, dec, pmRa, pmDec, epoch)
-
-  val DefaultSourceProfile = SourceProfile.Point(
-    SpectralDefinition.BandNormalized(
-      None,
-      SortedMap.empty
+  def brightnesses(row: CsvRow[String]): Map[Band, BigDecimal] = Band.all
+    .foldLeft(List.empty[(Band, Option[BigDecimal])])((l, t) =>
+      (t, row.as[Option[BigDecimal]](t.shortName).toOption.flatten) :: l
     )
-  )
+    .collect { case (b, Some(v)) =>
+      (b, v)
+    }
+    .toMap
+
+  def units[T](using
+    CellDecoder[Units Of Brightness[T]]
+  )(row: CsvRow[String]): Map[Band, Units Of Brightness[T]] = Band.all
+    .foldLeft(List.empty[(Band, Option[Units Of Brightness[T]])])((l, t) =>
+      (t,
+       row
+         .as[Option[Units Of Brightness[T]]](s"${t.shortName}_sys")
+         .toOption
+         .flatten
+      ) :: l
+    )
+    .collect { case (b, Some(v)) =>
+      (b, v)
+    }
+    .toMap
+
+  def integratedUnits(row: CsvRow[String]) = units[Integrated](row)
+  def surfaceUnits(row:    CsvRow[String]) = units[Surface](row)
+
+  given CsvRowDecoder[TargetCsvRow, String] =
+    (row: CsvRow[String]) =>
+      for {
+        name              <- row.as[NonEmptyString]("Name").orElse(row.as[NonEmptyString]("NAME"))
+        ra                <- row.as[Option[RightAscension]]("RAJ2000").defaultToNone(row)
+        dec               <- row
+                               .as[Option[Declination]]("DecJ2000")
+                               .orElse(row.as[Option[Declination]]("DECJ2000"))
+                               .defaultToNone(row)
+        pmRa              <- row
+                               .as[Option[ProperMotion.RA]]("pmRa")
+                               .defaultToNone(row)
+        pmDec             <- row
+                               .as[Option[ProperMotion.Dec]]("pmDec")
+                               .defaultToNone(row)
+        epoch             <- row.as[Option[Epoch]]("epoch").defaultToNone(row)
+        rowBrightnesses    = brightnesses(row)
+        rowIntegratedUnits = integratedUnits(row)
+        rowSurfaceUnits    = surfaceUnits(row)
+        _                 <- if (rowIntegratedUnits.nonEmpty && rowSurfaceUnits.nonEmpty)
+                               DecoderError("Cannot mix sourface and integrated units").asLeft
+                             else ().asRight
+        bare               = ra.isEmpty || dec.isEmpty
+      } yield TargetCsvRow(row.line,
+                           name,
+                           bare,
+                           ra,
+                           dec,
+                           pmRa,
+                           pmDec,
+                           epoch,
+                           rowBrightnesses,
+                           rowIntegratedUnits,
+                           rowSurfaceUnits
+      )
 
   private def tracking(t: TargetCsvRow, ra: RightAscension, dec: Declination): SiderealTracking =
     val base = Coordinates(ra, dec)
@@ -172,8 +273,8 @@ object TargetImport:
     in =>
       in
         .through(lowlevel.rows[F, String]())
-        .through(lowlevel.headers[F, CIString])
-        .through(lowlevel.attemptDecodeRow[F, CIString, TargetCsvRow])
+        .through(lowlevel.headers[F, String])
+        .through(lowlevel.attemptDecodeRow[F, String, TargetCsvRow])
 
   def csv2targets[F[_]: RaiseThrowable]
     : Pipe[F, String, EitherNec[ImportProblem, Target.Sidereal]] =
@@ -186,14 +287,14 @@ object TargetImport:
                 Target
                   .Sidereal(name = t.name,
                             tracking = tracking(t, ra, dec),
-                            sourceProfile = DefaultSourceProfile,
+                            sourceProfile = t.sourceProfile,
                             None
                   )
               )
               .getOrElse(
                 Target.Sidereal(t.name,
                                 tracking = SiderealTracking.const(Coordinates.Zero),
-                                sourceProfile = DefaultSourceProfile,
+                                sourceProfile = t.sourceProfile,
                                 None
                 )
               )
@@ -221,7 +322,7 @@ object TargetImport:
               Target
                 .Sidereal(name = t.name,
                           tracking = tracking(t, ra, dec),
-                          sourceProfile = DefaultSourceProfile,
+                          sourceProfile = t.sourceProfile,
                           None
                 )
                 .rightNec
