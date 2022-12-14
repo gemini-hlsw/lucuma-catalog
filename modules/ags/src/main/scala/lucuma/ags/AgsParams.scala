@@ -4,6 +4,9 @@
 package lucuma.ags
 
 import cats.Eq
+import cats.Order
+import cats.data.NonEmptyList
+import cats.data.NonEmptyMap
 import cats.derived.*
 import cats.syntax.all.*
 import lucuma.core.enums.GmosNorthFpu
@@ -19,7 +22,9 @@ import lucuma.core.math.Angle
 import lucuma.core.math.Offset
 import lucuma.core.math.syntax.int.*
 
-case class AgsPosition(posAngle: Angle, offsetPos: Offset) derives Eq
+private given Order[Angle] = Angle.SignedAngleOrder
+
+case class AgsPosition(posAngle: Angle, offsetPos: Offset) derives Order
 
 sealed trait AgsGeomCalc {
   // Indicates if the given offset is reachable
@@ -39,7 +44,7 @@ sealed trait AgsParams derives Eq {
 
   // Builds an AgsGeom object for each position
   // Some of the geometries don't chage with the position and we can cache them
-  def posCalculations(positions: List[AgsPosition]): Map[AgsPosition, AgsGeomCalc]
+  def posCalculations(positions: NonEmptyList[AgsPosition]): NonEmptyMap[AgsPosition, AgsGeomCalc]
 }
 
 object AgsParams {
@@ -52,8 +57,10 @@ object AgsParams {
       derives Eq {
     val probe = GuideProbe.OIWFS
 
-    def posCalculations(positions: List[AgsPosition]): Map[AgsPosition, AgsGeomCalc] =
-      positions.map { position =>
+    def posCalculations(
+      positions: NonEmptyList[AgsPosition]
+    ): NonEmptyMap[AgsPosition, AgsGeomCalc] = {
+      val result = positions.map { position =>
         position -> new AgsGeomCalc() {
           val patrolField =
             probeArm.patrolFieldAt(position.posAngle, position.offsetPos, fpu, port).eval
@@ -85,7 +92,9 @@ object AgsParams {
               )).eval.area
 
         }
-      }.toMap
+      }
+      result.toNem
+    }
 
   }
 
