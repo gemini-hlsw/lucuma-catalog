@@ -51,3 +51,5 @@ metals.sbt
 # Vim
 *.swp
 .direnv/
+modules/benchmarks/csv
+modules/benchmarks/*.csv
