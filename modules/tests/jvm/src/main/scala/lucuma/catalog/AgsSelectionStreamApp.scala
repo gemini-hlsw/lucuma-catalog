@@ -39,35 +39,7 @@ import org.http4s.jdkhttpclient.JdkHttpClient
 
 import java.time.Instant
 
-trait AgsSelectionSample {
-
-  given gaia: CatalogAdapter.Gaia = CatalogAdapter.Gaia3Lite
-
-  given ADQLInterpreter =
-    ADQLInterpreter.nTarget(30000)
-
-  val coords = (RightAscension.fromStringHMS.getOption("15:28:00.668"),
-                Declination.fromStringSignedDMS.getOption("+64:45:47.40")
-  ).mapN(Coordinates.apply).getOrElse(Coordinates.Zero)
-
-  def gaiaQuery[F[_]: Sync](client: Client[F]): Stream[F, Target.Sidereal] = {
-    val query   =
-      CatalogSearch.gaiaSearchUri(QueryByADQL(coords, candidatesArea, widestConstraints.some))
-    val request = Request[F](GET, query)
-    client
-      .stream(request)
-      .flatMap(
-        _.body
-          .through(text.utf8.decode)
-          // .evalTap(a => Sync[F].delay(println(a)))
-          .through(CatalogSearch.guideStars[F](gaia))
-          .collect { case Right(t) => t }
-          // .evalTap(a => Sync[F].delay(println(a)))
-      )
-  }
-}
-
-object AgsSelectionSampleApp extends IOApp.Simple with AgsSelectionSample {
+object AgsSelectionSampleStreamApp extends IOApp.Simple with AgsSelectionSample {
   val constraints = ConstraintSet(
     ImageQuality.PointOne,
     CloudExtinction.PointOne,
@@ -86,24 +58,24 @@ object AgsSelectionSampleApp extends IOApp.Simple with AgsSelectionSample {
       .flatMap(
         gaiaQuery[IO](_)
           .map(GuideStarCandidate.siderealTarget.get)
-          .compile
-          .toList
-          .map(candidates =>
+          .through(
             Ags
-              .agsAnalysis(
+              .agsAnalysisStream(
                 constraints,
                 wavelength,
                 coords,
                 List(coords),
-                NonEmptyList.of(AgsPosition(Angle.fromDoubleDegrees(120), Offset.Zero)),
+                NonEmptyList.of(AgsPosition(Angle.fromDoubleDegrees(-120), Offset.Zero),
+                                AgsPosition(Angle.fromDoubleDegrees(120), Offset.Zero)
+                ),
                 AgsParams.GmosAgsParams(
                   GmosNorthFpu.LongSlit_1_00.asLeft.some,
                   PortDisposition.Side
-                ),
-                candidates
+                )
               )
-              .sorted(AgsAnalysis.rankingOrdering)
           )
+          .compile
+          .toList
       )
       .flatTap(x => IO.println(x.length))
       // .flatMap(x => IO.println(x.head))

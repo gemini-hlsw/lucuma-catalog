@@ -3,6 +3,7 @@
 
 package lucuma.ags
 
+import cats.data.NonEmptyList
 import cats.syntax.all._
 import lucuma.core.enums._
 import lucuma.core.math.Angle
@@ -32,7 +33,7 @@ class AgsSuite extends munit.FunSuite {
           wavelength,
           Coordinates.Zero,
           List(Coordinates.Zero),
-          AgsPosition(Angle.Angle0, Offset.Zero),
+          NonEmptyList.of(AgsPosition(Angle.Angle0, Offset.Zero)),
           AgsParams.GmosAgsParams(GmosNorthFpu.LongSlit_5_00.asLeft.some, PortDisposition.Bottom),
           List(gs)
         )
@@ -58,7 +59,7 @@ class AgsSuite extends munit.FunSuite {
           wavelength,
           Coordinates.Zero,
           Nil,
-          AgsPosition(Angle.Angle0, Offset.Zero),
+          NonEmptyList.of(AgsPosition(Angle.Angle0, Offset.Zero)),
           AgsParams.GmosAgsParams(GmosNorthFpu.LongSlit_5_00.asLeft.some, PortDisposition.Bottom),
           List(gsOffset)
         )

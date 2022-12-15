@@ -88,7 +88,8 @@ object AgsAnalysis {
     target:               GuideStarCandidate,
     guideSpeed:           Option[GuideSpeed],
     override val quality: AgsGuideQuality,
-    vignettingArea:       Area
+    vignettingArea:       Area,
+    position:             AgsPosition
   ) extends AgsAnalysis {
     override def message(withProbe: Boolean): String = {
       val qualityMessage = quality match {
