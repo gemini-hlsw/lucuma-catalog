@@ -69,23 +69,32 @@ private case class TargetCsvRow(
   private def brightnessAndUnit[A](
     brightnesses: Map[Band, BigDecimal],
     units:        Map[Band, Units Of Brightness[A]],
-    defaultUnit:  Units Of Brightness[A]
+    defaultUnit:  Band => Units Of Brightness[A]
   ): List[(Band, Measure[BigDecimal] Of Brightness[A])] =
     brightnesses.map { b =>
       b._1 ->
         units
-          .getOrElse(b._1, defaultUnit)
+          .getOrElse(b._1, defaultUnit(b._1))
           .withValueTagged(b._2)
     }.toList
 
   private lazy val integratedBrightness
     : List[(Band, Measure[BigDecimal] Of Brightness[Integrated])] =
-    brightnessAndUnit(brightnesses, integratedUnits, VegaMagnitudeIsIntegratedBrightnessUnit.unit)
+    brightnessAndUnit(
+      brightnesses,
+      integratedUnits,
+      b =>
+        if (b.tag.startsWith("Sloan")) ABMagnitudeIsIntegratedBrightnessUnit.unit
+        else VegaMagnitudeIsIntegratedBrightnessUnit.unit
+    )
 
   private lazy val surfaceBrightness: List[(Band, Measure[BigDecimal] Of Brightness[Surface])] =
-    brightnessAndUnit(brightnesses,
-                      surfaceUnits,
-                      VegaMagnitudePerArcsec2IsSurfaceBrightnessUnit.unit
+    brightnessAndUnit(
+      brightnesses,
+      surfaceUnits,
+      b =>
+        if (b.tag.startsWith("Sloan")) ABMagnitudePerArcsec2IsSurfaceBrightnessUnit.unit
+        else VegaMagnitudePerArcsec2IsSurfaceBrightnessUnit.unit
     )
 
   val sourceProfile: SourceProfile =

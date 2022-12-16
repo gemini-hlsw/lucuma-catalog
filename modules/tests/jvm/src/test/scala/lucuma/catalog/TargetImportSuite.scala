@@ -22,31 +22,9 @@ import munit.CatsEffectSuite
 import org.http4s.jdkhttpclient.JdkHttpClient
 import org.typelevel.ci.*
 import lucuma.core.enums.Band
+import lucuma.core.model.SpectralDefinition
 
 class TargetImportFileSuite extends CatsEffectSuite:
-
-  test("parse sample pit file with spaces") {
-    val xmlFile = "/targets_test_case.csv"
-    val file    = getClass().getResource(xmlFile)
-    Resource.unit[IO].use { _ =>
-      Files[IO]
-        .readAll(Path(file.getPath()))
-        .through(text.utf8.decode)
-        .through(TargetImport.csv2targets)
-        .compile
-        .toList
-        // .flatTap(x => IO(pprint.pprintln(x)))
-        .map { l =>
-          assertEquals(l.length, 1)
-          assertEquals(
-            l.head.toOption
-              .flatMap(t => Target.integratedBrightnessIn(Band.V).headOption(t))
-              .map(_.value),
-            BigDecimal(10).some
-          )
-        }
-    }
-  }
 
   test("parse sample pit file") {
     val xmlFile = "/PIT_sidereal.csv"
@@ -66,6 +44,55 @@ class TargetImportFileSuite extends CatsEffectSuite:
                          case _                                                         => false
                        },
                        1
+          )
+        }
+    }
+  }
+
+  test("parse file with no brightness units") {
+    val xmlFile = "/assign_units_sidereal.csv"
+    val file    = getClass().getResource(xmlFile)
+    Resource.unit[IO].use { _ =>
+      Files[IO]
+        .readAll(Path(file.getPath()))
+        .through(text.utf8.decode)
+        .through(TargetImport.csv2targets)
+        .compile
+        .toList
+        // .flatTap(x => IO(pprint.pprintln(x)))
+        .map { l =>
+          assertEquals(l.length, 2)
+          assertEquals(
+            l.count {
+              case Right(
+                    Target.Sidereal(_,
+                                    _,
+                                    SourceProfile.Point(SpectralDefinition.BandNormalized(_, m)),
+                                    _
+                    )
+                  ) if (m.count { case ((_, m)) =>
+                    m.units.serialized === "VEGA_MAGNITUDE"
+                  }) === 1 =>
+                true
+              case _ => false
+            },
+            1
+          )
+          assertEquals(
+            l.count {
+              case Right(
+                    Target.Sidereal(_,
+                                    _,
+                                    SourceProfile.Point(SpectralDefinition.BandNormalized(_, m)),
+                                    _
+                    )
+                  ) if (m.count { case ((_, m)) =>
+                    m.units.serialized === "AB_MAGNITUDE"
+                  }) === 1 =>
+                true
+              case _ => false
+            },
+            1
           )
         }
     }
@@ -218,4 +245,27 @@ class TargetImportFileSuite extends CatsEffectSuite:
             assertEquals(l.count(_.isLeft), 3)
           }
       }
+  }
+
+  test("parse sample pit file with spaces") {
+    val xmlFile = "/targets_test_case.csv"
+    val file    = getClass().getResource(xmlFile)
+    Resource.unit[IO].use { _ =>
+      Files[IO]
+        .readAll(Path(file.getPath()))
+        .through(text.utf8.decode)
+        .through(TargetImport.csv2targets)
+        .compile
+        .toList
+        // .flatTap(x => IO(pprint.pprintln(x)))
+        .map { l =>
+          assertEquals(l.length, 1)
+          assertEquals(
+            l.head.toOption
+              .flatMap(t => Target.integratedBrightnessIn(Band.V).headOption(t))
+              .map(_.value),
+            BigDecimal(10).some
+          )
+        }
+    }
   }
