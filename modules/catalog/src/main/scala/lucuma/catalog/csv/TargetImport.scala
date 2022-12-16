@@ -181,12 +181,17 @@ object TargetImport:
 
   given integratedDecoder: CellDecoder[Units Of Brightness[Integrated]] =
     CellDecoder.stringDecoder.emap(s =>
-      integratedUnits.get(s).toRight(DecoderError(s"Unknown units $s"))
+      integratedUnits.get(s.trim()).toRight(DecoderError(s"Unknown units $s"))
     )
 
   given surfaceDecoder: CellDecoder[Units Of Brightness[Surface]] =
     CellDecoder.stringDecoder.emap(s =>
-      surfaceUnits.get(s).toRight(DecoderError(s"Unknown units $s"))
+      surfaceUnits.get(s.trim()).toRight(DecoderError(s"Unknown units $s"))
+    )
+
+  given bdDecoder: CellDecoder[BigDecimal] =
+    CellDecoder.stringDecoder.emap(r =>
+      r.trim().parseBigDecimalOption.toRight(DecoderError(s"Failed to parse bigdecimal '$r'"))
     )
 
   extension [A](r: DecoderResult[Option[A]])

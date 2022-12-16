@@ -21,8 +21,32 @@ import lucuma.core.model.Target
 import munit.CatsEffectSuite
 import org.http4s.jdkhttpclient.JdkHttpClient
 import org.typelevel.ci.*
+import lucuma.core.enums.Band
 
 class TargetImportFileSuite extends CatsEffectSuite:
+
+  test("parse sample pit file with spaces") {
+    val xmlFile = "/targets_test_case.csv"
+    val file    = getClass().getResource(xmlFile)
+    Resource.unit[IO].use { _ =>
+      Files[IO]
+        .readAll(Path(file.getPath()))
+        .through(text.utf8.decode)
+        .through(TargetImport.csv2targets)
+        .compile
+        .toList
+        // .flatTap(x => IO(pprint.pprintln(x)))
+        .map { l =>
+          assertEquals(l.length, 1)
+          assertEquals(
+            l.head.toOption
+              .flatMap(t => Target.integratedBrightnessIn(Band.V).headOption(t))
+              .map(_.value),
+            BigDecimal(10).some
+          )
+        }
+    }
+  }
 
   test("parse sample pit file") {
     val xmlFile = "/PIT_sidereal.csv"
