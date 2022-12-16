@@ -216,7 +216,7 @@ object TargetImport:
     .foldLeft(List.empty[(Band, Option[Units Of Brightness[T]])])((l, t) =>
       (t,
        row
-         .as[Option[Units Of Brightness[T]]](s"${t.shortName}_sys")
+         .as[Option[Units Of Brightness[T]]](s"${t.shortName}_unit")
          .toOption
          .flatten
       ) :: l
