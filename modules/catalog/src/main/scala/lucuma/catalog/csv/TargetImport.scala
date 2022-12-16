@@ -277,6 +277,12 @@ object TargetImport:
   private def csv2targetsRows[F[_]: RaiseThrowable]: Pipe[F, String, DecoderResult[TargetCsvRow]] =
     in =>
       in
+        .through(text.lines)
+        .filterNot { s =>
+          // Skip comment lines
+          s.startsWith("#") || s.startsWith("""//""")
+        }
+        .intersperse("\n")
         .through(lowlevel.rows[F, String]())
         .through(lowlevel.headers[F, String])
         .through(lowlevel.attemptDecodeRow[F, String, TargetCsvRow])
