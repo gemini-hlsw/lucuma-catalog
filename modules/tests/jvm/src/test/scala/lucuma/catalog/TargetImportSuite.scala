@@ -13,16 +13,16 @@ import fs2.io.file.Path
 import lucuma.catalog.*
 import lucuma.catalog.csv.TargetImport.given
 import lucuma.catalog.csv.*
+import lucuma.core.enums.Band
 import lucuma.core.math.Declination
 import lucuma.core.math.Epoch
 import lucuma.core.math.RightAscension
 import lucuma.core.model.SourceProfile
+import lucuma.core.model.SpectralDefinition
 import lucuma.core.model.Target
 import munit.CatsEffectSuite
 import org.http4s.jdkhttpclient.JdkHttpClient
 import org.typelevel.ci.*
-import lucuma.core.enums.Band
-import lucuma.core.model.SpectralDefinition
 
 class TargetImportFileSuite extends CatsEffectSuite:
 
