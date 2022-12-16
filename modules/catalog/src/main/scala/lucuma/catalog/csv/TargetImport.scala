@@ -181,12 +181,23 @@ object TargetImport:
 
   // Add some well knwon synonyms
   val integratedUnits: Map[String, Units Of Brightness[Integrated]] =
-    unitAbbv[Integrated] ++ Map("Vega" -> VegaMagnitudeIsIntegratedBrightnessUnit.unit,
-                                "AB"   -> ABMagnitudeIsIntegratedBrightnessUnit.unit,
-                                "Jy"   -> JanskyIsIntegratedBrightnessUnit.unit
+    unitAbbv[Integrated] ++ Map(
+      "Vega"   -> VegaMagnitudeIsIntegratedBrightnessUnit.unit,
+      "AB"     -> ABMagnitudeIsIntegratedBrightnessUnit.unit,
+      "Jy"     -> JanskyIsIntegratedBrightnessUnit.unit,
+      "Jansky" -> JanskyIsIntegratedBrightnessUnit.unit
     )
 
-  val surfaceUnits: Map[String, Units Of Brightness[Surface]] = unitAbbv[Surface]
+  val surfaceUnits: Map[String, Units Of Brightness[Surface]] = unitAbbv[Surface] ++ Map(
+    "Vega/arcsec2"    -> VegaMagnitudePerArcsec2IsSurfaceBrightnessUnit.unit,
+    "Vega/arcsec^2"   -> VegaMagnitudePerArcsec2IsSurfaceBrightnessUnit.unit,
+    "AB/arcsec2"      -> ABMagnitudePerArcsec2IsSurfaceBrightnessUnit.unit,
+    "AB/arcsec^2"     -> ABMagnitudePerArcsec2IsSurfaceBrightnessUnit.unit,
+    "Jy/arcsec2"      -> JanskyPerArcsec2IsSurfaceBrightnessUnit.unit,
+    "Jy/arcsec^2"     -> JanskyPerArcsec2IsSurfaceBrightnessUnit.unit,
+    "Jansky/arcsec2"  -> JanskyPerArcsec2IsSurfaceBrightnessUnit.unit,
+    "Jansky/arcsec^2" -> JanskyPerArcsec2IsSurfaceBrightnessUnit.unit
+  )
 
   given integratedDecoder: CellDecoder[Units Of Brightness[Integrated]] =
     CellDecoder.stringDecoder.emap(s =>
