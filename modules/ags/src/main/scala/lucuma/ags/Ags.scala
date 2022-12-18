@@ -22,6 +22,7 @@ import lucuma.core.model.ConstraintSet
 import lucuma.core.model.SiderealTracking
 
 import java.time.Instant
+import scala.annotation.tailrec
 
 object Ags {
 
@@ -53,7 +54,7 @@ object Ags {
       val guideSpeed = guideSpeedFor(speeds, gsc)
       AgsAnalysis.NotReachableAtPosition(pos, params.probe, guideSpeed, gsc)
     else if (geoms.exists(g => scienceOffsets.exists(g.overlapsScience(_))))
-      AgsAnalysis.VignettesScience(gsc)
+      AgsAnalysis.VignettesScience(gsc, pos)
     else
       magnitudeAnalysis(
         conditions,
@@ -109,9 +110,9 @@ object Ags {
       .map { _ =>
         guideSpeedFor(speeds, guideStar)
           .map(usable)
-          .getOrElse(NoGuideStarForProbe(guideProbe, guideStar))
+          .getOrElse(NoGuideStarForProbe(guideProbe, guideStar, position))
       }
-      .getOrElse(NoMagnitudeForBand(guideProbe, guideStar))
+      .getOrElse(NoMagnitudeForBand(guideProbe, guideStar, position))
 
   }
 
@@ -165,7 +166,7 @@ object Ags {
                                                                                       calcs
               )
             }
-            .getOrElse(ProperMotionNotAvailable(gsc))
+            .getOrElse(ProperMotionNotAvailable(gsc, position))
         }
   }
 
@@ -247,7 +248,7 @@ object Ags {
                                                                                     calcs
             )
           }
-          .getOrElse(ProperMotionNotAvailable(gsc))
+          .getOrElse(ProperMotionNotAvailable(gsc, position))
       }
   }
 
@@ -273,14 +274,34 @@ object Ags {
     // use constraints to calculate all guide speeds
     val bc    = constraintsFor(guideSpeeds)
 
-    candidates
-      .filter(c => c.gBrightness.exists(g => bc.exists(_.contains(Band.Gaia, g))))
-      .zip(positions.toList)
-      .map { (gsc, position) =>
-        val offset         = baseCoordinates.diff(gsc.tracking.baseCoordinates).offset
-        val scienceOffsets = scienceCoordinates.map(_.diff(gsc.tracking.baseCoordinates).offset)
-        runAnalysis(constraints, offset, scienceOffsets, position, params, gsc)(guideSpeeds, calcs)
-      }
+    // An optimal analysis result will be fast and deliver the requested IQ
+    def isOptimal(analysis: AgsAnalysis): Boolean = analysis match
+      case Usable(_, _, Some(GuideSpeed.Fast), AgsGuideQuality.DeliversRequestedIq, _, _) => true
+      case _                                                                              => false
+
+    @tailrec
+    def go(positions: List[AgsPosition], current: List[AgsAnalysis]): List[AgsAnalysis] = {
+      // We never pass an empty list
+      val position          = positions.head
+      val (found, analyses) = candidates
+        .filter(c => c.gBrightness.exists(g => bc.exists(_.contains(Band.Gaia, g))))
+        // Use fold left to traverse the list of candidates only once
+        .foldLeft((false, List.empty[AgsAnalysis])) { case ((found, current), gsc) =>
+          val offset         = baseCoordinates.diff(gsc.tracking.baseCoordinates).offset
+          val scienceOffsets = scienceCoordinates.map(_.diff(gsc.tracking.baseCoordinates).offset)
+          val analysis       =
+            runAnalysis(constraints, offset, scienceOffsets, position, params, gsc)(guideSpeeds,
+                                                                                    calcs
+            )
+          (found || isOptimal(analysis), analysis :: current)
+        }
+      // If we found an optimal start stop iterating over the positions
+      if (found || positions.length === 1) current ::: analyses
+      else go(positions.tail, current ::: analyses)
+    }
+
+    go(positions.toList, Nil)
+
   }
 
   /**

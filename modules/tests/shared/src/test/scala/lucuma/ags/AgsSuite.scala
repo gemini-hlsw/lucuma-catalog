@@ -38,7 +38,7 @@ class AgsSuite extends munit.FunSuite {
           List(gs)
         )
         .headOption,
-      AgsAnalysis.VignettesScience(gs).some
+      AgsAnalysis.VignettesScience(gs, AgsPosition(Angle.Angle0, Offset.Zero)).some
     )
 
     val gsOffset =
