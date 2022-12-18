@@ -83,18 +83,14 @@ private case class TargetCsvRow(
     brightnessAndUnit(
       brightnesses,
       integratedUnits,
-      b =>
-        if (b.tag.startsWith("Sloan")) ABMagnitudeIsIntegratedBrightnessUnit.unit
-        else VegaMagnitudeIsIntegratedBrightnessUnit.unit
+      _.defaultIntegrated.units
     )
 
   private lazy val surfaceBrightness: List[(Band, Measure[BigDecimal] Of Brightness[Surface])] =
     brightnessAndUnit(
       brightnesses,
       surfaceUnits,
-      b =>
-        if (b.tag.startsWith("Sloan")) ABMagnitudePerArcsec2IsSurfaceBrightnessUnit.unit
-        else VegaMagnitudePerArcsec2IsSurfaceBrightnessUnit.unit
+      _.defaultSurface.units
     )
 
   val sourceProfile: SourceProfile =
@@ -179,6 +175,22 @@ object TargetImport:
   def unitAbbv[A](using enumerated: Enumerated[Units Of Brightness[A]]) =
     enumerated.all.map(u => u.abbv -> u).toMap
 
+  // Add some replacemente to ² and Å to support more variants of units
+  private def expandedAbbrevations[T](using enumerated: Enumerated[Units Of Brightness[T]]) =
+    unitAbbv[T].foldLeft(
+      Map.empty[String, Units Of Brightness[T]]
+    ) { (map, unit) =>
+      val replaced = if (unit._1.contains("²") || unit._1.contains("Å")) {
+        Map(unit._1.replaceAll("²", "2").replaceAll("Å", "A")  -> unit._2,
+            unit._1.replaceAll("²", "^2").replaceAll("Å", "A") -> unit._2
+        )
+      } else Map.empty
+      val angstrom = if (unit._1.contains("Å")) {
+        Map(unit._1.replaceAll("Å", "A") -> unit._2, unit._1.replaceAll("Å", "A") -> unit._2)
+      } else Map.empty
+      map ++ replaced ++ angstrom
+    }
+
   // Add some well knwon synonyms
   val integratedUnits: Map[String, Units Of Brightness[Integrated]] =
     unitAbbv[Integrated] ++ Map(
@@ -186,18 +198,10 @@ object TargetImport:
       "AB"     -> ABMagnitudeIsIntegratedBrightnessUnit.unit,
       "Jy"     -> JanskyIsIntegratedBrightnessUnit.unit,
       "Jansky" -> JanskyIsIntegratedBrightnessUnit.unit
-    )
+    ) ++ expandedAbbrevations[Integrated]
 
-  val surfaceUnits: Map[String, Units Of Brightness[Surface]] = unitAbbv[Surface] ++ Map(
-    "Vega/arcsec2"    -> VegaMagnitudePerArcsec2IsSurfaceBrightnessUnit.unit,
-    "Vega/arcsec^2"   -> VegaMagnitudePerArcsec2IsSurfaceBrightnessUnit.unit,
-    "AB/arcsec2"      -> ABMagnitudePerArcsec2IsSurfaceBrightnessUnit.unit,
-    "AB/arcsec^2"     -> ABMagnitudePerArcsec2IsSurfaceBrightnessUnit.unit,
-    "Jy/arcsec2"      -> JanskyPerArcsec2IsSurfaceBrightnessUnit.unit,
-    "Jy/arcsec^2"     -> JanskyPerArcsec2IsSurfaceBrightnessUnit.unit,
-    "Jansky/arcsec2"  -> JanskyPerArcsec2IsSurfaceBrightnessUnit.unit,
-    "Jansky/arcsec^2" -> JanskyPerArcsec2IsSurfaceBrightnessUnit.unit
-  )
+  val surfaceUnits: Map[String, Units Of Brightness[Surface]] =
+    unitAbbv[Surface] ++ expandedAbbrevations[Surface]
 
   given integratedDecoder: CellDecoder[Units Of Brightness[Integrated]] =
     CellDecoder.stringDecoder.emap(s =>
@@ -392,7 +396,6 @@ object TargetImport:
                 )
                 // Handle general errors
                 .handleError { e =>
-                  e.printStackTrace()
                   ImportProblem
                     .LookupError(e.getMessage, t.line)
                     .asLeft[Target.Sidereal]
