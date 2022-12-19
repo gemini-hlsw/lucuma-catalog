@@ -4,6 +4,7 @@
 package lucuma.ags
 
 import cats.Order
+import cats.data.NonEmptyList
 import cats.syntax.all.*
 import lucuma.catalog.BandsList
 import lucuma.core.enums.Band
@@ -13,24 +14,30 @@ import lucuma.core.geom.Area
 sealed trait AgsAnalysis {
   def quality: AgsGuideQuality = AgsGuideQuality.Unusable
   def isUsable: Boolean        = quality =!= AgsGuideQuality.Unusable
+  def position: AgsPosition
   def target: GuideStarCandidate
   def message(withProbe: Boolean): String
 }
 
 object AgsAnalysis {
 
-  case class ProperMotionNotAvailable(target: GuideStarCandidate) extends AgsAnalysis {
+  case class ProperMotionNotAvailable(target: GuideStarCandidate, position: AgsPosition)
+      extends AgsAnalysis {
     override def message(withProbe: Boolean): String =
       "Cannot calculate proper motion."
   }
 
-  case class VignettesScience(target: GuideStarCandidate) extends AgsAnalysis {
+  case class VignettesScience(target: GuideStarCandidate, position: AgsPosition)
+      extends AgsAnalysis {
     override def message(withProbe: Boolean): String =
       "The target overlaps with the science target"
   }
 
-  case class NoGuideStarForProbe(guideProbe: GuideProbe, target: GuideStarCandidate)
-      extends AgsAnalysis {
+  case class NoGuideStarForProbe(
+    guideProbe: GuideProbe,
+    target:     GuideStarCandidate,
+    position:   AgsPosition
+  ) extends AgsAnalysis {
     override def message(withProbe: Boolean): String = {
       val p = if (withProbe) s"$guideProbe " else ""
       s"No ${p}guide star selected."
@@ -40,7 +47,8 @@ object AgsAnalysis {
   case class MagnitudeTooFaint(
     guideProbe:     GuideProbe,
     target:         GuideStarCandidate,
-    showGuideSpeed: Boolean
+    showGuideSpeed: Boolean,
+    position:       AgsPosition
   ) extends AgsAnalysis {
     override def message(withProbe: Boolean): String = {
       val p  = if (withProbe) s"use $guideProbe" else "guide"
@@ -49,8 +57,11 @@ object AgsAnalysis {
     }
   }
 
-  case class MagnitudeTooBright(guideProbe: GuideProbe, target: GuideStarCandidate)
-      extends AgsAnalysis {
+  case class MagnitudeTooBright(
+    guideProbe: GuideProbe,
+    target:     GuideStarCandidate,
+    position:   AgsPosition
+  ) extends AgsAnalysis {
     override def message(withProbe: Boolean): String = {
       val p = if (withProbe) s"$guideProbe g" else "G"
       s"${p}uide star is too bright to guide."
@@ -69,8 +80,11 @@ object AgsAnalysis {
     }
   }
 
-  case class NoMagnitudeForBand(guideProbe: GuideProbe, target: GuideStarCandidate)
-      extends AgsAnalysis {
+  case class NoMagnitudeForBand(
+    guideProbe: GuideProbe,
+    target:     GuideStarCandidate,
+    position:   AgsPosition
+  ) extends AgsAnalysis {
     private val probeBands: List[Band]               = BandsList.GaiaBandsList.bands
     override def message(withProbe: Boolean): String = {
       val p = if (withProbe) s"${guideProbe} g" else "G"
@@ -106,6 +120,18 @@ object AgsAnalysis {
   object Usable {
     val rankingOrder: Order[Usable] =
       Order.by(u => (u.guideSpeed, u.quality, u.vignettingArea, u.target.gBrightness, u.target.id))
+
+    // This order gives preferences to positions given earlier
+    private[ags] def rankingOrderAtPositions(positions: Map[AgsPosition, Int]): Order[Usable] =
+      Order.by(u =>
+        (u.guideSpeed,
+         u.quality,
+         u.vignettingArea,
+         positions.getOrElse(u.position, Int.MaxValue),
+         u.target.gBrightness,
+         u.target.id
+        )
+      )
   }
 
   val rankingOrder: Order[AgsAnalysis] =
@@ -117,5 +143,30 @@ object AgsAnalysis {
     }
 
   val rankingOrdering: Ordering[AgsAnalysis] = rankingOrder.toOrdering
+
+  private def rankingOrderAtPositions(positions: Map[AgsPosition, Int]): Order[AgsAnalysis] =
+    Order.from {
+      case (a: Usable, b: Usable) => Usable.rankingOrderAtPositions(positions).compare(a, b)
+      case (_: Usable, _)         => Int.MinValue
+      case (_, _: Usable)         => Int.MaxValue
+      case _                      => Int.MinValue
+    }
+
+  extension (results: List[AgsAnalysis])
+    /**
+     * This method will sort the analysis and remove duplicates for position, keeping only the ones
+     * for the winning position
+     */
+    def selectBestPosition(positions: NonEmptyList[AgsPosition]): List[AgsAnalysis] = {
+      val (usable, nonUsable)                   = results.partition(_.isUsable)
+      val positionsIndex: Map[AgsPosition, Int] = positions.zipWithIndex.toList.toMap
+      val topUsablePosition                     = usable
+        .sorted(rankingOrderAtPositions(positionsIndex).toOrdering)
+        .headOption
+        .map(_.position)
+      usable.filter(u => topUsablePosition.exists(_ === u.position)) :::
+        nonUsable.filter(u => topUsablePosition.exists(_ === u.position))
+
+    }
 
 }

@@ -69,7 +69,7 @@ trait AgsSelectionSample {
 
 object AgsSelectionSampleApp extends IOApp.Simple with AgsSelectionSample {
   val constraints = ConstraintSet(
-    ImageQuality.PointOne,
+    ImageQuality.PointEight,
     CloudExtinction.PointOne,
     SkyBackground.Dark,
     WaterVapor.Wet,
@@ -79,6 +79,9 @@ object AgsSelectionSampleApp extends IOApp.Simple with AgsSelectionSample {
   )
 
   val wavelength = Wavelength.fromNanometers(520).get
+  val positions  = NonEmptyList.of(AgsPosition(Angle.fromDoubleDegrees(1), Offset.Zero),
+                                  AgsPosition(Angle.fromDoubleDegrees(1).flip, Offset.Zero)
+  )
 
   def run =
     JdkHttpClient
@@ -95,18 +98,17 @@ object AgsSelectionSampleApp extends IOApp.Simple with AgsSelectionSample {
                 wavelength,
                 coords,
                 List(coords),
-                NonEmptyList.of(AgsPosition(Angle.fromDoubleDegrees(120), Offset.Zero)),
+                positions,
                 AgsParams.GmosAgsParams(
                   GmosNorthFpu.LongSlit_1_00.asLeft.some,
                   PortDisposition.Side
                 ),
                 candidates
               )
-              .sorted(AgsAnalysis.rankingOrdering)
+              .selectBestPosition(positions)
           )
       )
       .flatTap(x => IO.println(x.length))
-      // .flatMap(x => IO.println(x.head))
-      .flatMap(x => x.filter(_.isUsable).traverse(u => IO(pprint.pprintln(u))))
+      // .flatMap(x => x.filter(_.isUsable).traverse(u => IO(pprint.pprintln(u))))
       .void
 }
