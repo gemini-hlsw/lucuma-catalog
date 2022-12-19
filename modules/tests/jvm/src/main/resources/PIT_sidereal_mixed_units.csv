@@ -1,2 +1,2 @@
-Name,RAJ2000,DecJ2000,pmRA,pmDec,U,U_sys,B,B_sys,V,V_sys,UC,UC_sys,R,R_sys,I,I_sys,Y,Y_sys,J,J_sys,H,H_sys,K,K_sys,L,L_sys,M,M_sys,N,N_sys,Q,Q_sys
+Name,RAJ2000,DecJ2000,pmRA,pmDec,U,U_unit,B,B_unit,V,V_unit,UC,UC_unit,R,R_unit,I,I_unit,Y,Y_unit,J,J_unit,H,H_unit,K,K_unit,L,L_unit,M,M_unit,N,N_unit,Q,Q_unit
 33 PSC,00:05:20.15,-05:42:28.2,,,,,,,4.61,Vega,,,,,,,,,,,,,,,,,,,4.88,Jy/arcsec²,,

@@ -69,23 +69,28 @@ private case class TargetCsvRow(
   private def brightnessAndUnit[A](
     brightnesses: Map[Band, BigDecimal],
     units:        Map[Band, Units Of Brightness[A]],
-    defaultUnit:  Units Of Brightness[A]
+    defaultUnit:  Band => Units Of Brightness[A]
   ): List[(Band, Measure[BigDecimal] Of Brightness[A])] =
     brightnesses.map { b =>
       b._1 ->
         units
-          .getOrElse(b._1, defaultUnit)
+          .getOrElse(b._1, defaultUnit(b._1))
           .withValueTagged(b._2)
     }.toList
 
   private lazy val integratedBrightness
     : List[(Band, Measure[BigDecimal] Of Brightness[Integrated])] =
-    brightnessAndUnit(brightnesses, integratedUnits, VegaMagnitudeIsIntegratedBrightnessUnit.unit)
+    brightnessAndUnit(
+      brightnesses,
+      integratedUnits,
+      _.defaultIntegrated.units
+    )
 
   private lazy val surfaceBrightness: List[(Band, Measure[BigDecimal] Of Brightness[Surface])] =
-    brightnessAndUnit(brightnesses,
-                      surfaceUnits,
-                      VegaMagnitudePerArcsec2IsSurfaceBrightnessUnit.unit
+    brightnessAndUnit(
+      brightnesses,
+      surfaceUnits,
+      _.defaultSurface.units
     )
 
   val sourceProfile: SourceProfile =
@@ -170,23 +175,47 @@ object TargetImport:
   def unitAbbv[A](using enumerated: Enumerated[Units Of Brightness[A]]) =
     enumerated.all.map(u => u.abbv -> u).toMap
 
+  // Add some replacemente to ² and Å to support more variants of units
+  private def expandedAbbrevations[T](using enumerated: Enumerated[Units Of Brightness[T]]) =
+    unitAbbv[T].foldLeft(
+      Map.empty[String, Units Of Brightness[T]]
+    ) { (map, unit) =>
+      val replaced = if (unit._1.contains("²") || unit._1.contains("Å")) {
+        Map(unit._1.replaceAll("²", "2").replaceAll("Å", "A")  -> unit._2,
+            unit._1.replaceAll("²", "^2").replaceAll("Å", "A") -> unit._2
+        )
+      } else Map.empty
+      val angstrom = if (unit._1.contains("Å")) {
+        Map(unit._1.replaceAll("Å", "A") -> unit._2, unit._1.replaceAll("Å", "A") -> unit._2)
+      } else Map.empty
+      map ++ replaced ++ angstrom
+    }
+
   // Add some well knwon synonyms
   val integratedUnits: Map[String, Units Of Brightness[Integrated]] =
-    unitAbbv[Integrated] ++ Map("Vega" -> VegaMagnitudeIsIntegratedBrightnessUnit.unit,
-                                "AB"   -> ABMagnitudeIsIntegratedBrightnessUnit.unit,
-                                "Jy"   -> JanskyIsIntegratedBrightnessUnit.unit
-    )
+    unitAbbv[Integrated] ++ Map(
+      "Vega"   -> VegaMagnitudeIsIntegratedBrightnessUnit.unit,
+      "AB"     -> ABMagnitudeIsIntegratedBrightnessUnit.unit,
+      "Jy"     -> JanskyIsIntegratedBrightnessUnit.unit,
+      "Jansky" -> JanskyIsIntegratedBrightnessUnit.unit
+    ) ++ expandedAbbrevations[Integrated]
 
-  val surfaceUnits: Map[String, Units Of Brightness[Surface]] = unitAbbv[Surface]
+  val surfaceUnits: Map[String, Units Of Brightness[Surface]] =
+    unitAbbv[Surface] ++ expandedAbbrevations[Surface]
 
   given integratedDecoder: CellDecoder[Units Of Brightness[Integrated]] =
     CellDecoder.stringDecoder.emap(s =>
-      integratedUnits.get(s).toRight(DecoderError(s"Unknown units $s"))
+      integratedUnits.get(s.trim()).toRight(DecoderError(s"Unknown units $s"))
     )
 
   given surfaceDecoder: CellDecoder[Units Of Brightness[Surface]] =
     CellDecoder.stringDecoder.emap(s =>
-      surfaceUnits.get(s).toRight(DecoderError(s"Unknown units $s"))
+      surfaceUnits.get(s.trim()).toRight(DecoderError(s"Unknown units $s"))
+    )
+
+  given bdDecoder: CellDecoder[BigDecimal] =
+    CellDecoder.stringDecoder.emap(r =>
+      r.trim().parseBigDecimalOption.toRight(DecoderError(s"Failed to parse bigdecimal '$r'"))
     )
 
   extension [A](r: DecoderResult[Option[A]])
@@ -211,7 +240,7 @@ object TargetImport:
     .foldLeft(List.empty[(Band, Option[Units Of Brightness[T]])])((l, t) =>
       (t,
        row
-         .as[Option[Units Of Brightness[T]]](s"${t.shortName}_sys")
+         .as[Option[Units Of Brightness[T]]](s"${t.shortName}_unit")
          .toOption
          .flatten
       ) :: l
@@ -272,6 +301,12 @@ object TargetImport:
   private def csv2targetsRows[F[_]: RaiseThrowable]: Pipe[F, String, DecoderResult[TargetCsvRow]] =
     in =>
       in
+        .through(text.lines)
+        .filterNot { s =>
+          // Skip comment lines
+          s.startsWith("#") || s.startsWith("""//""")
+        }
+        .intersperse("\n")
         .through(lowlevel.rows[F, String]())
         .through(lowlevel.headers[F, String])
         .through(lowlevel.attemptDecodeRow[F, String, TargetCsvRow])
@@ -361,7 +396,6 @@ object TargetImport:
                 )
                 // Handle general errors
                 .handleError { e =>
-                  e.printStackTrace()
                   ImportProblem
                     .LookupError(e.getMessage, t.line)
                     .asLeft[Target.Sidereal]

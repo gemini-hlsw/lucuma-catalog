@@ -115,8 +115,6 @@ object Ags {
 
   }
 
-  import fs2.Stream
-
   private def offsetAt(
     at:      Instant => Option[Coordinates],
     instant: Instant,
