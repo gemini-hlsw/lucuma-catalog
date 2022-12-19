@@ -280,9 +280,9 @@ object Ags {
       case _                                                                              => false
 
     @tailrec
-    def go(positions: List[AgsPosition], current: List[AgsAnalysis]): List[AgsAnalysis] = {
-      // We never pass an empty list
-      val position          = positions.head
+    def go(positions: NonEmptyList[AgsPosition], previous: List[AgsAnalysis]): List[AgsAnalysis] = {
+      val position = positions.head
+
       val (found, analyses) = candidates
         .filter(c => c.gBrightness.exists(g => bc.exists(_.contains(Band.Gaia, g))))
         // Use fold left to traverse the list of candidates only once
@@ -296,11 +296,12 @@ object Ags {
           (found || isOptimal(analysis), analysis :: current)
         }
       // If we found an optimal start stop iterating over the positions
-      if (found || positions.length === 1) current ::: analyses
-      else go(positions.tail, current ::: analyses)
+      NonEmptyList.fromList(positions.tail).filterNot(_ => found) match
+        case None       => previous ::: analyses
+        case Some(next) => go(next, previous ::: analyses)
     }
 
-    go(positions.toList, Nil)
+    go(positions, Nil)
 
   }
 

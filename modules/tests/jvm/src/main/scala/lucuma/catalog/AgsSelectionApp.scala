@@ -69,7 +69,7 @@ trait AgsSelectionSample {
 
 object AgsSelectionSampleApp extends IOApp.Simple with AgsSelectionSample {
   val constraints = ConstraintSet(
-    ImageQuality.PointOne,
+    ImageQuality.PointEight,
     CloudExtinction.PointOne,
     SkyBackground.Dark,
     WaterVapor.Wet,
