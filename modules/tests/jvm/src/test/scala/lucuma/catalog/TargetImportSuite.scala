@@ -17,6 +17,7 @@ import lucuma.core.enums.Band
 import lucuma.core.math.Declination
 import lucuma.core.math.Epoch
 import lucuma.core.math.RightAscension
+import lucuma.core.model.SiderealTracking
 import lucuma.core.model.SourceProfile
 import lucuma.core.model.SpectralDefinition
 import lucuma.core.model.Target
@@ -25,6 +26,32 @@ import org.http4s.jdkhttpclient.JdkHttpClient
 import org.typelevel.ci.*
 
 class TargetImportFileSuite extends CatsEffectSuite:
+
+  test("Another test case") {
+    val xmlFile = "/another_test.csv"
+    val file    = getClass().getResource(xmlFile)
+    Resource.unit[IO].use { _ =>
+      Files[IO]
+        .readAll(Path(file.getPath()))
+        .through(text.utf8.decode)
+        .through(TargetImport.csv2targets)
+        .compile
+        .toList
+        // .flatTap(x => IO(pprint.pprintln(x)))
+        .map { l =>
+          assertEquals(l.length, 2)
+          assertEquals(
+            l.count {
+              case Right(Target.Sidereal(_, s: SiderealTracking, _, _))
+                  if s.epoch.epochYear === 2015.5 =>
+                true
+              case _ => false
+            },
+            1
+          )
+        }
+    }
+  }
 
   test("parse sample pit file") {
     val xmlFile = "/PIT_sidereal.csv"

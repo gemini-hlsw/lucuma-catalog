@@ -111,18 +111,18 @@ private case class TargetCsvRow(
 }
 
 object TargetImport:
-  given liftCellDecoder[A: CellDecoder]: CellDecoder[Option[A]] = s =>
+  private given liftCellDecoder[A: CellDecoder]: CellDecoder[Option[A]] = s =>
     s.nonEmpty.guard[Option].traverse(_ => CellDecoder[A].apply(s))
 
-  given CellDecoder[NonEmptyString] =
+  private given CellDecoder[NonEmptyString] =
     CellDecoder.stringDecoder.emap(r =>
       refineV[NonEmpty](r).leftMap(_ => new DecoderError("Empty name"))
     )
 
-  given ParseableHeader[String] =
+  private given ParseableHeader[String] =
     _.map(_.trim).asRight
 
-  given decDecoder: CellDecoder[Declination] =
+  private given decDecoder: CellDecoder[Declination] =
     CellDecoder.stringDecoder.emap { r =>
       val t = r.trim()
       Declination.fromStringSignedDMS
@@ -130,7 +130,7 @@ object TargetImport:
         .toRight(new DecoderError(s"Invalid Dec value '$r'"))
     }
 
-  given raDecoder: CellDecoder[RightAscension] =
+  private given raDecoder: CellDecoder[RightAscension] =
     CellDecoder.stringDecoder.emap { r =>
       RightAscension.lenientFromStringHMS
         .getOption(r.trim)
@@ -138,24 +138,21 @@ object TargetImport:
     }
 
   // Move to lucuma-core
-  val plainNumberEpoch: Parser[Epoch] =
+  private val plainNumberEpoch: Parser[Epoch] =
     TimeParsers.year4.mapFilter(y =>
       if (y.getValue() >= 1900 && y.getValue() <= 3000)
         Epoch.Julian.fromIntMilliyears(y.getValue())
       else None
     )
 
-  val epochParser: Parser[Epoch] =
+  private val epochParser: Parser[Epoch] =
     EpochParsers.epoch | EpochParsers.epochLenientNoScheme | plainNumberEpoch
 
-  given CellDecoder[Option[Epoch]] =
+  private given CellDecoder[Epoch] =
     CellDecoder.stringDecoder.emap { r =>
-      if (r.trim().isEmpty) Right(Epoch.J2000.some)
-      else
-        epochParser
-          .parseAll(r.trim())
-          .map(Some(_))
-          .leftMap(_ => new DecoderError(s"Invalid epoch value '$r'"))
+      epochParser
+        .parseAll(r.trim())
+        .leftMap(_ => new DecoderError(s"Invalid epoch value '$r'"))
     }
 
   private def angularVelocityComponentDecoder[T](build: BigDecimal => T): CellDecoder[T] =
@@ -166,13 +163,13 @@ object TargetImport:
         .toRight(new DecoderError(r))
     }
 
-  given pmRADecoder: CellDecoder[ProperMotion.RA] =
+  private given pmRADecoder: CellDecoder[ProperMotion.RA] =
     angularVelocityComponentDecoder(ProperMotion.RA.milliarcsecondsPerYear.reverseGet)
 
-  given pmDecDecoder: CellDecoder[ProperMotion.Dec] =
+  private given pmDecDecoder: CellDecoder[ProperMotion.Dec] =
     angularVelocityComponentDecoder(ProperMotion.Dec.milliarcsecondsPerYear.reverseGet)
 
-  def unitAbbv[A](using enumerated: Enumerated[Units Of Brightness[A]]) =
+  private def unitAbbv[A](using enumerated: Enumerated[Units Of Brightness[A]]) =
     enumerated.all.map(u => u.abbv -> u).toMap
 
   // Add some replacemente to ² and Å to support more variants of units
@@ -192,7 +189,7 @@ object TargetImport:
     }
 
   // Add some well knwon synonyms
-  val integratedUnits: Map[String, Units Of Brightness[Integrated]] =
+  private val integratedUnits: Map[String, Units Of Brightness[Integrated]] =
     unitAbbv[Integrated] ++ Map(
       "Vega"   -> VegaMagnitudeIsIntegratedBrightnessUnit.unit,
       "AB"     -> ABMagnitudeIsIntegratedBrightnessUnit.unit,
@@ -200,32 +197,25 @@ object TargetImport:
       "Jansky" -> JanskyIsIntegratedBrightnessUnit.unit
     ) ++ expandedAbbrevations[Integrated]
 
-  val surfaceUnits: Map[String, Units Of Brightness[Surface]] =
+  private val surfaceUnits: Map[String, Units Of Brightness[Surface]] =
     unitAbbv[Surface] ++ expandedAbbrevations[Surface]
 
-  given integratedDecoder: CellDecoder[Units Of Brightness[Integrated]] =
+  private given integratedDecoder: CellDecoder[Units Of Brightness[Integrated]] =
     CellDecoder.stringDecoder.emap(s =>
       integratedUnits.get(s.trim()).toRight(DecoderError(s"Unknown units $s"))
     )
 
-  given surfaceDecoder: CellDecoder[Units Of Brightness[Surface]] =
+  private given surfaceDecoder: CellDecoder[Units Of Brightness[Surface]] =
     CellDecoder.stringDecoder.emap(s =>
       surfaceUnits.get(s.trim()).toRight(DecoderError(s"Unknown units $s"))
     )
 
-  given bdDecoder: CellDecoder[BigDecimal] =
+  private given bdDecoder: CellDecoder[BigDecimal] =
     CellDecoder.stringDecoder.emap(r =>
       r.trim().parseBigDecimalOption.toRight(DecoderError(s"Failed to parse bigdecimal '$r'"))
     )
 
-  extension [A](r: DecoderResult[Option[A]])
-    def defaultToNone[B](row: CsvRow[B]): DecoderResult[Option[A]] = r match
-      case a @ Right(_)                                          => a
-      case Left(d) if d.getMessage().startsWith("unknown field") => Right(None)
-      case Left(d)                                               =>
-        d.withLine(row.line).asLeft
-
-  def brightnesses(row: CsvRow[String]): Map[Band, BigDecimal] = Band.all
+  private def brightnesses(row: CsvRow[String]): Map[Band, BigDecimal] = Band.all
     .foldLeft(List.empty[(Band, Option[BigDecimal])])((l, t) =>
       (t, row.as[Option[BigDecimal]](t.shortName).toOption.flatten) :: l
     )
@@ -234,7 +224,7 @@ object TargetImport:
     }
     .toMap
 
-  def units[T](using
+  private def units[T](using
     CellDecoder[Units Of Brightness[T]]
   )(row: CsvRow[String]): Map[Band, Units Of Brightness[T]] = Band.all
     .foldLeft(List.empty[(Band, Option[Units Of Brightness[T]])])((l, t) =>
@@ -250,25 +240,76 @@ object TargetImport:
     }
     .toMap
 
-  def integratedUnits(row: CsvRow[String]) = units[Integrated](row)
-  def surfaceUnits(row:    CsvRow[String]) = units[Surface](row)
+  private def integratedUnits(row: CsvRow[String]) = units[Integrated](row)
+  private def surfaceUnits(row:    CsvRow[String]) = units[Surface](row)
 
-  given CsvRowDecoder[TargetCsvRow, String] =
+  extension [A](r: DecoderResult[Option[A]])
+    // Check the result and populate the line where it failed
+    def defaultToNone[B](row: CsvRow[B]): DecoderResult[Option[A]] = r match
+      case a @ Right(_)                                          => a
+      case Left(d) if d.getMessage().startsWith("unknown field") => Right(None)
+      case Left(d)                                               =>
+        d.withLine(row.line).asLeft
+
+  extension (row: CsvRow[String])
+
+    // try to find the value on any of the columns and fail if not found on any
+    def asIn[A: CellDecoder](col: String, extras: String*): DecoderResult[A] =
+      (col :: extras.toList)
+        .collectFirst(row.as[A](_))
+        .getOrElse(DecoderError(s"No column $col found").asLeft)
+
+    private def internalAlternatives[T](
+      alternatives: List[String],
+      defaultValue: Option[T] = None
+    )(using CellDecoder[Option[T]]): DecoderResult[Option[T]] = {
+      val (errors, correct) = alternatives.toList
+        .map(row.as[Option[T]](_))
+        .partitionEither(identity)
+      if (correct.nonEmpty) correct.head.asRight
+      else if (errors.nonEmpty) {
+        val notFound = errors.forall { case d: DecoderError =>
+          d.getMessage.startsWith("unknown field")
+        }
+        // if not found anywhere go to the default
+        if (notFound)
+          defaultValue.asRight
+        else
+          errors.head.withLine(row.line).asLeft
+      } else DecoderError(s"No column col found").withLine(row.line).asLeft
+    }
+
+    // Try to decode a column with several alternative capitalizations
+    // If any fails the whole thing fails, if none is found return none
+    def withAlternatives[T](
+      col:          String,
+      defaultValue: Option[T] = None
+    )(using CellDecoder[Option[T]]): DecoderResult[Option[T]] =
+      internalAlternatives(List(col, col.toUpperCase(), col.toLowerCase(), col.capitalize))
+
+    //
+    // Try to decode a column with several alternative each expanded to several capitalization
+    // If any fails the whole thing fails, if none is found return none
+    def withAlternativesM[T](
+      defaultValue: Option[T] = None,
+      col:          String,
+      extras:       String*
+    )(using CellDecoder[Option[T]]): DecoderResult[Option[T]] =
+      internalAlternatives(
+        (col :: extras.toList).flatMap(col =>
+          List(col, col.toUpperCase(), col.toLowerCase(), col.capitalize)
+        )
+      )
+
+  private given CsvRowDecoder[TargetCsvRow, String] =
     (row: CsvRow[String]) =>
       for {
-        name              <- row.as[NonEmptyString]("Name").orElse(row.as[NonEmptyString]("NAME"))
-        ra                <- row.as[Option[RightAscension]]("RAJ2000").defaultToNone(row)
-        dec               <- row
-                               .as[Option[Declination]]("DecJ2000")
-                               .orElse(row.as[Option[Declination]]("DECJ2000"))
-                               .defaultToNone(row)
-        pmRa              <- row
-                               .as[Option[ProperMotion.RA]]("pmRa")
-                               .defaultToNone(row)
-        pmDec             <- row
-                               .as[Option[ProperMotion.Dec]]("pmDec")
-                               .defaultToNone(row)
-        epoch             <- row.as[Option[Epoch]]("epoch").defaultToNone(row)
+        name              <- row.asIn[NonEmptyString]("Name", "NAME")
+        ra                <- row.withAlternativesM[RightAscension](None, "RAJ2000", "RaJ2000")
+        dec               <- row.withAlternativesM[Declination](None, "DecJ2000", "DECJ2000")
+        pmRa              <- row.withAlternativesM[ProperMotion.RA](None, "pmRa", "pmRA")
+        pmDec             <- row.withAlternativesM[ProperMotion.Dec](None, "pmDec", "pmDEC")
+        epoch             <- row.withAlternatives[Epoch]("epoch", Epoch.J2000.some)
         rowBrightnesses    = brightnesses(row)
         rowIntegratedUnits = integratedUnits(row)
         rowSurfaceUnits    = surfaceUnits(row)
