@@ -111,18 +111,18 @@ private case class TargetCsvRow(
 }
 
 object TargetImport:
-  given liftCellDecoder[A: CellDecoder]: CellDecoder[Option[A]] = s =>
+  private given liftCellDecoder[A: CellDecoder]: CellDecoder[Option[A]] = s =>
     s.nonEmpty.guard[Option].traverse(_ => CellDecoder[A].apply(s))
 
-  given CellDecoder[NonEmptyString] =
+  private given CellDecoder[NonEmptyString] =
     CellDecoder.stringDecoder.emap(r =>
       refineV[NonEmpty](r).leftMap(_ => new DecoderError("Empty name"))
     )
 
-  given ParseableHeader[String] =
+  private given ParseableHeader[String] =
     _.map(_.trim).asRight
 
-  given decDecoder: CellDecoder[Declination] =
+  private given decDecoder: CellDecoder[Declination] =
     CellDecoder.stringDecoder.emap { r =>
       val t = r.trim()
       Declination.fromStringSignedDMS
@@ -130,7 +130,7 @@ object TargetImport:
         .toRight(new DecoderError(s"Invalid Dec value '$r'"))
     }
 
-  given raDecoder: CellDecoder[RightAscension] =
+  private given raDecoder: CellDecoder[RightAscension] =
     CellDecoder.stringDecoder.emap { r =>
       RightAscension.lenientFromStringHMS
         .getOption(r.trim)
@@ -138,17 +138,17 @@ object TargetImport:
     }
 
   // Move to lucuma-core
-  val plainNumberEpoch: Parser[Epoch] =
+  private val plainNumberEpoch: Parser[Epoch] =
     TimeParsers.year4.mapFilter(y =>
       if (y.getValue() >= 1900 && y.getValue() <= 3000)
         Epoch.Julian.fromIntMilliyears(y.getValue())
       else None
     )
 
-  val epochParser: Parser[Epoch] =
+  private val epochParser: Parser[Epoch] =
     EpochParsers.epoch | EpochParsers.epochLenientNoScheme | plainNumberEpoch
 
-  given CellDecoder[Epoch] =
+  private given CellDecoder[Epoch] =
     CellDecoder.stringDecoder.emap { r =>
       epochParser
         .parseAll(r.trim())
@@ -163,13 +163,13 @@ object TargetImport:
         .toRight(new DecoderError(r))
     }
 
-  given pmRADecoder: CellDecoder[ProperMotion.RA] =
+  private given pmRADecoder: CellDecoder[ProperMotion.RA] =
     angularVelocityComponentDecoder(ProperMotion.RA.milliarcsecondsPerYear.reverseGet)
 
-  given pmDecDecoder: CellDecoder[ProperMotion.Dec] =
+  private given pmDecDecoder: CellDecoder[ProperMotion.Dec] =
     angularVelocityComponentDecoder(ProperMotion.Dec.milliarcsecondsPerYear.reverseGet)
 
-  def unitAbbv[A](using enumerated: Enumerated[Units Of Brightness[A]]) =
+  private def unitAbbv[A](using enumerated: Enumerated[Units Of Brightness[A]]) =
     enumerated.all.map(u => u.abbv -> u).toMap
 
   // Add some replacemente to ² and Å to support more variants of units
@@ -189,7 +189,7 @@ object TargetImport:
     }
 
   // Add some well knwon synonyms
-  val integratedUnits: Map[String, Units Of Brightness[Integrated]] =
+  private val integratedUnits: Map[String, Units Of Brightness[Integrated]] =
     unitAbbv[Integrated] ++ Map(
       "Vega"   -> VegaMagnitudeIsIntegratedBrightnessUnit.unit,
       "AB"     -> ABMagnitudeIsIntegratedBrightnessUnit.unit,
@@ -197,25 +197,25 @@ object TargetImport:
       "Jansky" -> JanskyIsIntegratedBrightnessUnit.unit
     ) ++ expandedAbbrevations[Integrated]
 
-  val surfaceUnits: Map[String, Units Of Brightness[Surface]] =
+  private val surfaceUnits: Map[String, Units Of Brightness[Surface]] =
     unitAbbv[Surface] ++ expandedAbbrevations[Surface]
 
-  given integratedDecoder: CellDecoder[Units Of Brightness[Integrated]] =
+  private given integratedDecoder: CellDecoder[Units Of Brightness[Integrated]] =
     CellDecoder.stringDecoder.emap(s =>
       integratedUnits.get(s.trim()).toRight(DecoderError(s"Unknown units $s"))
     )
 
-  given surfaceDecoder: CellDecoder[Units Of Brightness[Surface]] =
+  private given surfaceDecoder: CellDecoder[Units Of Brightness[Surface]] =
     CellDecoder.stringDecoder.emap(s =>
       surfaceUnits.get(s.trim()).toRight(DecoderError(s"Unknown units $s"))
     )
 
-  given bdDecoder: CellDecoder[BigDecimal] =
+  private given bdDecoder: CellDecoder[BigDecimal] =
     CellDecoder.stringDecoder.emap(r =>
       r.trim().parseBigDecimalOption.toRight(DecoderError(s"Failed to parse bigdecimal '$r'"))
     )
 
-  def brightnesses(row: CsvRow[String]): Map[Band, BigDecimal] = Band.all
+  private def brightnesses(row: CsvRow[String]): Map[Band, BigDecimal] = Band.all
     .foldLeft(List.empty[(Band, Option[BigDecimal])])((l, t) =>
       (t, row.as[Option[BigDecimal]](t.shortName).toOption.flatten) :: l
     )
@@ -224,7 +224,7 @@ object TargetImport:
     }
     .toMap
 
-  def units[T](using
+  private def units[T](using
     CellDecoder[Units Of Brightness[T]]
   )(row: CsvRow[String]): Map[Band, Units Of Brightness[T]] = Band.all
     .foldLeft(List.empty[(Band, Option[Units Of Brightness[T]])])((l, t) =>
@@ -240,8 +240,8 @@ object TargetImport:
     }
     .toMap
 
-  def integratedUnits(row: CsvRow[String]) = units[Integrated](row)
-  def surfaceUnits(row:    CsvRow[String]) = units[Surface](row)
+  private def integratedUnits(row: CsvRow[String]) = units[Integrated](row)
+  private def surfaceUnits(row:    CsvRow[String]) = units[Surface](row)
 
   extension [A](r: DecoderResult[Option[A]])
     // Check the result and populate the line where it failed
@@ -301,7 +301,7 @@ object TargetImport:
         )
       )
 
-  given CsvRowDecoder[TargetCsvRow, String] =
+  private given CsvRowDecoder[TargetCsvRow, String] =
     (row: CsvRow[String]) =>
       for {
         name              <- row.asIn[NonEmptyString]("Name", "NAME")
