@@ -102,7 +102,12 @@ object Ags {
           else IqDegradation
       }
 
-      Usable(guideProbe, guideStar, guideSpeed.some, quality, vignettingArea(gsOffset), position)
+      Usable(guideProbe,
+             guideStar,
+             guideSpeed.some,
+             quality,
+             NonEmptyList.of((position, vignettingArea(gsOffset)))
+      )
     }
 
     // Do we have a g magnitude
@@ -110,9 +115,9 @@ object Ags {
       .map { _ =>
         guideSpeedFor(speeds, guideStar)
           .map(usable)
-          .getOrElse(NoGuideStarForProbe(guideProbe, guideStar, position))
+          .getOrElse(NoGuideStarForProbe(guideProbe, guideStar))
       }
-      .getOrElse(NoMagnitudeForBand(guideProbe, guideStar, position))
+      .getOrElse(NoMagnitudeForBand(guideProbe, guideStar))
 
   }
 
@@ -166,7 +171,7 @@ object Ags {
                                                                                       calcs
               )
             }
-            .getOrElse(ProperMotionNotAvailable(gsc, position))
+            .getOrElse(ProperMotionNotAvailable(gsc))
         }
   }
 
@@ -248,7 +253,7 @@ object Ags {
                                                                                     calcs
             )
           }
-          .getOrElse(ProperMotionNotAvailable(gsc, position))
+          .getOrElse(ProperMotionNotAvailable(gsc))
       }
   }
 
@@ -274,35 +279,18 @@ object Ags {
     // use constraints to calculate all guide speeds
     val bc    = constraintsFor(guideSpeeds)
 
-    // An optimal analysis result will be fast and deliver the requested IQ
-    def isOptimal(analysis: AgsAnalysis): Boolean = analysis match
-      case Usable(_, _, Some(GuideSpeed.Fast), AgsGuideQuality.DeliversRequestedIq, _, _) => true
-      case _                                                                              => false
-
-    @tailrec
-    def go(positions: NonEmptyList[AgsPosition], previous: List[AgsAnalysis]): List[AgsAnalysis] = {
-      val position = positions.head
-
-      val (found, analyses) = candidates
+    positions.map { position =>
+      candidates
         .filter(c => c.gBrightness.exists(g => bc.exists(_.contains(Band.Gaia, g))))
         // Use fold left to traverse the list of candidates only once
-        .foldLeft((false, List.empty[AgsAnalysis])) { case ((found, current), gsc) =>
+        .map(gsc =>
           val offset         = baseCoordinates.diff(gsc.tracking.baseCoordinates).offset
           val scienceOffsets = scienceCoordinates.map(_.diff(gsc.tracking.baseCoordinates).offset)
-          val analysis       =
-            runAnalysis(constraints, offset, scienceOffsets, position, params, gsc)(guideSpeeds,
-                                                                                    calcs
-            )
-          (found || isOptimal(analysis), analysis :: current)
-        }
-      // If we found an optimal start stop iterating over the positions
-      NonEmptyList.fromList(positions.tail).filterNot(_ => found) match
-        case None       => previous ::: analyses
-        case Some(next) => go(next, previous ::: analyses)
-    }
-
-    go(positions, Nil)
-
+          runAnalysis(constraints, offset, scienceOffsets, position, params, gsc)(guideSpeeds,
+                                                                                  calcs
+          )
+        )
+    }.combineAll
   }
 
   /**

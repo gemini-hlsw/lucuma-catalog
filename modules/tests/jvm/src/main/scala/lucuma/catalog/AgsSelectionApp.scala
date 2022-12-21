@@ -69,7 +69,7 @@ trait AgsSelectionSample {
 
 object AgsSelectionSampleApp extends IOApp.Simple with AgsSelectionSample {
   val constraints = ConstraintSet(
-    ImageQuality.PointEight,
+    ImageQuality.PointOne,
     CloudExtinction.PointOne,
     SkyBackground.Dark,
     WaterVapor.Wet,
@@ -105,7 +105,7 @@ object AgsSelectionSampleApp extends IOApp.Simple with AgsSelectionSample {
                 ),
                 candidates
               )
-              .selectBestPosition(positions)
+              .sortPositions(positions)
           )
       )
       .flatTap(x => IO.println(x.length))

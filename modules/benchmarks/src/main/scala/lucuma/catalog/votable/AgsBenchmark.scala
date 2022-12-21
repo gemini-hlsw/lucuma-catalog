@@ -3,6 +3,7 @@
 
 package lucuma.catalog.votable
 
+import cats.data.NonEmptyList
 import cats.effect.*
 import cats.effect.unsafe.implicits.global
 import cats.syntax.all.*
@@ -69,7 +70,7 @@ class AgsBenchmark extends AgsSelectionSample {
       wavelength,
       coords,
       List(coords),
-      AgsPosition(Angle.Angle0, Offset.Zero),
+      NonEmptyList.of(AgsPosition(Angle.Angle0, Offset.Zero)),
       AgsParams.GmosAgsParams(
         GmosNorthFpu.LongSlit_5_00.asLeft.some,
         PortDisposition.Bottom
@@ -86,7 +87,7 @@ class AgsBenchmark extends AgsSelectionSample {
       wavelength,
       _ => coords.some,
       List(_ => coords.some),
-      AgsPosition(Angle.Angle0, Offset.Zero),
+      NonEmptyList.of(AgsPosition(Angle.Angle0, Offset.Zero)),
       AgsParams.GmosAgsParams(
         GmosNorthFpu.LongSlit_5_00.asLeft.some,
         PortDisposition.Bottom
@@ -99,14 +100,15 @@ class AgsBenchmark extends AgsSelectionSample {
 
   @Benchmark
   def magnitudeAnalysis: Unit = {
-    val geoms  = params.posCalculations(List(pos))
+    val geoms  = params.posCalculations(NonEmptyList.of(pos))
     val limits = Ags.guideSpeedLimits(constraints, wavelength)
     Ags.magnitudeAnalysis(
       constraints,
       params.probe,
       Offset.Zero,
       items.head,
-      geoms.get(pos).get.vignettingArea(_)
+      geoms.get(0).get.vignettingArea(_),
+      pos
     )(limits)
     ()
   }
