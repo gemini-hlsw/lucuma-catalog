@@ -4,6 +4,7 @@
 package lucuma.ags
 
 import cats.Order
+import cats.Semigroup
 import cats.data.NonEmptyList
 import cats.syntax.all.*
 import lucuma.catalog.BandsList
@@ -14,15 +15,13 @@ import lucuma.core.geom.Area
 sealed trait AgsAnalysis {
   def quality: AgsGuideQuality = AgsGuideQuality.Unusable
   def isUsable: Boolean        = quality =!= AgsGuideQuality.Unusable
-  def position: AgsPosition
   def target: GuideStarCandidate
   def message(withProbe: Boolean): String
 }
 
 object AgsAnalysis {
 
-  case class ProperMotionNotAvailable(target: GuideStarCandidate, position: AgsPosition)
-      extends AgsAnalysis {
+  case class ProperMotionNotAvailable(target: GuideStarCandidate) extends AgsAnalysis {
     override def message(withProbe: Boolean): String =
       "Cannot calculate proper motion."
   }
@@ -35,8 +34,7 @@ object AgsAnalysis {
 
   case class NoGuideStarForProbe(
     guideProbe: GuideProbe,
-    target:     GuideStarCandidate,
-    position:   AgsPosition
+    target:     GuideStarCandidate
   ) extends AgsAnalysis {
     override def message(withProbe: Boolean): String = {
       val p = if (withProbe) s"$guideProbe " else ""
@@ -47,8 +45,7 @@ object AgsAnalysis {
   case class MagnitudeTooFaint(
     guideProbe:     GuideProbe,
     target:         GuideStarCandidate,
-    showGuideSpeed: Boolean,
-    position:       AgsPosition
+    showGuideSpeed: Boolean
   ) extends AgsAnalysis {
     override def message(withProbe: Boolean): String = {
       val p  = if (withProbe) s"use $guideProbe" else "guide"
@@ -59,8 +56,7 @@ object AgsAnalysis {
 
   case class MagnitudeTooBright(
     guideProbe: GuideProbe,
-    target:     GuideStarCandidate,
-    position:   AgsPosition
+    target:     GuideStarCandidate
   ) extends AgsAnalysis {
     override def message(withProbe: Boolean): String = {
       val p = if (withProbe) s"$guideProbe g" else "G"
@@ -82,8 +78,7 @@ object AgsAnalysis {
 
   case class NoMagnitudeForBand(
     guideProbe: GuideProbe,
-    target:     GuideStarCandidate,
-    position:   AgsPosition
+    target:     GuideStarCandidate
   ) extends AgsAnalysis {
     private val probeBands: List[Band]               = BandsList.GaiaBandsList.bands
     override def message(withProbe: Boolean): String = {
@@ -102,8 +97,7 @@ object AgsAnalysis {
     target:               GuideStarCandidate,
     guideSpeed:           Option[GuideSpeed],
     override val quality: AgsGuideQuality,
-    vignettingArea:       Area,
-    position:             AgsPosition
+    vignetting:           NonEmptyList[(AgsPosition, Area)]
   ) extends AgsAnalysis {
     override def message(withProbe: Boolean): String = {
       val qualityMessage = quality match {
@@ -112,26 +106,19 @@ object AgsAnalysis {
       }
       val p              = if (withProbe) s"${guideProbe} " else ""
       val gs             = guideSpeed.fold("Usable")(gs => s"Guide Speed: ${gs.toString()}")
-      s"$qualityMessage$p$gs. vignetting: ${vignettingArea.toMicroarcsecondsSquared} µas^2"
-      s"$p $quality $gs. vignetting: ${vignettingArea.toMicroarcsecondsSquared} µas^2"
+      s"$qualityMessage$p$gs. vignetting: ${vignetting.head._2.toMicroarcsecondsSquared} µas^2"
+      s"$p $quality $gs. vignetting: ${vignetting.head._2.toMicroarcsecondsSquared} µas^2"
     }
+
+    def sortedVignetting: Usable = copy(vignetting = vignetting.sortBy(_._2))
   }
 
   object Usable {
     val rankingOrder: Order[Usable] =
-      Order.by(u => (u.guideSpeed, u.quality, u.vignettingArea, u.target.gBrightness, u.target.id))
-
-    // This order gives preferences to positions given earlier
-    private[ags] def rankingOrderAtPositions(positions: Map[AgsPosition, Int]): Order[Usable] =
       Order.by(u =>
-        (u.guideSpeed,
-         u.quality,
-         u.vignettingArea,
-         positions.getOrElse(u.position, Int.MaxValue),
-         u.target.gBrightness,
-         u.target.id
-        )
+        (u.guideSpeed, u.quality, u.vignetting.minimumBy(_._2), u.target.gBrightness, u.target.id)
       )
+
   }
 
   val rankingOrder: Order[AgsAnalysis] =
@@ -144,29 +131,26 @@ object AgsAnalysis {
 
   val rankingOrdering: Ordering[AgsAnalysis] = rankingOrder.toOrdering
 
-  private def rankingOrderAtPositions(positions: Map[AgsPosition, Int]): Order[AgsAnalysis] =
-    Order.from {
-      case (a: Usable, b: Usable) => Usable.rankingOrderAtPositions(positions).compare(a, b)
-      case (_: Usable, _)         => Int.MinValue
-      case (_, _: Usable)         => Int.MaxValue
-      case _                      => Int.MinValue
-    }
-
   extension (results: List[AgsAnalysis])
     /**
-     * This method will sort the analysis and remove duplicates for position, keeping only the ones
-     * for the winning position
+     * This method will sort the analysis for quality and internally for positions that give the
+     * lowest vignetting.
      */
-    def selectBestPosition(positions: NonEmptyList[AgsPosition]): List[AgsAnalysis] = {
-      val (usable, nonUsable)                   = results.partition(_.isUsable)
-      val positionsIndex: Map[AgsPosition, Int] = positions.zipWithIndex.toList.toMap
-      val topUsablePosition                     = usable
-        .sorted(rankingOrderAtPositions(positionsIndex).toOrdering)
-        .headOption
-        .map(_.position)
-      usable.filter(u => topUsablePosition.exists(_ === u.position)) :::
-        nonUsable.filter(u => topUsablePosition.exists(_ === u.position))
-
+    def sortPositions(positions: NonEmptyList[AgsPosition]): List[AgsAnalysis] = {
+      val (usable, nonUsable)                = results.partition(_.isUsable)
+      val usablePerTarget: List[AgsAnalysis] =
+        usable
+          .groupBy(_.target.id)
+          .map { (id, analyses) =>
+            analyses
+              .collect { case u: Usable =>
+                u
+              }
+              .reduce((a, b) => a.copy(vignetting = a.vignetting.concatNel(b.vignetting)))
+              .sortedVignetting
+          }
+          .toList
+      usable.sorted(rankingOrdering) ::: nonUsable
     }
 
 }

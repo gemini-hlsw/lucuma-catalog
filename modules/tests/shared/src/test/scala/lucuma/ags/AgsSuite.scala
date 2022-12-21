@@ -4,8 +4,10 @@
 package lucuma.ags
 
 import cats.data.NonEmptyList
-import cats.syntax.all._
-import lucuma.core.enums._
+import cats.syntax.all.*
+import lucuma.ags.AgsAnalysis.Usable
+import lucuma.core.enums.*
+import lucuma.core.geom.Area
 import lucuma.core.math.Angle
 import lucuma.core.math.Coordinates
 import lucuma.core.math.Offset
@@ -15,6 +17,82 @@ import lucuma.core.model.ElevationRange
 import lucuma.core.model.SiderealTracking
 
 class AgsSuite extends munit.FunSuite {
+  val gs1 = GuideStarCandidate(0L, SiderealTracking.const(Coordinates.Zero), BigDecimal(15).some)
+  val gs2 = GuideStarCandidate(1L, SiderealTracking.const(Coordinates.Zero), BigDecimal(2).some)
+  test("usable comparisons") {
+    val u1 = Usable(
+      GuideProbe.OIWFS,
+      gs1,
+      GuideSpeed.Fast.some,
+      AgsGuideQuality.DeliversRequestedIq,
+      NonEmptyList.of(
+        AgsPosition(Angle.Angle0, Offset.Zero) -> Area.fromMicroarcsecondsSquared.getOption(0).get
+      )
+    )
+    val u2 = Usable(
+      GuideProbe.OIWFS,
+      gs1,
+      GuideSpeed.Fast.some,
+      AgsGuideQuality.DeliversRequestedIq,
+      NonEmptyList.of(
+        AgsPosition(Angle.Angle0, Offset.Zero) -> Area.fromMicroarcsecondsSquared.getOption(1).get
+      )
+    )
+    val u3 = Usable(
+      GuideProbe.OIWFS,
+      gs2,
+      GuideSpeed.Fast.some,
+      AgsGuideQuality.DeliversRequestedIq,
+      NonEmptyList.of(
+        AgsPosition(Angle.Angle0, Offset.Zero) -> Area.fromMicroarcsecondsSquared.getOption(0).get
+      )
+    )
+    val u4 = Usable(
+      GuideProbe.OIWFS,
+      gs2,
+      GuideSpeed.Fast.some,
+      AgsGuideQuality.DeliversRequestedIq,
+      NonEmptyList.of(
+        AgsPosition(Angle.Angle0, Offset.Zero) -> Area.fromMicroarcsecondsSquared.getOption(2).get
+      )
+    )
+
+    val u12 = Usable(
+      GuideProbe.OIWFS,
+      gs1,
+      GuideSpeed.Fast.some,
+      AgsGuideQuality.DeliversRequestedIq,
+      NonEmptyList.of(
+        AgsPosition(Angle.Angle0, Offset.Zero)   -> Area.fromMicroarcsecondsSquared.getOption(0).get,
+        AgsPosition(Angle.Angle180, Offset.Zero) -> Area.fromMicroarcsecondsSquared
+          .getOption(10)
+          .get
+      )
+    )
+
+    val u22 = Usable(
+      GuideProbe.OIWFS,
+      gs2,
+      GuideSpeed.Fast.some,
+      AgsGuideQuality.DeliversRequestedIq,
+      NonEmptyList.of(
+        AgsPosition(Angle.Angle0, Offset.Zero)   -> Area.fromMicroarcsecondsSquared.getOption(9).get,
+        AgsPosition(Angle.Angle180, Offset.Zero) -> Area.fromMicroarcsecondsSquared
+          .getOption(20)
+          .get
+      )
+    )
+
+    // less vignetting wins
+    assert(AgsAnalysis.rankingOrder.compare(u1, u2) < 0)
+    // same vignetting but brighter wins
+    assert(AgsAnalysis.rankingOrder.compare(u3, u1) < 0)
+    // vignetting trumps brighteness
+    assert(AgsAnalysis.rankingOrder.compare(u1, u4) < 0)
+    // we should check the whole list of vignettes
+    assert(AgsAnalysis.rankingOrder.compare(u12, u22) < 0)
+  }
+
   test("discard science target") {
     val constraints = ConstraintSet(ImageQuality.PointTwo,
                                     CloudExtinction.PointFive,
@@ -24,7 +102,6 @@ class AgsSuite extends munit.FunSuite {
     )
 
     val wavelength = Wavelength.fromNanometers(300).get
-    val gs         = GuideStarCandidate(0L, SiderealTracking.const(Coordinates.Zero), BigDecimal(15).some)
 
     assertEquals(
       Ags
@@ -35,10 +112,10 @@ class AgsSuite extends munit.FunSuite {
           List(Coordinates.Zero),
           NonEmptyList.of(AgsPosition(Angle.Angle0, Offset.Zero)),
           AgsParams.GmosAgsParams(GmosNorthFpu.LongSlit_5_00.asLeft.some, PortDisposition.Bottom),
-          List(gs)
+          List(gs1)
         )
         .headOption,
-      AgsAnalysis.VignettesScience(gs, AgsPosition(Angle.Angle0, Offset.Zero)).some
+      AgsAnalysis.VignettesScience(gs1, AgsPosition(Angle.Angle0, Offset.Zero)).some
     )
 
     val gsOffset =
