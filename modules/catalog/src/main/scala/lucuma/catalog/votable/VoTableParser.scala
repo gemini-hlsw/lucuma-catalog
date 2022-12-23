@@ -175,7 +175,7 @@ trait VoTableParser {
       case (Some(rv), Some(z)) => fromRV(rv).orElse(rvFromZ(z)).orElse(NoneRightNec)
       case (Some(rv), _)       => fromRV(rv).orElse(NoneRightNec)
       case (_, Some(z))        => rvFromZ(z).orElse(NoneRightNec)
-      case _                   => NoneRightNec
+      case _                   => RadialVelocity.Zero.some.rightNec
     }
   }
 

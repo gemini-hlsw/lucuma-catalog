@@ -30,6 +30,7 @@ import lucuma.core.math.Declination
 import lucuma.core.math.Epoch
 import lucuma.core.math.ProperMotion
 import lucuma.core.math.ProperMotion.AngularVelocity
+import lucuma.core.math.RadialVelocity
 import lucuma.core.math.RightAscension
 import lucuma.core.math.VelocityAxis
 import lucuma.core.math.dimensional.*
@@ -337,7 +338,7 @@ object TargetImport:
       case (Some(ra), None)      => ProperMotion(ra, ProperMotion.ZeroDecVelocity).some
       case (None, Some(dec))     => ProperMotion(ProperMotion.ZeroRAVelocity, dec).some
       case _                     => None
-    SiderealTracking(base, t.epoch.getOrElse(Epoch.J2000), pm, none, none)
+    SiderealTracking(base, t.epoch.getOrElse(Epoch.J2000), pm, RadialVelocity.Zero.some, none)
 
   private def csv2targetsRows[F[_]: RaiseThrowable]: Pipe[F, String, DecoderResult[TargetCsvRow]] =
     in =>
