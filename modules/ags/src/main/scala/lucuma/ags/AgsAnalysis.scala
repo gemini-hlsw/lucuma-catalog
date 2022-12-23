@@ -116,7 +116,12 @@ object AgsAnalysis {
   object Usable {
     val rankingOrder: Order[Usable] =
       Order.by(u =>
-        (u.guideSpeed, u.quality, u.vignetting.minimumBy(_._2), u.target.gBrightness, u.target.id)
+        (u.guideSpeed,
+         u.quality,
+         u.vignetting.minimumBy(_._2)._2.toMicroarcsecondsSquared,
+         u.target.gBrightness,
+         u.target.id
+        )
       )
 
   }
@@ -150,7 +155,7 @@ object AgsAnalysis {
               .sortedVignetting
           }
           .toList
-      usable.sorted(rankingOrdering) ::: nonUsable
+      usablePerTarget.sorted(rankingOrdering) ::: nonUsable
     }
 
 }
