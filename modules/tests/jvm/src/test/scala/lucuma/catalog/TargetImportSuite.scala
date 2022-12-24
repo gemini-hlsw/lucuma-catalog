@@ -229,7 +229,7 @@ class TargetImportFileSuite extends CatsEffectSuite:
           assertEquals(
             l.find(_.isLeft).map(_.leftMap(_.toList)),
             List(
-              ImportProblem.CsvParsingError("Invalid RA value '    a' in line 21", 21L.some)
+              ImportProblem.CsvParsingError("Invalid RA value 'a' in line 21", 21L.some)
             ).asLeft.some
           )
         }
@@ -292,6 +292,30 @@ class TargetImportFileSuite extends CatsEffectSuite:
               .flatMap(t => Target.integratedBrightnessIn(Band.V).headOption(t))
               .map(_.value),
             BigDecimal(10).some
+          )
+        }
+    }
+  }
+
+  test("test case with no pmRA") {
+    val xmlFile = "/import_test_2.csv"
+    val file    = getClass().getResource(xmlFile)
+    Resource.unit[IO].use { _ =>
+      Files[IO]
+        .readAll(Path(file.getPath()))
+        .through(text.utf8.decode)
+        .through(TargetImport.csv2targets)
+        .compile
+        .toList
+        // .flatTap(x => IO(pprint.pprintln(x)))
+        .map { l =>
+          assertEquals(l.length, 2)
+          assertEquals(
+            l.count {
+              case Right(Target.Sidereal(_, s: SiderealTracking, _, _)) => s.properMotion.isEmpty
+              case _                                                    => false
+            },
+            1
           )
         }
     }
