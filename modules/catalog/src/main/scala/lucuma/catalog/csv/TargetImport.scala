@@ -112,6 +112,16 @@ private case class TargetCsvRow(
 }
 
 object TargetImport:
+  class EmptyValue(msg: String, override val line: Option[Long] = None, inner: Throwable = null)
+      extends DecoderError(msg, line, inner)
+
+  extension [A](a: Option[A])
+    def orError(r: String, prefix: String): DecoderResult[A] =
+      a.toRight(
+        if (r.isEmpty()) EmptyValue(s"Empty $prefix value")
+        else DecoderError(s"Invalid $prefix value '$r'")
+      )
+
   private given liftCellDecoder[A: CellDecoder]: CellDecoder[Option[A]] = s =>
     s.nonEmpty.guard[Option].traverse(_ => CellDecoder[A].apply(s))
 
@@ -125,17 +135,18 @@ object TargetImport:
 
   private given decDecoder: CellDecoder[Declination] =
     CellDecoder.stringDecoder.emap { r =>
-      val t = r.trim()
+      val t = r.trim
       Declination.fromStringSignedDMS
-        .getOption(r.trim)
-        .toRight(new DecoderError(s"Invalid Dec value '$r'"))
+        .getOption(t)
+        .orError(t, "Dec")
     }
 
   private given raDecoder: CellDecoder[RightAscension] =
     CellDecoder.stringDecoder.emap { r =>
+      val t = r.trim
       RightAscension.lenientFromStringHMS
-        .getOption(r.trim)
-        .toRight(new DecoderError(s"Invalid RA value '$r'"))
+        .getOption(t)
+        .orError(t, "RA")
     }
 
   // Move to lucuma-core
@@ -151,17 +162,19 @@ object TargetImport:
 
   private given CellDecoder[Epoch] =
     CellDecoder.stringDecoder.emap { r =>
+      val t = r.trim
       epochParser
-        .parseAll(r.trim())
-        .leftMap(_ => new DecoderError(s"Invalid epoch value '$r'"))
+        .parseAll(t)
+        .toOption
+        .orError(t, "epoch")
     }
 
   private def angularVelocityComponentDecoder[T](build: BigDecimal => T): CellDecoder[T] =
     CellDecoder.stringDecoder.emap { r =>
-      val t = r.trim()
+      val t = r.trim
       t.parseBigDecimalOption
         .map(r => build(r))
-        .toRight(new DecoderError(r))
+        .orError(t, "angular velocity")
     }
 
   private given pmRADecoder: CellDecoder[ProperMotion.RA] =
@@ -269,11 +282,14 @@ object TargetImport:
         .partitionEither(identity)
       if (correct.nonEmpty) correct.head.asRight
       else if (errors.nonEmpty) {
-        val notFound = errors.forall { case d: DecoderError =>
+        val fixableError = errors.forall { case d: DecoderError =>
           d.getMessage.startsWith("unknown field")
+        } || errors.exists {
+          case _: EmptyValue => true
+          case _             => false
         }
-        // if not found anywhere go to the default
-        if (notFound)
+        // if fixable go to default
+        if (fixableError)
           defaultValue.asRight
         else
           errors.head.withLine(row.line).asLeft
@@ -331,14 +347,16 @@ object TargetImport:
                            rowSurfaceUnits
       )
 
-  private def tracking(t: TargetCsvRow, ra: RightAscension, dec: Declination): SiderealTracking =
-    val base = Coordinates(ra, dec)
-    val pm   = (t.pmRA, t.pmDec) match
+  private def pm(t: TargetCsvRow): Option[ProperMotion] =
+    (t.pmRA, t.pmDec) match
       case (Some(ra), Some(dec)) => ProperMotion(ra, dec).some
       case (Some(ra), None)      => ProperMotion(ra, ProperMotion.ZeroDecVelocity).some
       case (None, Some(dec))     => ProperMotion(ProperMotion.ZeroRAVelocity, dec).some
       case _                     => None
-    SiderealTracking(base, t.epoch.getOrElse(Epoch.J2000), pm, RadialVelocity.Zero.some, none)
+
+  private def tracking(t: TargetCsvRow, ra: RightAscension, dec: Declination): SiderealTracking =
+    val base = Coordinates(ra, dec)
+    SiderealTracking(base, t.epoch.getOrElse(Epoch.J2000), pm(t), RadialVelocity.Zero.some, none)
 
   private def csv2targetsRows[F[_]: RaiseThrowable]: Pipe[F, String, DecoderResult[TargetCsvRow]] =
     in =>
@@ -369,10 +387,11 @@ object TargetImport:
                   )
               )
               .getOrElse(
-                Target.Sidereal(t.name,
-                                tracking = SiderealTracking.const(Coordinates.Zero),
-                                sourceProfile = t.sourceProfile,
-                                None
+                Target.Sidereal(
+                  t.name,
+                  tracking = SiderealTracking.const(Coordinates.Zero).copy(properMotion = pm(t)),
+                  sourceProfile = t.sourceProfile,
+                  None
                 )
               )
           )
