@@ -118,7 +118,8 @@ object TargetImport:
   extension [A](a: Option[A])
     def orError(r: String, prefix: String): DecoderResult[A] =
       a.toRight(
-        if (r.isEmpty()) EmptyValue("Empty value") else DecoderError(s"Invalid $prefix value '$r'")
+        if (r.isEmpty()) EmptyValue(s"Empty $prefix value")
+        else DecoderError(s"Invalid $prefix value '$r'")
       )
 
   private given liftCellDecoder[A: CellDecoder]: CellDecoder[Option[A]] = s =>
