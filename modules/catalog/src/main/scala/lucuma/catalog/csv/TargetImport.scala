@@ -191,15 +191,19 @@ object TargetImport:
     unitAbbv[T].foldLeft(
       Map.empty[String, Units Of Brightness[T]]
     ) { (map, unit) =>
-      val replaced = if (unit._1.contains("²") || unit._1.contains("Å")) {
+      val replaced  = if (unit._1.contains("²") || unit._1.contains("Å")) {
         Map(unit._1.replaceAll("²", "2").replaceAll("Å", "A")  -> unit._2,
             unit._1.replaceAll("²", "^2").replaceAll("Å", "A") -> unit._2
         )
       } else Map.empty
-      val angstrom = if (unit._1.contains("Å")) {
+      val angstrom  = if (unit._1.contains("Å")) {
         Map(unit._1.replaceAll("Å", "A") -> unit._2, unit._1.replaceAll("Å", "A") -> unit._2)
       } else Map.empty
-      map ++ replaced ++ angstrom
+      val magSuffix = if (unit._1.contains(" mag")) {
+        Map(unit._1.replaceAll(" mag", "") -> unit._2)
+      } else Map.empty
+
+      map ++ replaced ++ angstrom ++ magSuffix
     }
 
   // Add some well knwon synonyms

@@ -65,12 +65,12 @@ class TargetImportFileSuite extends CatsEffectSuite:
         .toList
         // .flatTap(x => IO(pprint.pprintln(x)))
         .map { l =>
-          assertEquals(l.length, 6)
+          assertEquals(l.length, 7)
           assertEquals(l.count {
                          case Right(Target.Sidereal(_, _, SourceProfile.Uniform(_), _)) => true
                          case _                                                         => false
                        },
-                       1
+                       2
           )
         }
     }
