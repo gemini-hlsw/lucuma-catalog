@@ -7,7 +7,6 @@ import cats.*
 import cats.data.*
 import cats.effect.Concurrent
 import cats.effect.IO
-import cats.parse.Parser
 import cats.syntax.all.*
 import eu.timepit.refined.*
 import eu.timepit.refined.api.*
@@ -35,7 +34,6 @@ import lucuma.core.math.RightAscension
 import lucuma.core.math.VelocityAxis
 import lucuma.core.math.dimensional.*
 import lucuma.core.math.parser.AngleParsers
-import lucuma.core.math.parser.EpochParsers
 import lucuma.core.model.SiderealTracking
 import lucuma.core.model.SiderealTracking.apply
 import lucuma.core.model.SourceProfile
@@ -111,7 +109,7 @@ private case class TargetCsvRow(
       )
 }
 
-object TargetImport:
+object TargetImport extends ImportEpochParsers:
   class EmptyValue(msg: String, override val line: Option[Long] = None, inner: Throwable = null)
       extends DecoderError(msg, line, inner)
 
@@ -148,17 +146,6 @@ object TargetImport:
         .getOption(t)
         .orError(t, "RA")
     }
-
-  // Move to lucuma-core
-  private val plainNumberEpoch: Parser[Epoch] =
-    TimeParsers.year4.mapFilter(y =>
-      if (y.getValue() >= 1900 && y.getValue() <= 3000)
-        Epoch.Julian.fromIntMilliyears(y.getValue())
-      else None
-    )
-
-  private val epochParser: Parser[Epoch] =
-    EpochParsers.epoch | EpochParsers.epochLenientNoScheme | plainNumberEpoch
 
   private given CellDecoder[Epoch] =
     CellDecoder.stringDecoder.emap { r =>
