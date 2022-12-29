@@ -174,20 +174,29 @@ object TargetImport extends ImportEpochParsers:
     enumerated.all.map(u => u.abbv -> u).toMap
 
   // Add some replacemente to ² and Å to support more variants of units
-  private def expandedAbbrevations[T](using enumerated: Enumerated[Units Of Brightness[T]]) =
-    unitAbbv[T].foldLeft(
-      Map.empty[String, Units Of Brightness[T]]
-    ) { (map, unit) =>
-      val replaced = if (unit._1.contains("²") || unit._1.contains("Å")) {
+  private def expandedAbbrevations[T](using enumerated: Enumerated[Units Of Brightness[T]]) = {
+    def replacedSquares(unit: (String, Units Of Brightness[T])) =
+      if (unit._1.contains("²") || unit._1.contains("Å")) {
         Map(unit._1.replaceAll("²", "2").replaceAll("Å", "A")  -> unit._2,
             unit._1.replaceAll("²", "^2").replaceAll("Å", "A") -> unit._2
         )
       } else Map.empty
-      val angstrom = if (unit._1.contains("Å")) {
+
+    unitAbbv[T].foldLeft(
+      Map.empty[String, Units Of Brightness[T]]
+    ) { (map, unit) =>
+      val replaced  = replacedSquares(unit)
+      val angstrom  = if (unit._1.contains("Å")) {
         Map(unit._1.replaceAll("Å", "A") -> unit._2, unit._1.replaceAll("Å", "A") -> unit._2)
       } else Map.empty
-      map ++ replaced ++ angstrom
+      val magSuffix = if (unit._1.contains(" mag")) {
+        Map(unit._1.replaceAll(" mag", "") -> unit._2)
+      } else Map.empty
+
+      map ++ replaced ++ angstrom ++ angstrom.flatMap(replacedSquares) ++ magSuffix ++ magSuffix
+        .flatMap(replacedSquares)
     }
+  }
 
   // Add some well knwon synonyms
   private val integratedUnits: Map[String, Units Of Brightness[Integrated]] =
