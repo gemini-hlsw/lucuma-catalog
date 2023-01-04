@@ -3,6 +3,7 @@
 
 package lucuma.ags
 
+import cats.data.NonEmptyList
 import cats.syntax.all._
 import coulomb.*
 import coulomb.policy.spire.standard.given
@@ -16,9 +17,11 @@ import lucuma.core.enums.CloudExtinction
 import lucuma.core.enums.GuideSpeed
 import lucuma.core.enums.ImageQuality
 import lucuma.core.enums.SkyBackground
+import lucuma.core.math.Angle
 import lucuma.core.math.Wavelength
 import lucuma.core.math.units.rationalPosIntConverter
 import lucuma.core.model.ConstraintSet
+import lucuma.core.model.PosAngleConstraint
 import lucuma.core.util.Enumerated
 
 val baseFwhm = Wavelength.fromNanometers(500).get
@@ -123,3 +126,14 @@ def gaiaBrightnessConstraints(
                             constraints.imageQuality,
                             constraints.cloudExtinction
   )
+
+private val UnconstrainedAngles =
+  (0 until 360 by 10).map(a => Angle.fromDoubleDegrees(a.toDouble)).toList
+
+extension (posAngleConstraint: Option[PosAngleConstraint])
+  def anglesToTest: Option[NonEmptyList[Angle]] = posAngleConstraint match
+    case Some(PosAngleConstraint.Fixed(a))               => NonEmptyList.of(a).some
+    case Some(PosAngleConstraint.AllowFlip(a))           => NonEmptyList.of(a, a.flip).some
+    case Some(PosAngleConstraint.ParallacticOverride(a)) => NonEmptyList.of(a).some
+    case None                                            => NonEmptyList.fromList(UnconstrainedAngles)
+    case _                                               => None
