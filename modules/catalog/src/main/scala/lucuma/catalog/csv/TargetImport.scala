@@ -27,9 +27,11 @@ import lucuma.core.math.BrightnessUnits.*
 import lucuma.core.math.Coordinates
 import lucuma.core.math.Declination
 import lucuma.core.math.Epoch
+import lucuma.core.math.Parallax
 import lucuma.core.math.ProperMotion
 import lucuma.core.math.ProperMotion.AngularVelocity
 import lucuma.core.math.RadialVelocity
+import lucuma.core.math.Redshift
 import lucuma.core.math.RightAscension
 import lucuma.core.math.VelocityAxis
 import lucuma.core.math.dimensional.*
@@ -62,7 +64,10 @@ private case class TargetCsvRow(
   epoch:           Option[Epoch],
   brightnesses:    Map[Band, BigDecimal],
   integratedUnits: Map[Band, Units Of Brightness[Integrated]],
-  surfaceUnits:    Map[Band, Units Of Brightness[Surface]]
+  surfaceUnits:    Map[Band, Units Of Brightness[Surface]],
+  parallax:        Option[Parallax],
+  rv:              Option[RadialVelocity],
+  z:               Option[Redshift]
 ) {
 
   private def brightnessAndUnit[A](
@@ -156,6 +161,29 @@ object TargetImport extends ImportEpochParsers:
         .orError(t, "epoch")
     }
 
+  private given CellDecoder[Parallax] =
+    CellDecoder.stringDecoder.emap { r =>
+      val t = r.trim
+      t.parseBigDecimalOption
+        .map(Parallax.milliarcseconds.reverseGet)
+        .orError(t, "parallax")
+    }
+
+  private given CellDecoder[RadialVelocity] =
+    CellDecoder.stringDecoder.emap { r =>
+      val t = r.trim
+      t.parseBigDecimalOption
+        .flatMap(RadialVelocity.kilometerspersecond.getOption)
+        .orError(t, "rv")
+    }
+
+  private given CellDecoder[Redshift]                                                    =
+    CellDecoder.stringDecoder.emap { r =>
+      val t = r.trim
+      t.parseBigDecimalOption
+        .map(Redshift.apply)
+        .orError(t, "z")
+    }
   private def angularVelocityComponentDecoder[T](build: BigDecimal => T): CellDecoder[T] =
     CellDecoder.stringDecoder.emap { r =>
       val t = r.trim
@@ -323,6 +351,13 @@ object TargetImport extends ImportEpochParsers:
         pmRa              <- row.withAlternativesM[ProperMotion.RA](None, "pmRa", "pmRA")
         pmDec             <- row.withAlternativesM[ProperMotion.Dec](None, "pmDec", "pmDEC")
         epoch             <- row.withAlternatives[Epoch]("epoch", Epoch.J2000.some)
+        parallax          <- row.withAlternatives[Parallax]("parallax", None)
+        rv                <- row.withAlternativesM[RadialVelocity](RadialVelocity.Zero.some,
+                                                                   "rv",
+                                                                   "radialvelocity",
+                                                                   "radialVelocity"
+                             )
+        z                 <- row.withAlternativesM[Redshift](None, "z")
         rowBrightnesses    = brightnesses(row)
         rowIntegratedUnits = integratedUnits(row)
         rowSurfaceUnits    = surfaceUnits(row)
@@ -340,7 +375,10 @@ object TargetImport extends ImportEpochParsers:
                            epoch,
                            rowBrightnesses,
                            rowIntegratedUnits,
-                           rowSurfaceUnits
+                           rowSurfaceUnits,
+                           parallax,
+                           rv,
+                           z
       )
 
   private def pm(t: TargetCsvRow): Option[ProperMotion] =
@@ -352,7 +390,12 @@ object TargetImport extends ImportEpochParsers:
 
   private def tracking(t: TargetCsvRow, ra: RightAscension, dec: Declination): SiderealTracking =
     val base = Coordinates(ra, dec)
-    SiderealTracking(base, t.epoch.getOrElse(Epoch.J2000), pm(t), RadialVelocity.Zero.some, none)
+    SiderealTracking(base,
+                     t.epoch.getOrElse(Epoch.J2000),
+                     pm(t),
+                     t.rv.orElse(t.z.flatMap(_.toRadialVelocity)).orElse(RadialVelocity.Zero.some),
+                     t.parallax
+    )
 
   private def csv2targetsRows[F[_]: RaiseThrowable]: Pipe[F, String, DecoderResult[TargetCsvRow]] =
     in =>

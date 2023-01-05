@@ -16,6 +16,8 @@ import lucuma.catalog.csv.*
 import lucuma.core.enums.Band
 import lucuma.core.math.Declination
 import lucuma.core.math.Epoch
+import lucuma.core.math.Parallax
+import lucuma.core.math.RadialVelocity
 import lucuma.core.math.RightAscension
 import lucuma.core.model.SiderealTracking
 import lucuma.core.model.SourceProfile
@@ -26,6 +28,59 @@ import org.http4s.jdkhttpclient.JdkHttpClient
 import org.typelevel.ci.*
 
 class TargetImportFileSuite extends CatsEffectSuite:
+
+  test("parallax-rv-v") {
+    val xmlFile = "/targets_pv.csv"
+    val file    = getClass().getResource(xmlFile)
+    Resource.unit[IO].use { _ =>
+      Files[IO]
+        .readAll(Path(file.getPath()))
+        .through(text.utf8.decode)
+        .through(TargetImport.csv2targets)
+        .compile
+        .toList
+        // .flatTap(x => IO(pprint.pprintln(x)))
+        .map { l =>
+          assertEquals(l.length, 4)
+          // parallax
+          assertEquals(
+            l.count {
+              case Right(Target.Sidereal(_, s: SiderealTracking, _, _)) =>
+                s.parallax.exists(_ === Parallax.fromMicroarcseconds(1000))
+              case _                                                    => false
+            },
+            1
+          )
+          // plain rv
+          assertEquals(
+            l.count {
+              case Right(Target.Sidereal(_, s: SiderealTracking, _, _)) =>
+                s.radialVelocity === RadialVelocity.kilometerspersecond.getOption(1)
+              case _                                                    => false
+            },
+            1
+          )
+          // z converted to rv
+          assertEquals(
+            l.count {
+              case Right(Target.Sidereal(_, s: SiderealTracking, _, _)) =>
+                s.radialVelocity === RadialVelocity.fromMetersPerSecond.getOption(179875474.8)
+              case _                                                    => false
+            },
+            1
+          )
+          // rv overrides z
+          assertEquals(
+            l.count {
+              case Right(Target.Sidereal(_, s: SiderealTracking, _, _)) =>
+                s.radialVelocity === RadialVelocity.kilometerspersecond.getOption(2)
+              case _                                                    => false
+            },
+            1
+          )
+        }
+    }
+  }
 
   test("Another test case") {
     val xmlFile = "/another_test.csv"
