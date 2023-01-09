@@ -31,7 +31,7 @@ class LimitsSuite extends munit.FunSuite {
       ElevationRange.AirMass.Default // Not relevant
     )
 
-    val wavelength = Wavelength.fromNanometers(300).get
+    val wavelength = Wavelength.fromIntNanometers(300).get
 
     val brightnessConstraints =
       gaiaBrightnessConstraints(constraints, GuideSpeed.Fast, wavelength)

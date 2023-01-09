@@ -24,7 +24,7 @@ import lucuma.core.model.ConstraintSet
 import lucuma.core.model.PosAngleConstraint
 import lucuma.core.util.Enumerated
 
-val baseFwhm = Wavelength.fromNanometers(500).get
+val baseFwhm = Wavelength.fromIntNanometers(500).get
 
 // FWHM as seen on the optical wavefront sensor (WFS)
 // Operate on Double, we don't need exact precision
@@ -39,7 +39,7 @@ def wfsFwhm(sciFwhm: ImageQuality, wavelength: Wavelength): Double = {
 // We get the union off all possible constraints at the slow guide speed
 // darkest sky background and 300nm wavelength
 val widestConstraints: BrightnessConstraints = {
-  val widest = Wavelength.fromNanometers(300).get
+  val widest = Wavelength.fromIntNanometers(300).get
 
   val constraints = Enumerated[ImageQuality].all.flatMap { iq =>
     Enumerated[CloudExtinction].all.map { ce =>

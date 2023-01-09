@@ -50,7 +50,7 @@ object AgsSelectionSampleStreamApp extends IOApp.Simple with AgsSelectionSample 
     )
   )
 
-  val wavelength = Wavelength.fromNanometers(520).get
+  val wavelength = Wavelength.fromIntNanometers(520).get
 
   def run =
     JdkHttpClient
