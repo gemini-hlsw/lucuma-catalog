@@ -395,10 +395,6 @@ object CatalogAdapter {
 
   object Gaia extends Gaia
 
-  object Gaia2 extends Gaia {
-    override val gaiaDB: String = "gaiadr2.gaia_source"
-  }
-
   object Gaia3 extends Gaia {
     override val gaiaDB: String = "gaiadr3.gaia_source"
   }
