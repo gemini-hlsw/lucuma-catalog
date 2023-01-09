@@ -78,7 +78,7 @@ object AgsSelectionSampleApp extends IOApp.Simple with AgsSelectionSample {
     )
   )
 
-  val wavelength = Wavelength.fromNanometers(520).get
+  val wavelength = Wavelength.fromIntNanometers(520).get
   val positions  = NonEmptyList.of(AgsPosition(Angle.fromDoubleDegrees(1), Offset.Zero),
                                   AgsPosition(Angle.fromDoubleDegrees(1).flip, Offset.Zero)
   )

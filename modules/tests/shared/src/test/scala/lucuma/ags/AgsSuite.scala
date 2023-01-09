@@ -183,7 +183,7 @@ class AgsSuite extends munit.FunSuite {
                                     ElevationRange.AirMass.Default
     )
 
-    val wavelength = Wavelength.fromNanometers(300).get
+    val wavelength = Wavelength.fromIntNanometers(300).get
 
     assertEquals(
       Ags
