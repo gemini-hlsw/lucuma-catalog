@@ -21,7 +21,9 @@ trait ADQLInterpreter {
 
   def orderBy: Option[String] = None
 
-  implicit val shapeInterpreter: ShapeInterpreter
+  def extraConstraints: List[String] = Nil
+
+  given shapeInterpreter: ShapeInterpreter
 }
 
 object ADQLInterpreter {
@@ -55,7 +57,9 @@ object ADQLInterpreter {
       val MaxCount                 = count
       val shapeInterpreter         = si
       def allFields: List[FieldId] = gaia.allFields
-      def extraFields(c: Coordinates): List[String] = Nil
+      override def orderBy         = Some("phot_g_mean_mag")
+      override def extraFields(c: Coordinates) = Nil
+      override val extraConstraints: List[String] = List("ruwe < 1.4")
     }
 
   // Find n targets around the base
@@ -65,6 +69,7 @@ object ADQLInterpreter {
   ): ADQLInterpreter =
     new ADQLInterpreter {
       val MaxCount                 = count
+      override def orderBy         = Some("phot_g_mean_mag")
       val shapeInterpreter         = si
       def allFields: List[FieldId] = gaia.allFields.filter {
         case gaia.raField | gaia.decField | gaia.pmDecField | gaia.pmRaField | gaia.plxField |
@@ -73,6 +78,8 @@ object ADQLInterpreter {
         case f if f === gaia.epochField => false
         case _                          => true
       }
+
+      override val extraConstraints: List[String] = List("ruwe < 1.4")
 
       def extraFields(c: Coordinates): List[String] = List(
         // Gaia can do pm correction for a given epoch
