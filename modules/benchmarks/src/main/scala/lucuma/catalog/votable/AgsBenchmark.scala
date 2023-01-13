@@ -54,7 +54,7 @@ class AgsBenchmark extends AgsSelectionSample {
                                   ElevationRange.AirMass.Default
   )
 
-  val wavelength = Wavelength.fromNanometers(700).get
+  val wavelength = Wavelength.fromIntNanometers(700).get
 
   val params = AgsParams.GmosAgsParams(
     GmosNorthFpu.LongSlit_5_00.asLeft.some,
