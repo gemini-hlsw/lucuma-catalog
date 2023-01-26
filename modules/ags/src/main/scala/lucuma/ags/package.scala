@@ -130,10 +130,10 @@ def gaiaBrightnessConstraints(
 private val UnconstrainedAngles =
   (0 until 360 by 10).map(a => Angle.fromDoubleDegrees(a.toDouble)).toList
 
-extension (posAngleConstraint: Option[PosAngleConstraint])
+extension (posAngleConstraint: PosAngleConstraint)
   def anglesToTest: Option[NonEmptyList[Angle]] = posAngleConstraint match
-    case Some(PosAngleConstraint.Fixed(a))               => NonEmptyList.of(a).some
-    case Some(PosAngleConstraint.AllowFlip(a))           => NonEmptyList.of(a, a.flip).some
-    case Some(PosAngleConstraint.ParallacticOverride(a)) => NonEmptyList.of(a).some
-    case None                                            => NonEmptyList.fromList(UnconstrainedAngles)
-    case _                                               => None
+    case PosAngleConstraint.Fixed(a)               => NonEmptyList.of(a).some
+    case PosAngleConstraint.AllowFlip(a)           => NonEmptyList.of(a, a.flip).some
+    case PosAngleConstraint.ParallacticOverride(a) => NonEmptyList.of(a).some
+    case PosAngleConstraint.Unbounded              => NonEmptyList.fromList(UnconstrainedAngles)
+    case PosAngleConstraint.AverageParallactic     => None
