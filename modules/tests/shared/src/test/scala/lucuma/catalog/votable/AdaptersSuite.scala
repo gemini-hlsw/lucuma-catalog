@@ -20,6 +20,7 @@ import lucuma.catalog.*
 import lucuma.core.enums.Band
 import lucuma.core.enums.CatalogName
 import lucuma.core.math.BrightnessUnits.*
+import lucuma.core.math.BrightnessValue
 import lucuma.core.math.Declination
 import lucuma.core.math.Epoch
 import lucuma.core.math.Parallax
@@ -75,7 +76,7 @@ class AdaptersSuite extends CatsEffectSuite with VoTableParser with VoTableSampl
           )
           assertEquals(
             Target.integratedBrightnessIn(Band.Gaia).headOption(t),
-            BigDecimal(14.292543).withUnit[VegaMagnitude].toMeasureTagged.some
+            BrightnessValue.unsafeFrom(14.292543).withUnit[VegaMagnitude].toMeasureTagged.some
           )
           // parallax
           assertEquals(
@@ -120,7 +121,7 @@ class AdaptersSuite extends CatsEffectSuite with VoTableParser with VoTableSampl
           )
           assertEquals(
             Target.integratedBrightnessIn(Band.Gaia).headOption(t),
-            BigDecimal(20.755217).withUnit[VegaMagnitude].toMeasureTagged.some
+            BrightnessValue.unsafeFrom(20.755217).withUnit[VegaMagnitude].toMeasureTagged.some
           )
           assertEquals(
             Target.epoch.getOption(t),

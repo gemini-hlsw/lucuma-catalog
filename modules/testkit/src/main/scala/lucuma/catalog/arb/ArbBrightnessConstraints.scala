@@ -7,7 +7,9 @@ import lucuma.catalog.BandsList
 import lucuma.catalog.BrightnessConstraints
 import lucuma.catalog.FaintnessConstraint
 import lucuma.catalog.SaturationConstraint
-import lucuma.core.util.arb.ArbEnumerated._
+import lucuma.core.math.BrightnessValue
+import lucuma.core.math.arb.ArbBrightnessValue.given
+import lucuma.core.util.arb.ArbEnumerated.*
 import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck._
 
@@ -16,22 +18,22 @@ trait ArbBrightnessConstraints {
   given Arbitrary[FaintnessConstraint] =
     Arbitrary {
       for {
-        b <- arbitrary[BigDecimal]
+        b <- arbitrary[BrightnessValue]
       } yield FaintnessConstraint(b)
     }
 
   given Cogen[FaintnessConstraint] =
-    Cogen[BigDecimal].contramap(_.brightness)
+    Cogen[BrightnessValue].contramap(_.brightness)
 
   given Arbitrary[SaturationConstraint] =
     Arbitrary {
       for {
-        b <- arbitrary[BigDecimal]
+        b <- arbitrary[BrightnessValue]
       } yield SaturationConstraint(b)
     }
 
   given Cogen[SaturationConstraint] =
-    Cogen[BigDecimal].contramap(_.brightness)
+    Cogen[BrightnessValue].contramap(_.brightness)
 
   given Arbitrary[BrightnessConstraints] =
     Arbitrary {

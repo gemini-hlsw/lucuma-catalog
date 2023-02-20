@@ -18,6 +18,7 @@ import lucuma.core.enums.GuideSpeed
 import lucuma.core.enums.ImageQuality
 import lucuma.core.enums.SkyBackground
 import lucuma.core.math.Angle
+import lucuma.core.math.BrightnessValue
 import lucuma.core.math.Wavelength
 import lucuma.core.math.units.rationalPosIntConverter
 import lucuma.core.model.ConstraintSet
@@ -100,7 +101,7 @@ def faintLimit(
           17.1 - 0.8 * wfsFwhm(iq, wavelength) - ce.toBrightness
       }
   }
-  FaintnessConstraint(limit)
+  FaintnessConstraint(BrightnessValue.unsafeFrom(BigDecimal(limit)))
 }
 
 def gaiaBrightnessConstraints(
@@ -111,7 +112,9 @@ def gaiaBrightnessConstraints(
   ce:         CloudExtinction
 ): BrightnessConstraints = {
   val faintness  = faintLimit(guideSpeed, wavelength, sb, iq, ce)
-  val saturation = SaturationConstraint(faintness.brightness - 6)
+  val saturation = SaturationConstraint(
+    BrightnessValue.unsafeFrom(faintness.brightness.value.value - 6)
+  )
   BrightnessConstraints(BandsList.GaiaBandsList, faintness, saturation.some)
 }
 

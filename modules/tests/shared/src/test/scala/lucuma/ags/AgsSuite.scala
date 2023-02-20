@@ -9,6 +9,7 @@ import lucuma.ags.AgsAnalysis.Usable
 import lucuma.core.enums.*
 import lucuma.core.geom.Area
 import lucuma.core.math.Angle
+import lucuma.core.math.BrightnessValue
 import lucuma.core.math.Coordinates
 import lucuma.core.math.Offset
 import lucuma.core.math.Wavelength
@@ -17,8 +18,14 @@ import lucuma.core.model.ElevationRange
 import lucuma.core.model.SiderealTracking
 
 class AgsSuite extends munit.FunSuite {
-  val gs1 = GuideStarCandidate(0L, SiderealTracking.const(Coordinates.Zero), BigDecimal(16.05).some)
-  val gs2 = GuideStarCandidate(1L, SiderealTracking.const(Coordinates.Zero), BigDecimal(11.23).some)
+  val gs1 = GuideStarCandidate(0L,
+                               SiderealTracking.const(Coordinates.Zero),
+                               BrightnessValue.unsafeFrom(16.05).some
+  )
+  val gs2 = GuideStarCandidate(1L,
+                               SiderealTracking.const(Coordinates.Zero),
+                               BrightnessValue.unsafeFrom(11.23).some
+  )
   test("usable comparisons") {
     val u1 = Usable(
       GuideProbe.OIWFS,
@@ -208,7 +215,7 @@ class AgsSuite extends munit.FunSuite {
             .offsetBy(Angle.Angle0, Offset.signedDecimalArcseconds.reverseGet(0.0, 23.0))
             .get
         ),
-        BigDecimal(15).some
+        BrightnessValue.unsafeFrom(15).some
       )
 
     assert(

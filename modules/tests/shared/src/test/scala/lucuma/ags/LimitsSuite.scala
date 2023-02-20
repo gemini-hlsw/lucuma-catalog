@@ -7,7 +7,8 @@ import lucuma.catalog.BandsList
 import lucuma.catalog.BrightnessConstraints
 import lucuma.catalog.FaintnessConstraint
 import lucuma.catalog.SaturationConstraint
-import lucuma.core.enums._
+import lucuma.core.enums.*
+import lucuma.core.math.BrightnessValue
 import lucuma.core.math.Wavelength
 import lucuma.core.model.ConstraintSet
 import lucuma.core.model.ElevationRange
@@ -16,7 +17,10 @@ class LimitsSuite extends munit.FunSuite {
   test("widestConstraints") {
     assertEquals(
       widestConstraints,
-      BrightnessConstraints(BandsList.GaiaBandsList, FaintnessConstraint(17.227769563884202), None)
+      BrightnessConstraints(BandsList.GaiaBandsList,
+                            FaintnessConstraint(BrightnessValue.unsafeFrom(17.227769563884202)),
+                            None
+      )
     )
   }
 
@@ -38,9 +42,10 @@ class LimitsSuite extends munit.FunSuite {
 
     assertEquals(
       brightnessConstraints,
-      BrightnessConstraints(BandsList.GaiaBandsList,
-                            FaintnessConstraint(16.127769563884204),
-                            Some(SaturationConstraint(10.127769563884204))
+      BrightnessConstraints(
+        BandsList.GaiaBandsList,
+        FaintnessConstraint(BrightnessValue.unsafeFrom(16.127769563884204)),
+        Some(SaturationConstraint(BrightnessValue.unsafeFrom(10.127769563884204)))
       )
     )
   }

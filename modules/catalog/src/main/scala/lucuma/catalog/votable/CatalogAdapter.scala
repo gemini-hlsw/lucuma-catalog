@@ -12,6 +12,7 @@ import lucuma.catalog.votable.*
 import lucuma.core.enums.Band
 import lucuma.core.enums.CatalogName
 import lucuma.core.math.BrightnessUnits.*
+import lucuma.core.math.BrightnessValue
 import lucuma.core.math.Epoch
 import lucuma.core.math.ProperMotion
 import lucuma.core.math.ProperMotion.AngularVelocity
@@ -92,13 +93,13 @@ sealed trait CatalogAdapter {
   // filter brightnesses as a whole, removing invalid values and duplicates
   // (This is written to be overridden--see PPMXL adapter. By default nothing is done.)
   def filterAndDeduplicateBrightnesses(
-    ms: Vector[(FieldId, (Band, BigDecimal))]
-  ): Vector[(Band, BigDecimal)] =
+    ms: Vector[(FieldId, (Band, BrightnessValue))]
+  ): Vector[(Band, BrightnessValue)] =
     ms.unzip._2
 
   // Indicates if a parsed brightness is valid
   def validBrightness(m: BrightnessMeasure[Integrated]): Boolean =
-    !(m.value.toDouble.isNaN || m.error.exists(_.toDouble.isNaN))
+    !(m.value.value.value.toDouble.isNaN || m.error.exists(_.value.value.toDouble.isNaN))
 
   // Attempts to extract the radial velocity of a field
   def parseRadialVelocity(ucd: Ucd, v: String): EitherNec[CatalogProblem, RadialVelocity] =
@@ -155,11 +156,16 @@ sealed trait CatalogAdapter {
     e: Vector[(FieldId, Band, Double)],
     u: Vector[(Band, Units Of Brightness[Integrated])]
   ): Vector[(Band, BrightnessMeasure[Integrated])] = {
-    val values = v.map { case (f, b, d) =>
-      f -> (b -> BigDecimal(d))
-    }
+    val values: Vector[(FieldId, (Band, BrightnessValue))] = v
+      .map { case (f, b, d) =>
+        f -> (b -> BrightnessValue.from(d).toOption)
+      }
+      .collect { case (f, (b, Some(v))) => (f, (b, v)) }
 
-    val errors = e.map { case (_, b, d) => b -> BigDecimal(d) }.toMap
+    val errors = e
+      .map { case (_, b, d) => b -> BrightnessValue.from(d).toOption }
+      .collect { case (b, Some(v)) => (b, v) }
+      .toMap
     val units  = u.toMap
 
     // Link band brightnesses with their errors

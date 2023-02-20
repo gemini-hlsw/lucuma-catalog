@@ -14,6 +14,7 @@ import lucuma.catalog.*
 import lucuma.catalog.csv.TargetImport.given
 import lucuma.catalog.csv.*
 import lucuma.core.enums.Band
+import lucuma.core.math.BrightnessValue
 import lucuma.core.math.Declination
 import lucuma.core.math.Epoch
 import lucuma.core.math.Parallax
@@ -346,7 +347,7 @@ class TargetImportFileSuite extends CatsEffectSuite:
             l.head.toOption
               .flatMap(t => Target.integratedBrightnessIn(Band.V).headOption(t))
               .map(_.value),
-            BigDecimal(10).some
+            BrightnessValue.unsafeFrom(10).some
           )
         }
     }

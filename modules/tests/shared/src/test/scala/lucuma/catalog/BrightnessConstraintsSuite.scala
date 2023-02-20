@@ -3,10 +3,11 @@
 
 package lucuma.catalog
 
-import cats.kernel.laws.discipline._
+import cats.kernel.laws.discipline.*
 import lucuma.catalog.arb.all.given
 import lucuma.core.enums.Band
-import munit._
+import lucuma.core.math.BrightnessValue
+import munit.*
 
 class BrightnessConstraintsSuite extends DisciplineSuite {
 
@@ -16,25 +17,28 @@ class BrightnessConstraintsSuite extends DisciplineSuite {
   checkAll("Order[SaturationConstraint]", OrderTests[SaturationConstraint].order)
 
   test("filter targets on band and faintness") {
-    val bc = BrightnessConstraints(BandsList.GaiaBandsList, FaintnessConstraint(10.0), None)
-    assert(bc.contains(Band.Gaia, 3.0))
+    val bc = BrightnessConstraints(BandsList.GaiaBandsList,
+                                   FaintnessConstraint(BrightnessValue.unsafeFrom(10.0)),
+                                   None
+    )
+    assert(bc.contains(Band.Gaia, BrightnessValue.unsafeFrom(3.0)))
     // no matching band
-    assert(!bc.contains(Band.R, 3.0))
+    assert(!bc.contains(Band.R, BrightnessValue.unsafeFrom(3.0)))
     // Too faint
-    assert(!bc.contains(Band.Gaia, 12.0))
+    assert(!bc.contains(Band.Gaia, BrightnessValue.unsafeFrom(12.0)))
   }
 
   test("filter targets on band, faintness and saturation") {
     val bc = BrightnessConstraints(BandsList.GaiaBandsList,
-                                   FaintnessConstraint(10.0),
-                                   Some(SaturationConstraint(2))
+                                   FaintnessConstraint(BrightnessValue.unsafeFrom(10.0)),
+                                   Some(SaturationConstraint(BrightnessValue.unsafeFrom(2)))
     )
-    assert(bc.contains(Band.Gaia, 3.0))
+    assert(bc.contains(Band.Gaia, BrightnessValue.unsafeFrom(3.0)))
     // no matching band
-    assert(!bc.contains(Band.R, 3.0))
+    assert(!bc.contains(Band.R, BrightnessValue.unsafeFrom(3.0)))
     // Too faint
-    assert(!bc.contains(Band.Gaia, 12.0))
+    assert(!bc.contains(Band.Gaia, BrightnessValue.unsafeFrom(12.0)))
     // Saturated
-    assert(!bc.contains(Band.Gaia, 1.0))
+    assert(!bc.contains(Band.Gaia, BrightnessValue.unsafeFrom(1.0)))
   }
 }

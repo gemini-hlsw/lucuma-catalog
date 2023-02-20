@@ -9,11 +9,13 @@ import cats.Semigroup
 import cats.data.NonEmptyList
 import cats.derived.*
 import cats.syntax.all.*
+import eu.timepit.refined.cats.*
 import lucuma.catalog.BandsList
 import lucuma.core.enums.Band
 import lucuma.core.enums.GuideSpeed
 import lucuma.core.geom.Area
 import lucuma.core.math.Angle
+import lucuma.core.math.BrightnessValue
 
 sealed trait AgsAnalysis derives Eq {
   def quality: AgsGuideQuality = AgsGuideQuality.Unusable
