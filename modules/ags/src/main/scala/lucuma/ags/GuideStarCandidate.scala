@@ -20,6 +20,7 @@ import lucuma.catalog.BandsList
 import lucuma.core.enums.Band
 import lucuma.core.enums.StellarLibrarySpectrum
 import lucuma.core.math.BrightnessUnits.*
+import lucuma.core.math.BrightnessValue
 import lucuma.core.math.Epoch
 import lucuma.core.math.dimensional.*
 import lucuma.core.math.units.*
@@ -43,7 +44,7 @@ import scala.collection.immutable.SortedMap
 case class GuideStarCandidate(
   id:          Long,
   tracking:    SiderealTracking,
-  gBrightness: Option[BigDecimal]
+  gBrightness: Option[BrightnessValue]
 ) derives Eq {
   def name: NonEmptyString =
     refineV[NonEmpty](s"Gaia DR3 $id").getOrElse(sys.error("Cannot happen"))
@@ -74,7 +75,7 @@ object GuideStarCandidate {
   val tracking: Lens[GuideStarCandidate, SiderealTracking] =
     Focus[GuideStarCandidate](_.tracking)
 
-  val gBrightness: Lens[GuideStarCandidate, Option[BigDecimal]] =
+  val gBrightness: Lens[GuideStarCandidate, Option[BrightnessValue]] =
     Focus[GuideStarCandidate](_.gBrightness)
 
   // There is some loss of info converting one to the other but further

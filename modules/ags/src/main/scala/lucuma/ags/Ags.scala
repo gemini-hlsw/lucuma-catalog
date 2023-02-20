@@ -15,6 +15,7 @@ import lucuma.core.enums.Band
 import lucuma.core.enums.GuideSpeed
 import lucuma.core.enums.ImageQuality
 import lucuma.core.geom.Area
+import lucuma.core.math.BrightnessValue
 import lucuma.core.math.Coordinates
 import lucuma.core.math.Offset
 import lucuma.core.math.Wavelength
@@ -300,7 +301,7 @@ object Ags {
   def fastestGuideSpeed(
     constraints: ConstraintSet,
     wavelength:  Wavelength,
-    magnitude:   BigDecimal
+    magnitude:   BrightnessValue
   ): Option[GuideSpeed] =
     GuideSpeed.all.find { speed => // assumes the values are sorted fast to slow
       gaiaBrightnessConstraints(constraints, speed, wavelength).contains(Band.Gaia, magnitude)

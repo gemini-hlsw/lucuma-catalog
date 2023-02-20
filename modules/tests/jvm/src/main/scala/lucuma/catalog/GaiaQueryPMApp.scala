@@ -12,6 +12,7 @@ import fs2.text
 import lucuma.catalog.*
 import lucuma.core.geom.gmos.all.candidatesArea
 import lucuma.core.geom.jts.interpreter.*
+import lucuma.core.math.BrightnessValue
 import lucuma.core.math.Coordinates
 import lucuma.core.math.Declination
 import lucuma.core.math.Epoch
@@ -48,8 +49,8 @@ trait GaiaQueryPMSample {
 
   def gaiaQuery[F[_]: Sync](client: Client[F]) = {
     val bc    = BrightnessConstraints(BandsList.GaiaBandsList,
-                                   FaintnessConstraint(16),
-                                   SaturationConstraint(9).some
+                                   FaintnessConstraint(BrightnessValue.unsafeFrom(16)),
+                                   SaturationConstraint(BrightnessValue.unsafeFrom(9)).some
     )
     val query = CatalogSearch.gaiaSearchUri(
       CoordinatesRangeQueryByADQL(

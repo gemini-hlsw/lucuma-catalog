@@ -24,6 +24,7 @@ import lucuma.catalog.votable.QueryByName
 import lucuma.core.enums.Band
 import lucuma.core.enums.StellarLibrarySpectrum
 import lucuma.core.math.BrightnessUnits.*
+import lucuma.core.math.BrightnessValue
 import lucuma.core.math.Coordinates
 import lucuma.core.math.Declination
 import lucuma.core.math.Epoch
@@ -62,7 +63,7 @@ private case class TargetCsvRow(
   pmRA:            Option[ProperMotion.RA],
   pmDec:           Option[ProperMotion.Dec],
   epoch:           Option[Epoch],
-  brightnesses:    Map[Band, BigDecimal],
+  brightnesses:    Map[Band, BrightnessValue],
   integratedUnits: Map[Band, Units Of Brightness[Integrated]],
   surfaceUnits:    Map[Band, Units Of Brightness[Surface]],
   parallax:        Option[Parallax],
@@ -71,10 +72,10 @@ private case class TargetCsvRow(
 ) {
 
   private def brightnessAndUnit[A](
-    brightnesses: Map[Band, BigDecimal],
+    brightnesses: Map[Band, BrightnessValue],
     units:        Map[Band, Units Of Brightness[A]],
     defaultUnit:  Band => Units Of Brightness[A]
-  ): List[(Band, Measure[BigDecimal] Of Brightness[A])] =
+  ): List[(Band, Measure[BrightnessValue] Of Brightness[A])] =
     brightnesses.map { b =>
       b._1 ->
         units
@@ -83,14 +84,15 @@ private case class TargetCsvRow(
     }.toList
 
   private lazy val integratedBrightness
-    : List[(Band, Measure[BigDecimal] Of Brightness[Integrated])] =
+    : List[(Band, Measure[BrightnessValue] Of Brightness[Integrated])] =
     brightnessAndUnit(
       brightnesses,
       integratedUnits,
       _.defaultIntegrated.units
     )
 
-  private lazy val surfaceBrightness: List[(Band, Measure[BigDecimal] Of Brightness[Surface])] =
+  private lazy val surfaceBrightness
+    : List[(Band, Measure[BrightnessValue] Of Brightness[Surface])] =
     brightnessAndUnit(
       brightnesses,
       surfaceUnits,
@@ -177,13 +179,22 @@ object TargetImport extends ImportEpochParsers:
         .orError(t, "rv")
     }
 
-  private given CellDecoder[Redshift]                                                    =
+  private given CellDecoder[Redshift] =
     CellDecoder.stringDecoder.emap { r =>
       val t = r.trim
       t.parseBigDecimalOption
         .map(Redshift.apply)
         .orError(t, "z")
     }
+
+  private given CellDecoder[BrightnessValue] =
+    CellDecoder.stringDecoder.emap { r =>
+      val t = r.trim
+      t.parseBigDecimalOption
+        .flatMap(BrightnessValue.from(_).toOption)
+        .orError(t, "z")
+    }
+
   private def angularVelocityComponentDecoder[T](build: BigDecimal => T): CellDecoder[T] =
     CellDecoder.stringDecoder.emap { r =>
       val t = r.trim
@@ -253,9 +264,9 @@ object TargetImport extends ImportEpochParsers:
       r.trim().parseBigDecimalOption.toRight(DecoderError(s"Failed to parse bigdecimal '$r'"))
     )
 
-  private def brightnesses(row: CsvRow[String]): Map[Band, BigDecimal] = Band.all
-    .foldLeft(List.empty[(Band, Option[BigDecimal])])((l, t) =>
-      (t, row.as[Option[BigDecimal]](t.shortName).toOption.flatten) :: l
+  private def brightnesses(row: CsvRow[String]): Map[Band, BrightnessValue] = Band.all
+    .foldLeft(List.empty[(Band, Option[BrightnessValue])])((l, t) =>
+      (t, row.as[Option[BrightnessValue]](t.shortName).toOption.flatten) :: l
     )
     .collect { case (b, Some(v)) =>
       (b, v)
