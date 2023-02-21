@@ -227,10 +227,11 @@ trait VoTableParser {
 
     def parseObjType: Option[NonEmptyString] =
       refineV[NonEmpty](
-        List(entries.get(adapter.oTypeField),
-             entries.get(adapter.spTypeField),
-             entries.get(adapter.morphTypeField)
-        ).flatten.mkString("; ")
+        List(
+          entries.get(adapter.oTypeField),
+          entries.get(adapter.morphTypeField),
+          entries.get(adapter.spTypeField)
+        ).flatten.mkString(", ")
       ).toOption
 
     def parseCatalogInfo: EitherNec[CatalogProblem, Option[CatalogInfo]] =
