@@ -56,7 +56,7 @@ class ParseSimbadFileSuite extends CatsEffectSuite with VoTableParser {
             assertEquals(t.name, "Vega".refined[NonEmpty])
             assertEquals(
               t.catalogInfo,
-              CatalogInfo(CatalogName.Simbad, "* alf Lyr", "PulsV*delSct; A0Va")
+              CatalogInfo(CatalogName.Simbad, "* alf Lyr", "PulsV*delSct, A0Va")
             )
             // base coordinates
             assertEquals(
@@ -139,7 +139,7 @@ class ParseSimbadFileSuite extends CatsEffectSuite with VoTableParser {
           case Right(CatalogTargetResult(t, angularSize)) =>
             // id and search name
             assertEquals(t.name, "2MFGC6625".refined[NonEmpty])
-            assertEquals(t.catalogInfo, CatalogInfo(CatalogName.Simbad, "2MFGC 6625", "EmG; I"))
+            assertEquals(t.catalogInfo, CatalogInfo(CatalogName.Simbad, "2MFGC 6625", "EmG, I"))
             // base coordinates
             assertEquals(
               Target.baseRA.getOption(t),
@@ -493,7 +493,7 @@ class ParseSimbadFileSuite extends CatsEffectSuite with VoTableParser {
             assertEquals(t.name, "Vega".refined[NonEmpty])
             assertEquals(
               t.catalogInfo,
-              CatalogInfo(CatalogName.Simbad, "* alf Lyr", "PulsV*delSct; A0Va")
+              CatalogInfo(CatalogName.Simbad, "* alf Lyr", "PulsV*delSct, A0Va")
             )
             // base coordinates
             assertEquals(
