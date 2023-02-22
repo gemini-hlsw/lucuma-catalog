@@ -38,21 +38,13 @@ case class BrightnessConstraints(
     BrightnessConstraints(
       searchBands ∪ that.searchBands,
       FaintnessConstraint(
-        BrightnessValue
-          .from(
-            faintnessConstraint.brightness.value.value
-              .max(that.faintnessConstraint.brightness.value.value)
-          )
-          .getOrElse(sys.error("Cannot happen"))
+        faintnessConstraint.brightness.max(that.faintnessConstraint.brightness)
       ),
       (this.saturationConstraint, that.saturationConstraint) match {
         case (a @ Some(_), None) => a
         case (None, a @ Some(_)) => a
         case (Some(a), Some(b))  =>
-          BrightnessValue
-            .from(a.brightness.value.value.min(b.brightness.value.value))
-            .toOption
-            .map(SaturationConstraint.apply)
+          SaturationConstraint(a.brightness.min(b.brightness)).some
         case _                   => none
       }
     )
