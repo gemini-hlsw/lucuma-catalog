@@ -16,14 +16,19 @@ import lucuma.catalog.SaturationConstraint
 import lucuma.core.enums.CloudExtinction
 import lucuma.core.enums.GuideSpeed
 import lucuma.core.enums.ImageQuality
+import lucuma.core.enums.Site
 import lucuma.core.enums.SkyBackground
 import lucuma.core.math.Angle
 import lucuma.core.math.BrightnessValue
 import lucuma.core.math.Wavelength
+import lucuma.core.math.skycalc.averageParallacticAngle
 import lucuma.core.math.units.rationalPosIntConverter
 import lucuma.core.model.ConstraintSet
+import lucuma.core.model.ObjectTracking
 import lucuma.core.model.PosAngleConstraint
 import lucuma.core.util.Enumerated
+
+import java.time.Instant
 
 val baseFwhm = Wavelength.fromIntNanometers(500).get
 
@@ -134,9 +139,14 @@ private val UnconstrainedAngles =
   (0 until 360 by 10).map(a => Angle.fromDoubleDegrees(a.toDouble)).toList
 
 extension (posAngleConstraint: PosAngleConstraint)
-  def anglesToTest: Option[NonEmptyList[Angle]] = posAngleConstraint match
+  def anglesToTestAt(
+    site:     Site,
+    tracking: ObjectTracking,
+    vizTime:  Instant
+  ): Option[NonEmptyList[Angle]] = posAngleConstraint match
     case PosAngleConstraint.Fixed(a)               => NonEmptyList.of(a).some
     case PosAngleConstraint.AllowFlip(a)           => NonEmptyList.of(a, a.flip).some
     case PosAngleConstraint.ParallacticOverride(a) => NonEmptyList.of(a).some
+    case PosAngleConstraint.AverageParallactic     =>
+      averageParallacticAngle(site, tracking, vizTime).map(a => NonEmptyList.of(a, a.flip))
     case PosAngleConstraint.Unbounded              => NonEmptyList.fromList(UnconstrainedAngles)
-    case PosAngleConstraint.AverageParallactic     => None
