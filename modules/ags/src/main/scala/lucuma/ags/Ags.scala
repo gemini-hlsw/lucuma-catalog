@@ -81,7 +81,7 @@ object Ags {
     guideStar:      GuideStarCandidate,
     vignettingArea: Offset => Area,
     position:       AgsPosition
-  )(speeds:         List[(GuideSpeed, BrightnessConstraints)]): AgsAnalysis = {
+  )(speeds: List[(GuideSpeed, BrightnessConstraints)]): AgsAnalysis = {
 
     // Called when we know that a valid guide speed can be chosen for the given guide star.
     // Determine the quality and return an analysis indicating that the star is usable.

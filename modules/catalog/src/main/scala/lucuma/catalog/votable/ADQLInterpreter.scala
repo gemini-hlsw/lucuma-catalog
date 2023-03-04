@@ -51,7 +51,7 @@ object ADQLInterpreter {
 
   // Find n targets around the base
   def nTarget(
-    count:      Int
+    count: Int
   )(using gaia: CatalogAdapter.Gaia, si: ShapeInterpreter): ADQLInterpreter =
     new ADQLInterpreter {
       val MaxCount                 = count
@@ -64,8 +64,8 @@ object ADQLInterpreter {
 
   // Find n targets around the base
   def pmCorrected(count: Int, epoch: Epoch)(using
-    gaia:                CatalogAdapter.Gaia,
-    si:                  ShapeInterpreter
+    gaia: CatalogAdapter.Gaia,
+    si:   ShapeInterpreter
   ): ADQLInterpreter =
     new ADQLInterpreter {
       val MaxCount                 = count
