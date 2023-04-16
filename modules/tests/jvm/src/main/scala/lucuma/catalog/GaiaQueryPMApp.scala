@@ -11,7 +11,7 @@ import cats.syntax.all.*
 import fs2.text
 import lucuma.catalog.*
 import lucuma.core.geom.gmos.all.candidatesArea
-import lucuma.core.geom.jts.interpreter.*
+import lucuma.core.geom.jts.interpreter.given
 import lucuma.core.math.BrightnessValue
 import lucuma.core.math.Coordinates
 import lucuma.core.math.Declination

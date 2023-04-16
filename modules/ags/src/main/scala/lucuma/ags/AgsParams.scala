@@ -16,7 +16,7 @@ import lucuma.core.geom.Area
 import lucuma.core.geom.ShapeExpression
 import lucuma.core.geom.gmos.probeArm
 import lucuma.core.geom.gmos.scienceArea
-import lucuma.core.geom.jts.interpreter.*
+import lucuma.core.geom.jts.interpreter.given
 import lucuma.core.geom.syntax.all.*
 import lucuma.core.math.Angle
 import lucuma.core.math.Offset
