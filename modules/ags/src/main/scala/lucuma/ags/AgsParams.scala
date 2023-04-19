@@ -26,7 +26,7 @@ private given Order[Angle] = Angle.SignedAngleOrder
 
 case class AgsPosition(posAngle: Angle, offsetPos: Offset) derives Order
 
-sealed trait AgsGeomCalc {
+sealed trait AgsGeomCalc:
   // Indicates if the given offset is reachable
   def isReachable(gsOffset: Offset): Boolean
 
@@ -36,35 +36,34 @@ sealed trait AgsGeomCalc {
   // Indicates if the given guide star would vignette the science target
   def overlapsScience(gsOffset: Offset): Boolean
 
-}
-
-sealed trait AgsParams derives Eq {
+sealed trait AgsParams derives Eq:
 
   def probe: GuideProbe
 
   // Builds an AgsGeom object for each position
   // Some of the geometries don't chage with the position and we can cache them
   def posCalculations(positions: NonEmptyList[AgsPosition]): NonEmptyMap[AgsPosition, AgsGeomCalc]
-}
 
-object AgsParams {
+object AgsParams:
   val scienceRadius = 20.arcseconds
 
   case class GmosAgsParams(
     fpu:  Option[Either[GmosNorthFpu, GmosSouthFpu]],
     port: PortDisposition
   ) extends AgsParams
-      derives Eq {
+      derives Eq:
     val probe = GuideProbe.OIWFS
 
     def posCalculations(
       positions: NonEmptyList[AgsPosition]
-    ): NonEmptyMap[AgsPosition, AgsGeomCalc] = {
-      val result = positions.map { position =>
+    ): NonEmptyMap[AgsPosition, AgsGeomCalc] =
+      val intersectionPatrolField =
+        positions
+          .map(position => probeArm.patrolFieldAt(position.posAngle, position.offsetPos, fpu, port))
+          .reduce(_ ∩ _)
+          .eval
+      val result                  = positions.map { position =>
         position -> new AgsGeomCalc() {
-          val patrolField =
-            probeArm.patrolFieldAt(position.posAngle, position.offsetPos, fpu, port).eval
-
           val scienceAreaShape =
             scienceArea.shapeAt(position.posAngle, position.offsetPos, fpu)
 
@@ -74,7 +73,7 @@ object AgsParams {
             ) ↗ position.offsetPos ⟲ position.posAngle
 
           override def isReachable(gsOffset: Offset): Boolean =
-            patrolField.contains(gsOffset)
+            intersectionPatrolField.contains(gsOffset)
 
           def overlapsScience(gsOffset: Offset): Boolean =
             // Calculating with area maybe more precise but it is more costly
@@ -94,8 +93,3 @@ object AgsParams {
         }
       }
       result.toNem
-    }
-
-  }
-
-}
