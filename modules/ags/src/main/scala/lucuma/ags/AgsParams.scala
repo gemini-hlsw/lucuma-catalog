@@ -57,17 +57,22 @@ object AgsParams:
     def posCalculations(
       positions: NonEmptyList[AgsPosition]
     ): NonEmptyMap[AgsPosition, AgsGeomCalc] =
-      val intersectionPatrolField =
-        positions
-          .map(position => probeArm.patrolFieldAt(position.posAngle, position.offsetPos, fpu, port))
-          .reduce(_ ∩ _)
-          .eval
-      val result                  = positions.map { position =>
+      val result = positions.map { position =>
         position -> new AgsGeomCalc() {
-          val scienceAreaShape =
+          private val intersectionPatrolField =
+            positions
+              .map(_.offsetPos)
+              .distinct
+              // note we use the outer posAngle but the inner offset
+              // we want the intersection of offsets at a single PA
+              .map(offset => probeArm.patrolFieldAt(position.posAngle, offset, fpu, port))
+              .reduce(_ ∩ _)
+              .eval
+
+          private val scienceAreaShape =
             scienceArea.shapeAt(position.posAngle, position.offsetPos, fpu)
 
-          val scienceTargetArea =
+          private val scienceTargetArea =
             ShapeExpression.centeredEllipse(scienceRadius,
                                             scienceRadius
             ) ↗ position.offsetPos ⟲ position.posAngle
