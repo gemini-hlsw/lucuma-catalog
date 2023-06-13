@@ -143,10 +143,13 @@ extension (posAngleConstraint: PosAngleConstraint)
     site:     Site,
     tracking: ObjectTracking,
     vizTime:  Instant
-  ): Option[NonEmptyList[Angle]] = posAngleConstraint match
-    case PosAngleConstraint.Fixed(a)               => NonEmptyList.of(a).some
-    case PosAngleConstraint.AllowFlip(a)           => NonEmptyList.of(a, a.flip).some
-    case PosAngleConstraint.ParallacticOverride(a) => NonEmptyList.of(a).some
-    case PosAngleConstraint.AverageParallactic     =>
-      averageParallacticAngle(site, tracking, vizTime).map(a => NonEmptyList.of(a, a.flip))
-    case PosAngleConstraint.Unbounded              => NonEmptyList.fromList(UnconstrainedAngles)
+  ): Option[NonEmptyList[Angle]] =
+    def flippedAngles(a: Angle): NonEmptyList[Angle] =
+      NonEmptyList.of(a, a.flip).sorted
+    posAngleConstraint match
+      case PosAngleConstraint.Fixed(a)               => NonEmptyList.of(a).some
+      case PosAngleConstraint.AllowFlip(a)           => flippedAngles(a).some
+      case PosAngleConstraint.ParallacticOverride(a) => NonEmptyList.of(a).some
+      case PosAngleConstraint.AverageParallactic     =>
+        averageParallacticAngle(site, tracking, vizTime).map(flippedAngles)
+      case PosAngleConstraint.Unbounded              => NonEmptyList.fromList(UnconstrainedAngles)
