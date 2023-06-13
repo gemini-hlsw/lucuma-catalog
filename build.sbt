@@ -4,7 +4,7 @@ lazy val catsVersion                = "2.9.0"
 lazy val catsEffectVersion          = "3.5.0"
 lazy val kindProjectorVersion       = "0.13.2"
 lazy val pprintVersion              = "0.8.1"
-lazy val lucumaCoreVersion          = "0.80.0"
+lazy val lucumaCoreVersion          = "0.76.0"
 lazy val lucumaRefinedVersion       = "0.1.1"
 lazy val monocleVersion             = "3.2.0"
 lazy val munitVersion               = "0.7.29"
@@ -14,7 +14,7 @@ lazy val betterMonadicForVersion    = "0.3.1"
 lazy val refinedVersion             = "0.10.3"
 lazy val catsScalacheckVersion      = "0.3.2"
 lazy val scalaXmlVersion            = "2.1.0"
-lazy val http4sVersion              = "0.23.20"
+lazy val http4sVersion              = "0.23.19"
 lazy val http4sJdkHttpClientVersion = "0.9.1"
 lazy val http4sDomVersion           = "0.2.9"
 lazy val refinedAlgebraVersion      = "0.1.0"
@@ -27,8 +27,8 @@ Global / onChangedBuildSource := ReloadOnSourceChanges
 ThisBuild / tlBaseVersion       := "0.40"
 ThisBuild / tlCiReleaseBranches := Seq("master", "scala3")
 
-ThisBuild / scalaVersion       := "3.3.0"
-ThisBuild / crossScalaVersions := Seq("3.3.0")
+ThisBuild / scalaVersion       := "3.2.2"
+ThisBuild / crossScalaVersions := Seq("3.2.2")
 ThisBuild / scalacOptions ++= Seq(
   "-language:implicitConversions"
 )
