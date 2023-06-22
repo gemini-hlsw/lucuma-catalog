@@ -6,16 +6,12 @@ package lucuma.catalog.csv
 import cats.*
 import cats.data.*
 import cats.effect.Concurrent
-import cats.effect.IO
 import cats.syntax.all.*
 import eu.timepit.refined.*
-import eu.timepit.refined.api.*
 import eu.timepit.refined.collection.NonEmpty
 import eu.timepit.refined.types.string.NonEmptyString
 import fs2.*
-import fs2.data.csv.CellDecoder.doubleDecoder
 import fs2.data.csv.*
-import fs2.data.csv.generic.semiauto.*
 import fs2.text
 import lucuma.catalog.*
 import lucuma.catalog.votable.CatalogAdapter
@@ -34,17 +30,13 @@ import lucuma.core.math.ProperMotion.AngularVelocity
 import lucuma.core.math.RadialVelocity
 import lucuma.core.math.Redshift
 import lucuma.core.math.RightAscension
-import lucuma.core.math.VelocityAxis
 import lucuma.core.math.dimensional.*
-import lucuma.core.math.parser.AngleParsers
 import lucuma.core.model.SiderealTracking
 import lucuma.core.model.SiderealTracking.apply
 import lucuma.core.model.SourceProfile
 import lucuma.core.model.SpectralDefinition
 import lucuma.core.model.Target
 import lucuma.core.model.UnnormalizedSED
-import lucuma.core.parser.MiscParsers
-import lucuma.core.parser.TimeParsers
 import lucuma.core.syntax.string.*
 import lucuma.core.util.*
 import org.http4s.Method.*
@@ -257,11 +249,6 @@ object TargetImport extends ImportEpochParsers:
   private given surfaceDecoder: CellDecoder[Units Of Brightness[Surface]] =
     CellDecoder.stringDecoder.emap(s =>
       surfaceUnits.get(s.trim()).toRight(DecoderError(s"Unknown units $s"))
-    )
-
-  private given bdDecoder: CellDecoder[BigDecimal] =
-    CellDecoder.stringDecoder.emap(r =>
-      r.trim().parseBigDecimalOption.toRight(DecoderError(s"Failed to parse bigdecimal '$r'"))
     )
 
   private def brightnesses(row: CsvRow[String]): Map[Band, BrightnessValue] = Band.all

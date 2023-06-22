@@ -13,7 +13,6 @@ import fs2.text
 import lucuma.ags.*
 import lucuma.core.enums.CloudExtinction
 import lucuma.core.enums.GmosNorthFpu
-import lucuma.core.enums.GmosSouthFpu
 import lucuma.core.enums.ImageQuality
 import lucuma.core.enums.PortDisposition
 import lucuma.core.enums.SkyBackground
@@ -30,14 +29,11 @@ import lucuma.core.model.ConstraintSet
 import lucuma.core.model.ElevationRange
 import lucuma.core.model.ElevationRange.AirMass
 import lucuma.core.model.ElevationRange.AirMass.DecimalValue
-import lucuma.core.model.SiderealTracking
 import lucuma.core.model.Target
 import org.http4s.Method.*
 import org.http4s.Request
 import org.http4s.client.Client
 import org.http4s.jdkhttpclient.JdkHttpClient
-
-import java.time.Instant
 
 trait AgsSelectionSample {
 

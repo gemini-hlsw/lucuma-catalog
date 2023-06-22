@@ -5,7 +5,6 @@ package lucuma.ags
 
 import cats.Eq
 import cats.Order
-import cats.Semigroup
 import cats.data.NonEmptyList
 import cats.derived.*
 import cats.syntax.all.*
@@ -165,7 +164,7 @@ object AgsAnalysis {
       val usablePerTarget: List[AgsAnalysis] =
         usable
           .groupBy(_.target.id)
-          .map { (id, analyses) =>
+          .map { (_, analyses) =>
             analyses
               .collect { case u: Usable =>
                 u

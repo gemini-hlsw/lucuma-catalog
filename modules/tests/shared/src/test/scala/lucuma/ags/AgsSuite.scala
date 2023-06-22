@@ -144,41 +144,6 @@ class AgsSuite extends munit.FunSuite {
         AgsPosition(Angle.Angle180, Offset.Zero) -> Area.fromMicroarcsecondsSquared.getOption(1).get
       )
     )
-    val u3        = Usable(
-      GuideProbe.OIWFS,
-      gs2,
-      GuideSpeed.Fast.some,
-      AgsGuideQuality.DeliversRequestedIq,
-      NonEmptyList.of(
-        AgsPosition(Angle.Angle0, Offset.Zero) -> Area.fromMicroarcsecondsSquared.getOption(0).get
-      )
-    )
-
-    val u12 = Usable(
-      GuideProbe.OIWFS,
-      gs2,
-      GuideSpeed.Fast.some,
-      AgsGuideQuality.DeliversRequestedIq,
-      NonEmptyList.of(
-        AgsPosition(Angle.Angle0, Offset.Zero)   -> Area.fromMicroarcsecondsSquared.getOption(0).get,
-        AgsPosition(Angle.Angle180, Offset.Zero) -> Area.fromMicroarcsecondsSquared
-          .getOption(10)
-          .get
-      )
-    )
-
-    val u22 = Usable(
-      GuideProbe.OIWFS,
-      gs2,
-      GuideSpeed.Fast.some,
-      AgsGuideQuality.DeliversRequestedIq,
-      NonEmptyList.of(
-        AgsPosition(Angle.Angle0, Offset.Zero)   -> Area.fromMicroarcsecondsSquared.getOption(9).get,
-        AgsPosition(Angle.Angle180, Offset.Zero) -> Area.fromMicroarcsecondsSquared
-          .getOption(20)
-          .get
-      )
-    )
     assertEquals(1, List(u1, u2).sortPositions(positions).length)
   }
 

@@ -7,7 +7,6 @@ import cats.data.NonEmptyList
 import cats.syntax.all.*
 import eu.timepit.refined.types.string.NonEmptyString
 import lucuma.catalog.*
-import lucuma.catalog.*
 import lucuma.core.enums.Band
 import lucuma.core.enums.CatalogName
 import lucuma.core.geom.ShapeExpression
@@ -15,9 +14,7 @@ import lucuma.core.geom.ShapeInterpreter
 import lucuma.core.geom.syntax.all.*
 import lucuma.core.math.Angle
 import lucuma.core.math.Coordinates
-import lucuma.core.math.Declination
 import lucuma.core.math.Offset
-import lucuma.core.math.RightAscension
 import lucuma.core.model.SiderealTracking
 import org.http4s.Uri
 import spire.math.Bounded

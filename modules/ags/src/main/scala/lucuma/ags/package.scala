@@ -6,9 +6,6 @@ package lucuma.ags
 import cats.data.NonEmptyList
 import cats.syntax.all._
 import coulomb.*
-import coulomb.policy.spire.standard.given
-import coulomb.syntax.*
-import coulomb.units.accepted.ArcSecond
 import lucuma.catalog.BandsList
 import lucuma.catalog.BrightnessConstraints
 import lucuma.catalog.FaintnessConstraint
@@ -22,7 +19,6 @@ import lucuma.core.math.Angle
 import lucuma.core.math.BrightnessValue
 import lucuma.core.math.Wavelength
 import lucuma.core.math.skycalc.averageParallacticAngle
-import lucuma.core.math.units.rationalPosIntConverter
 import lucuma.core.model.ConstraintSet
 import lucuma.core.model.ObjectTracking
 import lucuma.core.model.PosAngleConstraint

@@ -9,7 +9,6 @@ import lucuma.catalog.FaintnessConstraint
 import lucuma.catalog.SaturationConstraint
 import lucuma.core.math.BrightnessValue
 import lucuma.core.math.arb.ArbBrightnessValue.given
-import lucuma.core.util.arb.ArbEnumerated.*
 import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck._
 

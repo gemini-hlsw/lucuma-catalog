@@ -7,18 +7,13 @@ import cats.Eq
 import cats.derived.*
 import cats.syntax.all.*
 import coulomb.*
-import coulomb.ops.algebra.spire.all.given
-import coulomb.policy.spire.standard.given
 import coulomb.syntax.*
-import coulomb.units.si.*
-import coulomb.units.si.given
 import eu.timepit.refined.*
 import eu.timepit.refined.cats.*
 import eu.timepit.refined.collection.NonEmpty
 import eu.timepit.refined.types.string.NonEmptyString
 import lucuma.catalog.BandsList
 import lucuma.core.enums.Band
-import lucuma.core.enums.StellarLibrarySpectrum
 import lucuma.core.math.BrightnessUnits.*
 import lucuma.core.math.BrightnessValue
 import lucuma.core.math.Epoch
@@ -28,7 +23,6 @@ import lucuma.core.model.SiderealTracking
 import lucuma.core.model.SourceProfile
 import lucuma.core.model.SpectralDefinition
 import lucuma.core.model.Target
-import lucuma.core.model.UnnormalizedSED
 import lucuma.core.optics.SplitEpi
 import monocle.Focus
 import monocle.Lens
