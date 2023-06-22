@@ -19,7 +19,6 @@ import lucuma.core.math.ProperMotion.AngularVelocity
 import lucuma.core.math.RadialVelocity
 import lucuma.core.math.VelocityAxis
 import lucuma.core.math.dimensional.*
-import lucuma.core.math.dimensional.*
 import lucuma.core.math.units.*
 import lucuma.core.syntax.string.*
 import lucuma.core.util.*

@@ -4,8 +4,6 @@
 package lucuma.catalog.csv
 
 import cats.syntax.all.*
-import lucuma.catalog.votable.*
-import lucuma.core.enums.CatalogName
 
 /** Indicates an issue parsing the targets, e.g. missing values, bad format, etc. */
 sealed trait ImportProblem extends Throwable with Product with Serializable {

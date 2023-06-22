@@ -6,27 +6,21 @@ package lucuma.catalog.csv
 import cats.effect.*
 import cats.syntax.all.*
 import fs2.*
-import fs2.data.csv.*
-import fs2.data.csv.generic.semiauto.*
 import fs2.io.file.Files
 import fs2.io.file.Path
 import lucuma.catalog.*
-import lucuma.catalog.csv.TargetImport.given
 import lucuma.catalog.csv.*
 import lucuma.core.enums.Band
 import lucuma.core.math.BrightnessValue
-import lucuma.core.math.Declination
 import lucuma.core.math.Epoch
 import lucuma.core.math.Parallax
 import lucuma.core.math.RadialVelocity
-import lucuma.core.math.RightAscension
 import lucuma.core.model.SiderealTracking
 import lucuma.core.model.SourceProfile
 import lucuma.core.model.SpectralDefinition
 import lucuma.core.model.Target
 import munit.CatsEffectSuite
 import org.http4s.jdkhttpclient.JdkHttpClient
-import org.typelevel.ci.*
 
 class TargetImportFileSuite extends CatsEffectSuite:
 

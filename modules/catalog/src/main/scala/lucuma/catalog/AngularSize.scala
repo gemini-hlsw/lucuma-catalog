@@ -4,7 +4,6 @@
 package lucuma.catalog
 
 import cats.Eq
-import cats.Show
 import cats.derived.*
 import lucuma.core.math.Angle
 import monocle.Focus

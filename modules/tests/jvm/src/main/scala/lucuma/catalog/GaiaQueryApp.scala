@@ -9,7 +9,6 @@ import cats.effect.Sync
 import cats.syntax.all.*
 import fs2.text
 import lucuma.catalog.*
-import lucuma.catalog.*
 import lucuma.core.geom.gmos.all.candidatesArea
 import lucuma.core.geom.jts.interpreter.given
 import lucuma.core.math.BrightnessValue
@@ -17,7 +16,7 @@ import lucuma.core.math.Coordinates
 import lucuma.core.math.Declination
 import lucuma.core.math.Epoch
 import lucuma.core.math.RightAscension
-import org.http4s.Method._
+import org.http4s.Method.*
 import org.http4s.Request
 import org.http4s.client.Client
 import org.http4s.jdkhttpclient.JdkHttpClient

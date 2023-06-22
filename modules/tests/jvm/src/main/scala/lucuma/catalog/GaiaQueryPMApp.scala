@@ -23,11 +23,6 @@ import org.http4s.Method.*
 import org.http4s.Request
 import org.http4s.client.Client
 import org.http4s.jdkhttpclient.JdkHttpClient
-import org.typelevel.cats.time.*
-import spire.math.Bounded
-import spire.math.Interval
-
-import java.time.Instant
 
 trait GaiaQueryPMSample {
   given gaia: CatalogAdapter.Gaia = CatalogAdapter.Gaia3Lite

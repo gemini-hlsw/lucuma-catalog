@@ -3,13 +3,10 @@
 
 package lucuma.catalog.votable
 
-import cats.data._
-import cats.syntax.all._
-import eu.timepit.refined._
-import eu.timepit.refined.collection.NonEmpty
-import eu.timepit.refined.types.string.NonEmptyString
+import cats.data.*
+import cats.syntax.all.*
 import lucuma.catalog.votable.CatalogProblem.FieldValueProblem
-import lucuma.core.syntax.string._
+import lucuma.core.syntax.string.*
 
 def parseDoubleValue(
   ucd: Option[Ucd],

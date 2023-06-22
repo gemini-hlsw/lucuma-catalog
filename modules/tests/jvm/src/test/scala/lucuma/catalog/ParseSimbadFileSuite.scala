@@ -6,17 +6,14 @@ package lucuma.catalog.votable
 import cats.effect.*
 import cats.implicits.*
 import coulomb.*
-import coulomb.ops.algebra.spire.all.given
 import coulomb.policy.spire.standard.given
 import coulomb.syntax.*
 import coulomb.units.si.*
-import coulomb.units.si.given
 import eu.timepit.refined.*
 import eu.timepit.refined.collection.NonEmpty
 import fs2.*
 import fs2.io.file.Files
 import fs2.io.file.Path
-import lucuma.catalog.*
 import lucuma.catalog.*
 import lucuma.core.enums.Band
 import lucuma.core.enums.CatalogName

@@ -16,7 +16,6 @@ import fs2.data.xml.*
 import lucuma.catalog.*
 import lucuma.catalog.votable.CatalogProblem.*
 import lucuma.catalog.votable.*
-import lucuma.core.enums.StellarLibrarySpectrum
 import lucuma.core.math.*
 import lucuma.core.math.units.*
 import lucuma.core.model.CatalogInfo
@@ -24,7 +23,6 @@ import lucuma.core.model.SiderealTracking
 import lucuma.core.model.SourceProfile
 import lucuma.core.model.SpectralDefinition
 import lucuma.core.model.Target
-import lucuma.core.model.UnnormalizedSED
 import lucuma.refined.*
 import monocle.Focus
 import monocle.Lens

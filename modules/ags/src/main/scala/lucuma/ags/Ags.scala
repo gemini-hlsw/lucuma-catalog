@@ -20,10 +20,8 @@ import lucuma.core.math.Coordinates
 import lucuma.core.math.Offset
 import lucuma.core.math.Wavelength
 import lucuma.core.model.ConstraintSet
-import lucuma.core.model.SiderealTracking
 
 import java.time.Instant
-import scala.annotation.tailrec
 
 object Ags {
 

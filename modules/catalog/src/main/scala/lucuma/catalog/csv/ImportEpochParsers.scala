@@ -6,7 +6,6 @@ package lucuma.catalog.csv
 import cats.parse.Parser
 import cats.parse.Parser.char
 import cats.parse.Parser.charIn
-import cats.parse.Parser.string
 import cats.parse.Rfc5234.*
 import lucuma.core.math.Epoch
 import lucuma.core.math.parser.EpochParsers

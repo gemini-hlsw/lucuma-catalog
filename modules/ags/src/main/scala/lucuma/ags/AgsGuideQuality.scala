@@ -3,7 +3,6 @@
 
 package lucuma.ags
 
-import cats.Order
 import lucuma.core.util.Enumerated
 
 enum AgsGuideQuality(private val tag: String, val message: String) derives Enumerated:
