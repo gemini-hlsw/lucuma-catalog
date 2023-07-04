@@ -165,17 +165,12 @@ object AgsAnalysis {
         results
           .groupBy(_.target.id)
           .flatMap { (_, analyses) =>
-            val usable = analyses.collect {
-              case r if r.isUsable => r
-            }
+            val usable = analyses.collect { case u: Usable => u }
             // If there is at least a single usable result, we can sort by vignetting
             // and discard the non usable results
             if (usable.nonEmpty) {
               List(
                 usable
-                  .collect { case u: Usable =>
-                    u
-                  }
                   .reduce((a, b) => a.copy(vignetting = a.vignetting.concatNel(b.vignetting)))
                   .sortedVignetting
               )
