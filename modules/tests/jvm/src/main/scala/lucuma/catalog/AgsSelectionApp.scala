@@ -15,6 +15,7 @@ import lucuma.core.enums.CloudExtinction
 import lucuma.core.enums.GmosNorthFpu
 import lucuma.core.enums.ImageQuality
 import lucuma.core.enums.PortDisposition
+import lucuma.core.enums.Site
 import lucuma.core.enums.SkyBackground
 import lucuma.core.enums.WaterVapor
 import lucuma.core.geom.gmos.all.candidatesArea
@@ -22,34 +23,86 @@ import lucuma.core.geom.jts.interpreter.given
 import lucuma.core.math.Angle
 import lucuma.core.math.Coordinates
 import lucuma.core.math.Declination
+import lucuma.core.math.Epoch
 import lucuma.core.math.Offset
+import lucuma.core.math.ProperMotion
+import lucuma.core.math.RadialVelocity
 import lucuma.core.math.RightAscension
 import lucuma.core.math.Wavelength
 import lucuma.core.model.ConstraintSet
 import lucuma.core.model.ElevationRange
 import lucuma.core.model.ElevationRange.AirMass
 import lucuma.core.model.ElevationRange.AirMass.DecimalValue
+import lucuma.core.model.ObjectTracking
+import lucuma.core.model.PosAngleConstraint
+import lucuma.core.model.SiderealTracking
 import lucuma.core.model.Target
 import org.http4s.Method.*
 import org.http4s.Request
 import org.http4s.client.Client
 import org.http4s.jdkhttpclient.JdkHttpClient
 
+import java.time.Instant
+
 trait AgsSelectionSample {
 
   given gaia: CatalogAdapter.Gaia = CatalogAdapter.Gaia3Lite
 
   given ADQLInterpreter =
-    ADQLInterpreter.nTarget(30000)
+    ADQLInterpreter.nTarget(100)
 
-  val coords = (RightAscension.fromStringHMS.getOption("15:28:00.668"),
-                Declination.fromStringSignedDMS.getOption("+64:45:47.40")
+  val coords = (RightAscension.fromStringHMS.getOption("19:59:36.748"),
+                Declination.fromStringSignedDMS.getOption("+20:48:14.60")
   ).mapN(Coordinates.apply).getOrElse(Coordinates.Zero)
 
+  val tracking = SiderealTracking(
+    coords,
+    Epoch.J2000,
+    ProperMotion(ProperMotion.RA.milliarcsecondsPerYear.reverseGet(-16),
+                 ProperMotion.Dec.milliarcsecondsPerYear.reverseGet(-26)
+    ).some,
+    RadialVelocity.Zero.some,
+    none
+  )
+
+  val now        = Instant.ofEpochMilli(1688486539L)
+  val wavelength = Wavelength.fromIntNanometers(600).get
+
+  val offsets =
+    NonEmptyList.of(Offset.Zero, Offset.Zero.copy(q = Offset.Q(Angle.fromDoubleArcseconds(15))))
+
+  val params = AgsParams.GmosAgsParams(
+    GmosNorthFpu.LongSlit_0_25.asLeft.some,
+    PortDisposition.Bottom
+  )
+
+  val constraints = ConstraintSet(
+    ImageQuality.PointSix,
+    CloudExtinction.PointOne,
+    SkyBackground.Bright,
+    WaterVapor.Wet,
+    AirMass.fromDecimalValues.get(DecimalValue.unsafeFrom(BigDecimal(1.0)),
+                                  DecimalValue.unsafeFrom(BigDecimal(1.75))
+    )
+  )
+
+  val positions = PosAngleConstraint.Unbounded
+    .anglesToTestAt(
+      Site.GN,
+      ObjectTracking.SiderealObjectTracking(tracking),
+      now
+    )
+    .get
+    .flatMap(a => offsets.map(o => AgsPosition(a, o)))
+
+  println(positions.length)
   def gaiaQuery[F[_]: Sync](client: Client[F]): Stream[F, Target.Sidereal] = {
     val query   =
-      CatalogSearch.gaiaSearchUri(QueryByADQL(coords, candidatesArea, widestConstraints.some))
+      CatalogSearch.gaiaSearchUri(
+        QueryByADQL(tracking.at(now).get, candidatesArea, widestConstraints.some)
+      )
     val request = Request[F](GET, query)
+    println(query)
     client
       .stream(request)
       .flatMap(
@@ -64,20 +117,6 @@ trait AgsSelectionSample {
 }
 
 object AgsSelectionSampleApp extends IOApp.Simple with AgsSelectionSample {
-  val constraints = ConstraintSet(
-    ImageQuality.PointOne,
-    CloudExtinction.PointOne,
-    SkyBackground.Dark,
-    WaterVapor.Wet,
-    AirMass.fromDecimalValues.get(DecimalValue.unsafeFrom(BigDecimal(1.0)),
-                                  DecimalValue.unsafeFrom(BigDecimal(1.75))
-    )
-  )
-
-  val wavelength = Wavelength.fromIntNanometers(520).get
-  val positions  = NonEmptyList.of(AgsPosition(Angle.fromDoubleDegrees(1), Offset.Zero),
-                                  AgsPosition(Angle.fromDoubleDegrees(1).flip, Offset.Zero)
-  )
 
   def run =
     JdkHttpClient
@@ -87,8 +126,9 @@ object AgsSelectionSampleApp extends IOApp.Simple with AgsSelectionSample {
           .map(GuideStarCandidate.siderealTarget.get)
           .compile
           .toList
-          .map(candidates =>
-            Ags
+          .map { candidates =>
+            println(s"Candidates ${candidates.length}")
+            val r = Ags
               .agsAnalysis(
                 constraints,
                 wavelength,
@@ -96,13 +136,14 @@ object AgsSelectionSampleApp extends IOApp.Simple with AgsSelectionSample {
                 List(coords),
                 positions,
                 AgsParams.GmosAgsParams(
-                  GmosNorthFpu.LongSlit_1_00.asLeft.some,
-                  PortDisposition.Side
+                  GmosNorthFpu.LongSlit_0_25.asLeft.some,
+                  PortDisposition.Bottom
                 ),
                 candidates
               )
-              .sortPositions(positions)
-          )
+            println(s"Results ${r.sortUsablePositions(positions)}")
+            r.sortUsablePositions(positions)
+          }
       )
       .flatTap(x => IO.println(x.length))
       // .flatMap(x => x.filter(_.isUsable).traverse(u => IO(pprint.pprintln(u))))

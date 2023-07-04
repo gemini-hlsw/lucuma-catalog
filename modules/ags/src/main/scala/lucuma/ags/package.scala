@@ -132,7 +132,9 @@ def gaiaBrightnessConstraints(
   )
 
 private val UnconstrainedAngles =
-  (0 until 360 by 10).map(a => Angle.fromDoubleDegrees(a.toDouble)).toList
+  NonEmptyList.fromListUnsafe(
+    (0 until 360 by 10).map(a => Angle.fromDoubleDegrees(a.toDouble)).toList
+  )
 
 extension (posAngleConstraint: PosAngleConstraint)
   def anglesToTestAt(
@@ -145,4 +147,4 @@ extension (posAngleConstraint: PosAngleConstraint)
     case PosAngleConstraint.ParallacticOverride(a) => NonEmptyList.of(a).some
     case PosAngleConstraint.AverageParallactic     =>
       averageParallacticAngle(site, tracking, vizTime).map(a => NonEmptyList.of(a, a.flip))
-    case PosAngleConstraint.Unbounded              => NonEmptyList.fromList(UnconstrainedAngles)
+    case PosAngleConstraint.Unbounded              => UnconstrainedAngles.some

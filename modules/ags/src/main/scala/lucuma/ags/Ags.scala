@@ -27,13 +27,11 @@ object Ags {
 
   private def guideSpeedFor(
     speeds: List[(GuideSpeed, BrightnessConstraints)],
-    gsc:    GuideStarCandidate
-  ): Option[GuideSpeed] = gsc.gBrightness
-    .flatMap { g =>
-      speeds
-        .find(_._2.contains(Band.Gaia, g))
-        .map(_._1)
-    }
+    gMag:   BrightnessValue
+  ): Option[GuideSpeed] =
+    speeds
+      .find(_._2.contains(Band.Gaia, gMag))
+      .map(_._1)
 
   // Runs the analyisis for a single guide star at a single position
   def runAnalysis(
@@ -50,7 +48,7 @@ object Ags {
     val geoms = calcs.lookup(pos)
     if (!geoms.exists(_.isReachable(gsOffset)))
       // Do we have a g magnitude
-      val guideSpeed = guideSpeedFor(speeds, gsc)
+      val guideSpeed = gsc.gBrightness.flatMap(guideSpeedFor(speeds, _))
       AgsAnalysis.NotReachableAtPosition(pos, params.probe, guideSpeed, gsc)
     else if (geoms.exists(g => scienceOffsets.exists(g.overlapsScience(_))))
       AgsAnalysis.VignettesScience(gsc, pos)
@@ -103,20 +101,20 @@ object Ags {
 
       Usable(guideProbe,
              guideStar,
-             guideSpeed.some,
+             guideSpeed,
              quality,
-             NonEmptyList.of((position, vignettingArea(gsOffset)))
+             NonEmptyList.one((position, vignettingArea(gsOffset)))
       )
     }
 
     // Do we have a g magnitude
-    guideStar.gBrightness
-      .map { _ =>
-        guideSpeedFor(speeds, guideStar)
+    guideStar.gBrightness match {
+      case Some(g) =>
+        guideSpeedFor(speeds, g)
           .map(usable)
           .getOrElse(NoGuideStarForProbe(guideProbe, guideStar))
-      }
-      .getOrElse(NoMagnitudeForBand(guideProbe, guideStar))
+      case _       => NoMagnitudeForBand(guideProbe, guideStar)
+    }
 
   }
 
@@ -258,7 +256,10 @@ object Ags {
 
   /**
    * Do analysis of a list of Candidate Guide Stars Note the base coordinates should be pm corrected
-   * if needed
+   * if needed.
+   *
+   * The results contaains every possible combination of candidates and positions, the result will
+   * be less than candidates..length * positions.length as some candidates will be filtered out
    */
   def agsAnalysis(
     constraints:        ConstraintSet,
@@ -278,18 +279,17 @@ object Ags {
     // use constraints to calculate all guide speeds
     val bc    = constraintsFor(guideSpeeds)
 
-    positions.map { position =>
-      candidates
-        .filter(c => c.gBrightness.exists(g => bc.exists(_.contains(Band.Gaia, g))))
-        // Use fold left to traverse the list of candidates only once
-        .map(gsc =>
+    candidates
+      .filter(c => c.gBrightness.exists(g => bc.exists(_.contains(Band.Gaia, g))))
+      .flatMap(gsc =>
+        positions.toList.map { position =>
           val offset         = baseCoordinates.diff(gsc.tracking.baseCoordinates).offset
           val scienceOffsets = scienceCoordinates.map(_.diff(gsc.tracking.baseCoordinates).offset)
           runAnalysis(constraints, offset, scienceOffsets, position, params, gsc)(guideSpeeds,
                                                                                   calcs
           )
-        )
-    }.combineAll
+        }
+      )
   }
 
   /**

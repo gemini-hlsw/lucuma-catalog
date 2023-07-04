@@ -98,13 +98,12 @@ object AgsAnalysis {
         s"${p}uide star ${probeBands.map(_.shortName).mkString(", ")}-band magnitudes are missing. Cannot determine guiding performance."
       }
     }
-    override val quality: AgsGuideQuality            = AgsGuideQuality.PossiblyUnusable
   }
 
   case class Usable(
     guideProbe:           GuideProbe,
     target:               GuideStarCandidate,
-    guideSpeed:           Option[GuideSpeed],
+    guideSpeed:           GuideSpeed,
     override val quality: AgsGuideQuality,
     vignetting:           NonEmptyList[(AgsPosition, Area)]
   ) extends AgsAnalysis
@@ -115,7 +114,7 @@ object AgsAnalysis {
         case _                                   => s"${quality.message} "
       }
       val p              = if (withProbe) s"${guideProbe} " else ""
-      val gs             = guideSpeed.fold("Usable")(gs => s"Guide Speed: ${gs.toString()}")
+      val gs             = s"Guide Speed: ${guideSpeed.toString()}"
       s"$qualityMessage$p$gs. vignetting: ${vignetting.head._2.toMicroarcsecondsSquared} µas^2"
       s"$p $quality $gs. vignetting: ${vignetting.head._2.toMicroarcsecondsSquared} µas^2"
     }
@@ -158,22 +157,32 @@ object AgsAnalysis {
     /**
      * This method will sort the analysis for quality and internally for positions that give the
      * lowest vignetting.
+     *
+     * Non usable positions wii be discarded.
      */
-    def sortPositions(positions: NonEmptyList[AgsPosition]): List[AgsAnalysis] = {
-      val (usable, nonUsable)                = results.partition(_.isUsable)
+    def sortUsablePositions(positions: NonEmptyList[AgsPosition]): List[AgsAnalysis] = {
       val usablePerTarget: List[AgsAnalysis] =
-        usable
+        results
           .groupBy(_.target.id)
-          .map { (_, analyses) =>
-            analyses
-              .collect { case u: Usable =>
-                u
-              }
-              .reduce((a, b) => a.copy(vignetting = a.vignetting.concatNel(b.vignetting)))
-              .sortedVignetting
+          .flatMap { (_, analyses) =>
+            val usable = analyses.collect {
+              case r if r.isUsable => r
+            }
+            // If there is at least a single usable result, we can sort by vignetting
+            // and discard the non usable results
+            if (usable.nonEmpty) {
+              List(
+                usable
+                  .collect { case u: Usable =>
+                    u
+                  }
+                  .reduce((a, b) => a.copy(vignetting = a.vignetting.concatNel(b.vignetting)))
+                  .sortedVignetting
+              )
+            } else Nil // Ignore if there are no usable results
           }
           .toList
-      usablePerTarget.sorted(rankingOrdering) ::: nonUsable
+      usablePerTarget.sorted(rankingOrdering)
     }
 
 }
