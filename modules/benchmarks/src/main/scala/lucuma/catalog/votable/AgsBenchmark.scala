@@ -11,16 +11,8 @@ import org.openjdk.jmh.annotations.*
 
 import java.util.concurrent.TimeUnit
 import lucuma.ags.*
-import lucuma.core.model.ConstraintSet
-import lucuma.core.enums.*
-import lucuma.core.math.Wavelength
-import lucuma.core.math.Wavelength
-import lucuma.core.util.*
-import lucuma.core.model.ElevationRange
 import org.http4s.jdkhttpclient.JdkHttpClient
-import lucuma.core.math.Angle
 import lucuma.core.math.Offset
-import lucuma.core.model.SiderealTracking
 import java.time.Instant
 
 @State(Scope.Thread)
@@ -47,22 +39,6 @@ class AgsBenchmark extends AgsSelectionSample {
       .flatTap(x => IO.println(s"Loaded ${x.length}"))
       .unsafeRunSync()
 
-  val constraints = ConstraintSet(ImageQuality.PointTwo,
-                                  CloudExtinction.PointFive,
-                                  SkyBackground.Dark,
-                                  WaterVapor.Wet,
-                                  ElevationRange.AirMass.Default
-  )
-
-  val wavelength = Wavelength.fromIntNanometers(700).get
-
-  val params = AgsParams.GmosAgsParams(
-    GmosNorthFpu.LongSlit_5_00.asLeft.some,
-    PortDisposition.Bottom
-  )
-
-  val pos = AgsPosition(Angle.Angle0, Offset.Zero)
-
   @Benchmark
   def ags: Unit = {
     Ags.agsAnalysis(
@@ -70,11 +46,8 @@ class AgsBenchmark extends AgsSelectionSample {
       wavelength,
       coords,
       List(coords),
-      NonEmptyList.of(AgsPosition(Angle.Angle0, Offset.Zero)),
-      AgsParams.GmosAgsParams(
-        GmosNorthFpu.LongSlit_5_00.asLeft.some,
-        PortDisposition.Bottom
-      ),
+      positions,
+      params,
       items
     )
     ()
@@ -87,11 +60,8 @@ class AgsBenchmark extends AgsSelectionSample {
       wavelength,
       _ => coords.some,
       List(_ => coords.some),
-      NonEmptyList.of(AgsPosition(Angle.Angle0, Offset.Zero)),
-      AgsParams.GmosAgsParams(
-        GmosNorthFpu.LongSlit_5_00.asLeft.some,
-        PortDisposition.Bottom
-      ),
+      positions,
+      params,
       Instant.now(),
       items
     )
@@ -100,7 +70,7 @@ class AgsBenchmark extends AgsSelectionSample {
 
   @Benchmark
   def magnitudeAnalysis: Unit = {
-    val geoms  = params.posCalculations(NonEmptyList.of(pos))
+    val geoms  = params.posCalculations(NonEmptyList.one(positions.head))
     val limits = Ags.guideSpeedLimits(constraints, wavelength)
     Ags.magnitudeAnalysis(
       constraints,
@@ -108,7 +78,7 @@ class AgsBenchmark extends AgsSelectionSample {
       Offset.Zero,
       items.head,
       geoms.get(0).get.vignettingArea(_),
-      pos
+      positions.head
     )(limits)
     ()
   }

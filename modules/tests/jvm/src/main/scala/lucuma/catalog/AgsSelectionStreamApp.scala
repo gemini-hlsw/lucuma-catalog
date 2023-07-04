@@ -9,34 +9,14 @@ import cats.effect.IOApp
 import cats.syntax.all.*
 import fs2.*
 import lucuma.ags.*
-import lucuma.core.enums.CloudExtinction
 import lucuma.core.enums.GmosNorthFpu
-import lucuma.core.enums.ImageQuality
 import lucuma.core.enums.PortDisposition
-import lucuma.core.enums.SkyBackground
-import lucuma.core.enums.WaterVapor
 import lucuma.core.math.Angle
 import lucuma.core.math.Coordinates
 import lucuma.core.math.Offset
-import lucuma.core.math.Wavelength
-import lucuma.core.model.ConstraintSet
-import lucuma.core.model.ElevationRange
-import lucuma.core.model.ElevationRange.AirMass
-import lucuma.core.model.ElevationRange.AirMass.DecimalValue
 import org.http4s.jdkhttpclient.JdkHttpClient
 
 object AgsSelectionSampleStreamApp extends IOApp.Simple with AgsSelectionSample {
-  val constraints = ConstraintSet(
-    ImageQuality.PointOne,
-    CloudExtinction.PointOne,
-    SkyBackground.Dark,
-    WaterVapor.Wet,
-    AirMass.fromDecimalValues.get(DecimalValue.unsafeFrom(BigDecimal(1.0)),
-                                  DecimalValue.unsafeFrom(BigDecimal(1.75))
-    )
-  )
-
-  val wavelength = Wavelength.fromIntNanometers(520).get
 
   def run =
     JdkHttpClient

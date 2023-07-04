@@ -5,6 +5,7 @@ package lucuma.ags
 
 import cats.data.NonEmptyList
 import cats.syntax.all.*
+import lucuma.ags.AgsAnalysis.NoMagnitudeForBand
 import lucuma.ags.AgsAnalysis.Usable
 import lucuma.core.enums.*
 import lucuma.core.geom.Area
@@ -30,7 +31,7 @@ class AgsSuite extends munit.FunSuite {
     val u1 = Usable(
       GuideProbe.OIWFS,
       gs1,
-      GuideSpeed.Fast.some,
+      GuideSpeed.Fast,
       AgsGuideQuality.DeliversRequestedIq,
       NonEmptyList.of(
         AgsPosition(Angle.Angle0, Offset.Zero) -> Area.fromMicroarcsecondsSquared.getOption(0).get
@@ -39,7 +40,7 @@ class AgsSuite extends munit.FunSuite {
     val u2 = Usable(
       GuideProbe.OIWFS,
       gs1,
-      GuideSpeed.Fast.some,
+      GuideSpeed.Fast,
       AgsGuideQuality.DeliversRequestedIq,
       NonEmptyList.of(
         AgsPosition(Angle.Angle0, Offset.Zero) -> Area.fromMicroarcsecondsSquared.getOption(1).get
@@ -48,7 +49,7 @@ class AgsSuite extends munit.FunSuite {
     val u3 = Usable(
       GuideProbe.OIWFS,
       gs2,
-      GuideSpeed.Fast.some,
+      GuideSpeed.Fast,
       AgsGuideQuality.DeliversRequestedIq,
       NonEmptyList.of(
         AgsPosition(Angle.Angle0, Offset.Zero) -> Area.fromMicroarcsecondsSquared.getOption(0).get
@@ -57,7 +58,7 @@ class AgsSuite extends munit.FunSuite {
     val u4 = Usable(
       GuideProbe.OIWFS,
       gs2,
-      GuideSpeed.Fast.some,
+      GuideSpeed.Fast,
       AgsGuideQuality.DeliversRequestedIq,
       NonEmptyList.of(
         AgsPosition(Angle.Angle0, Offset.Zero) -> Area.fromMicroarcsecondsSquared.getOption(2).get
@@ -67,7 +68,7 @@ class AgsSuite extends munit.FunSuite {
     val u12 = Usable(
       GuideProbe.OIWFS,
       gs1,
-      GuideSpeed.Fast.some,
+      GuideSpeed.Fast,
       AgsGuideQuality.DeliversRequestedIq,
       NonEmptyList.of(
         AgsPosition(Angle.Angle0, Offset.Zero)   -> Area.fromMicroarcsecondsSquared.getOption(0).get,
@@ -80,7 +81,7 @@ class AgsSuite extends munit.FunSuite {
     val u22 = Usable(
       GuideProbe.OIWFS,
       gs2,
-      GuideSpeed.Fast.some,
+      GuideSpeed.Fast,
       AgsGuideQuality.DeliversRequestedIq,
       NonEmptyList.of(
         AgsPosition(Angle.Angle0, Offset.Zero)   -> Area.fromMicroarcsecondsSquared.getOption(9).get,
@@ -104,7 +105,7 @@ class AgsSuite extends munit.FunSuite {
     val u1 = Usable(
       GuideProbe.OIWFS,
       gs1,
-      GuideSpeed.Fast.some,
+      GuideSpeed.Fast,
       AgsGuideQuality.DeliversRequestedIq,
       NonEmptyList.of(
         AgsPosition(Angle.Angle180, Offset.Zero) -> Area.fromMicroarcsecondsSquared.getOption(0).get
@@ -113,7 +114,7 @@ class AgsSuite extends munit.FunSuite {
     val u2 = Usable(
       GuideProbe.OIWFS,
       gs2,
-      GuideSpeed.Fast.some,
+      GuideSpeed.Fast,
       AgsGuideQuality.DeliversRequestedIq,
       NonEmptyList.of(
         AgsPosition(Angle.Angle0, Offset.Zero) -> Area.fromMicroarcsecondsSquared.getOption(0).get
@@ -129,7 +130,7 @@ class AgsSuite extends munit.FunSuite {
     val u1        = Usable(
       GuideProbe.OIWFS,
       gs1,
-      GuideSpeed.Fast.some,
+      GuideSpeed.Fast,
       AgsGuideQuality.DeliversRequestedIq,
       NonEmptyList.of(
         AgsPosition(Angle.Angle0, Offset.Zero) -> Area.fromMicroarcsecondsSquared.getOption(0).get
@@ -138,13 +139,33 @@ class AgsSuite extends munit.FunSuite {
     val u2        = Usable(
       GuideProbe.OIWFS,
       gs1,
-      GuideSpeed.Fast.some,
+      GuideSpeed.Fast,
       AgsGuideQuality.DeliversRequestedIq,
       NonEmptyList.of(
         AgsPosition(Angle.Angle180, Offset.Zero) -> Area.fromMicroarcsecondsSquared.getOption(1).get
       )
     )
-    assertEquals(1, List(u1, u2).sortPositions(positions).length)
+    assertEquals(1, List(u1, u2).sortUsablePositions(positions).length)
+  }
+
+  test("sort unusable positions") {
+    val positions = NonEmptyList.of(AgsPosition(Angle.Angle0, Offset.Zero),
+                                    AgsPosition(Angle.Angle180, Offset.Zero)
+    )
+    val u1        = Usable(
+      GuideProbe.OIWFS,
+      gs1,
+      GuideSpeed.Fast,
+      AgsGuideQuality.DeliversRequestedIq,
+      NonEmptyList.of(
+        AgsPosition(Angle.Angle0, Offset.Zero) -> Area.fromMicroarcsecondsSquared.getOption(0).get
+      )
+    )
+    val u2        = NoMagnitudeForBand(
+      GuideProbe.OIWFS,
+      gs1
+    )
+    assertEquals(1, List(u1, u2).sortUsablePositions(positions).length)
   }
 
   test("discard science target") {
