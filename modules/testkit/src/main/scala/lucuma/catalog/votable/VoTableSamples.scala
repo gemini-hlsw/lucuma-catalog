@@ -5,7 +5,7 @@ package lucuma.catalog.votable
 
 trait VoTableSamples {
 
-  val fieldsNode =
+  lazy val fieldsNode =
     <TABLE>
         <FIELD ID="gmag_err" datatype="double" name="gmag_err" ucd="stat.error;phot.mag;em.opt.g"/>
         <FIELD ID="rmag_err" datatype="double" name="rmag_err" ucd="stat.error;phot.mag;em.opt.r"/>
@@ -13,7 +13,7 @@ trait VoTableSamples {
         <FIELD ID="ppmxl" datatype="int" name="ppmxl" ucd="meta.id;meta.main"/>
       </TABLE>
 
-  val tableRow =
+  lazy val tableRow =
     <TR>
         <TD>0.0960165</TD>
         <TD>0.0503736</TD>
@@ -21,14 +21,14 @@ trait VoTableSamples {
         <TD>-2140405448</TD>
       </TR>
 
-  val tableRowMissing =
+  lazy val tableRowMissing =
     <TR>
         <TD>0.0960165</TD>
         <TD>0.0503736</TD>
         <TD>268435728</TD>
       </TR>
 
-  val tableRowExtra =
+  lazy val tableRowExtra =
     <TR>
         <TD>0.0960165</TD>
         <TD>0.0503736</TD>
@@ -37,7 +37,7 @@ trait VoTableSamples {
         <TD>-2140405448</TD>
       </TR>
 
-  val dataNode =
+  lazy val dataNode =
     <DATA>
         <TABLEDATA>
           <TR>
@@ -55,7 +55,7 @@ trait VoTableSamples {
         </TABLEDATA>
       </DATA>
 
-  val dataNodeMissing = <DATA>
+  lazy val dataNodeMissing = <DATA>
         <TABLEDATA>
           <TR>
             <TD>0.0960165</TD>
@@ -71,7 +71,7 @@ trait VoTableSamples {
         </TABLEDATA>
       </DATA>
 
-  val targets =
+  lazy val targets =
     <TABLE>
         <FIELD ID="flags1" datatype="int" name="flags1" ucd="meta.code"/>
         <FIELD ID="umag" datatype="double" name="umag" ucd="phot.mag;em.opt.u"/>
@@ -119,7 +119,7 @@ trait VoTableSamples {
       </DATA>
     </TABLE>
 
-  val targetsWithRedshift =
+  lazy val targetsWithRedshift =
     <TABLE>
         <FIELD ID="flags1" datatype="int" name="flags1" ucd="meta.code"/>
         <FIELD ID="umag" datatype="double" name="umag" ucd="phot.mag;em.opt.u"/>
@@ -173,7 +173,7 @@ trait VoTableSamples {
       </DATA>
     </TABLE>
 
-  val targetsWithRadialVelocityError =
+  lazy val targetsWithRadialVelocityError =
     <TABLE>
         <FIELD ID="flags1" datatype="int" name="flags1" ucd="meta.code"/>
         <FIELD ID="umag" datatype="double" name="umag" ucd="phot.mag;em.opt.u"/>
@@ -209,7 +209,7 @@ trait VoTableSamples {
       </DATA>
     </TABLE>
 
-  val targetsWithErrors =
+  lazy val targetsWithErrors =
     <TABLE>
         <FIELD ID="gmag_err" datatype="double" name="gmag_err" ucd="stat.error;phot.mag;em.opt.g"/>
         <FIELD ID="rmag_err" datatype="double" name="rmag_err" ucd="stat.error;phot.mag;em.opt.r"/>
@@ -278,7 +278,7 @@ trait VoTableSamples {
       </DATA>
     </TABLE>
 
-  val targetsWithProperMotion =
+  lazy val targetsWithProperMotion =
     <TABLE>
         <FIELD ID="pmde" datatype="double" name="pmde" ucd="pos.pm;pos.eq.dec"/>
         <FIELD ID="pmra" datatype="double" name="pmra" ucd="pos.pm;pos.eq.ra"/>
@@ -323,7 +323,7 @@ trait VoTableSamples {
         </DATA>
        </TABLE>
 
-  val gaia =
+  lazy val gaia =
     <TABLE>
         <FIELD ID="DESIGNATION" arraysize="*" datatype="char" name="designation" ucd="meta.id;meta.main">
           <DESCRIPTION>Unique source designation (unique across all Data Releases)</DESCRIPTION>
@@ -437,49 +437,49 @@ trait VoTableSamples {
         </DATA>
       </TABLE>
 
-  val voTable =
+  lazy val voTable =
     <VOTABLE>
         <RESOURCE type="results">
           {targets}
         </RESOURCE>
       </VOTABLE>
 
-  val voTableWithErrors =
+  lazy val voTableWithErrors =
     <VOTABLE>
         <RESOURCE type="results">
           {targetsWithErrors}
         </RESOURCE>
       </VOTABLE>
 
-  val voTableWithProperMotion =
+  lazy val voTableWithProperMotion =
     <VOTABLE>
         <RESOURCE type="results">
           {targetsWithProperMotion}
         </RESOURCE>
       </VOTABLE>
 
-  val voTableWithRedshift =
+  lazy val voTableWithRedshift =
     <VOTABLE>
         <RESOURCE type="results">
           {targetsWithRedshift}
         </RESOURCE>
       </VOTABLE>
 
-  val voTableWithRadialVelocityError =
+  lazy val voTableWithRadialVelocityError =
     <VOTABLE>
         <RESOURCE type="results">
           {targetsWithRadialVelocityError}
         </RESOURCE>
       </VOTABLE>
 
-  val voTableGaia =
+  lazy val voTableGaia =
     <VOTABLE>
         <RESOURCE type="results">
           {gaia}
         </RESOURCE>
       </VOTABLE>
 
-  val voTableGaiaPMCorrected =
+  lazy val voTableGaiaPMCorrected =
     <VOTABLE version="1.4" xmlns="http://www.ivoa.net/xml/VOTable/v1.3" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.ivoa.net/xml/VOTable/v1.3 http://www.ivoa.net/xml/VOTable/v1.3">
       <RESOURCE type="results">
       <INFO name="QUERY_STATUS" value="OK" />
