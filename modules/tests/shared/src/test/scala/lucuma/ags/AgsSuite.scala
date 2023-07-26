@@ -29,65 +29,61 @@ class AgsSuite extends munit.FunSuite {
   )
   test("usable comparisons") {
     val u1 = Usable(
-      GuideProbe.OIWFS,
+      GuideProbe.GmosOiwfs,
       gs1,
       GuideSpeed.Fast,
       AgsGuideQuality.DeliversRequestedIq,
       NonEmptyList.of(
-        AgsPosition(Angle.Angle0, Offset.Zero) -> Area.fromMicroarcsecondsSquared.getOption(0).get
+        Angle.Angle0 -> Area.fromMicroarcsecondsSquared.getOption(0).get
       )
     )
     val u2 = Usable(
-      GuideProbe.OIWFS,
+      GuideProbe.GmosOiwfs,
       gs1,
       GuideSpeed.Fast,
       AgsGuideQuality.DeliversRequestedIq,
       NonEmptyList.of(
-        AgsPosition(Angle.Angle0, Offset.Zero) -> Area.fromMicroarcsecondsSquared.getOption(1).get
+        Angle.Angle0 -> Area.fromMicroarcsecondsSquared.getOption(1).get
       )
     )
     val u3 = Usable(
-      GuideProbe.OIWFS,
+      GuideProbe.GmosOiwfs,
       gs2,
       GuideSpeed.Fast,
       AgsGuideQuality.DeliversRequestedIq,
       NonEmptyList.of(
-        AgsPosition(Angle.Angle0, Offset.Zero) -> Area.fromMicroarcsecondsSquared.getOption(0).get
+        Angle.Angle0 -> Area.fromMicroarcsecondsSquared.getOption(0).get
       )
     )
     val u4 = Usable(
-      GuideProbe.OIWFS,
+      GuideProbe.GmosOiwfs,
       gs2,
       GuideSpeed.Fast,
       AgsGuideQuality.DeliversRequestedIq,
       NonEmptyList.of(
-        AgsPosition(Angle.Angle0, Offset.Zero) -> Area.fromMicroarcsecondsSquared.getOption(2).get
+        Angle.Angle0 -> Area.fromMicroarcsecondsSquared.getOption(2).get
       )
     )
 
     val u12 = Usable(
-      GuideProbe.OIWFS,
+      GuideProbe.GmosOiwfs,
       gs1,
       GuideSpeed.Fast,
       AgsGuideQuality.DeliversRequestedIq,
       NonEmptyList.of(
-        AgsPosition(Angle.Angle0, Offset.Zero)   -> Area.fromMicroarcsecondsSquared.getOption(0).get,
-        AgsPosition(Angle.Angle180, Offset.Zero) -> Area.fromMicroarcsecondsSquared
-          .getOption(10)
-          .get
+        Angle.Angle0   -> Area.fromMicroarcsecondsSquared.getOption(0).get,
+        Angle.Angle180 -> Area.fromMicroarcsecondsSquared.getOption(10).get
       )
     )
 
     val u22 = Usable(
-      GuideProbe.OIWFS,
+      GuideProbe.GmosOiwfs,
       gs2,
       GuideSpeed.Fast,
       AgsGuideQuality.DeliversRequestedIq,
       NonEmptyList.of(
-        AgsPosition(Angle.Angle0, Offset.Zero)   -> Area.fromMicroarcsecondsSquared.getOption(9).get,
-        AgsPosition(Angle.Angle180, Offset.Zero) -> Area.fromMicroarcsecondsSquared
-          .getOption(20)
-          .get
+        Angle.Angle0   -> Area.fromMicroarcsecondsSquared.getOption(9).get,
+        Angle.Angle180 -> Area.fromMicroarcsecondsSquared.getOption(20).get
       )
     )
 
@@ -103,69 +99,63 @@ class AgsSuite extends munit.FunSuite {
 
   test("sort by brightness") {
     val u1 = Usable(
-      GuideProbe.OIWFS,
+      GuideProbe.GmosOiwfs,
       gs1,
       GuideSpeed.Fast,
       AgsGuideQuality.DeliversRequestedIq,
       NonEmptyList.of(
-        AgsPosition(Angle.Angle180, Offset.Zero) -> Area.fromMicroarcsecondsSquared.getOption(0).get
+        Angle.Angle180 -> Area.fromMicroarcsecondsSquared.getOption(0).get
       )
     )
     val u2 = Usable(
-      GuideProbe.OIWFS,
+      GuideProbe.GmosOiwfs,
       gs2,
       GuideSpeed.Fast,
       AgsGuideQuality.DeliversRequestedIq,
       NonEmptyList.of(
-        AgsPosition(Angle.Angle0, Offset.Zero) -> Area.fromMicroarcsecondsSquared.getOption(0).get
+        Angle.Angle0 -> Area.fromMicroarcsecondsSquared.getOption(0).get
       )
     )
     assert(AgsAnalysis.rankingOrder.compare(u1, u2) > 0)
   }
 
   test("sort positions") {
-    val positions = NonEmptyList.of(AgsPosition(Angle.Angle0, Offset.Zero),
-                                    AgsPosition(Angle.Angle180, Offset.Zero)
-    )
-    val u1        = Usable(
-      GuideProbe.OIWFS,
+    val u1 = Usable(
+      GuideProbe.GmosOiwfs,
       gs1,
       GuideSpeed.Fast,
       AgsGuideQuality.DeliversRequestedIq,
       NonEmptyList.of(
-        AgsPosition(Angle.Angle0, Offset.Zero) -> Area.fromMicroarcsecondsSquared.getOption(0).get
+        Angle.Angle0 -> Area.fromMicroarcsecondsSquared.getOption(0).get
       )
     )
-    val u2        = Usable(
-      GuideProbe.OIWFS,
+    val u2 = Usable(
+      GuideProbe.GmosOiwfs,
       gs1,
       GuideSpeed.Fast,
       AgsGuideQuality.DeliversRequestedIq,
       NonEmptyList.of(
-        AgsPosition(Angle.Angle180, Offset.Zero) -> Area.fromMicroarcsecondsSquared.getOption(1).get
+        Angle.Angle180 -> Area.fromMicroarcsecondsSquared.getOption(1).get
       )
     )
-    assertEquals(1, List(u1, u2).sortUsablePositions(positions).length)
+    assertEquals(1, List(u1, u2).sortUsablePositions.length)
   }
 
   test("sort unusable positions") {
-    val positions = NonEmptyList.of(AgsPosition(Angle.Angle0, Offset.Zero),
-                                    AgsPosition(Angle.Angle180, Offset.Zero)
-    )
-    val u1        = Usable(
-      GuideProbe.OIWFS,
+    val u1 = Usable(
+      GuideProbe.GmosOiwfs,
       gs1,
       GuideSpeed.Fast,
       AgsGuideQuality.DeliversRequestedIq,
       NonEmptyList.of(
-        AgsPosition(Angle.Angle0, Offset.Zero) -> Area.fromMicroarcsecondsSquared.getOption(0).get
+        Angle.Angle0 -> Area.fromMicroarcsecondsSquared.getOption(0).get
       )
     )
-    val u2        = NoMagnitudeForBand(
-      GuideProbe.OIWFS,
+    val u2 = NoMagnitudeForBand(
+      GuideProbe.GmosOiwfs,
       gs1
     )
-    assertEquals(1, List(u1, u2).sortUsablePositions(positions).length)
+    assertEquals(1, List(u1, u2).sortUsablePositions.length)
   }
 
   test("discard science target") {

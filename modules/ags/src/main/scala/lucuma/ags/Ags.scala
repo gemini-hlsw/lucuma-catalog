@@ -103,7 +103,7 @@ object Ags {
              guideStar,
              guideSpeed,
              quality,
-             NonEmptyList.one((position, vignettingArea(gsOffset)))
+             NonEmptyList.one((position.posAngle, vignettingArea(gsOffset)))
       )
     }
 

@@ -141,8 +141,8 @@ object AgsSelectionSampleApp extends IOApp.Simple with AgsSelectionSample {
                 ),
                 candidates
               )
-            println(s"Results ${r.sortUsablePositions(positions)}")
-            r.sortUsablePositions(positions)
+            println(s"Results ${r.sortUsablePositions}")
+            r.sortUsablePositions
           }
       )
       .flatTap(x => IO.println(x.length))

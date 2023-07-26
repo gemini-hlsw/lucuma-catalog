@@ -51,7 +51,7 @@ object AgsParams:
     port: PortDisposition
   ) extends AgsParams
       derives Eq:
-    val probe = GuideProbe.OIWFS
+    val probe = GuideProbe.GmosOiwfs
 
     def posCalculations(
       positions: NonEmptyList[AgsPosition]
