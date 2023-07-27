@@ -105,7 +105,7 @@ object AgsAnalysis {
     target:               GuideStarCandidate,
     guideSpeed:           GuideSpeed,
     override val quality: AgsGuideQuality,
-    vignetting:           NonEmptyList[(AgsPosition, Area)]
+    vignetting:           NonEmptyList[(Angle, Area)]
   ) extends AgsAnalysis
       derives Eq {
     override def message(withProbe: Boolean): String = {
@@ -147,7 +147,7 @@ object AgsAnalysis {
 
   extension (analysis: AgsAnalysis)
     def posAngle: Option[Angle] = analysis match
-      case AgsAnalysis.Usable(_, _, _, _, v) => Some(v.head._1.posAngle)
+      case AgsAnalysis.Usable(_, _, _, _, v) => Some(v.head._1)
       case _                                 => None
 
   extension (analysis: Option[AgsAnalysis])
@@ -160,7 +160,7 @@ object AgsAnalysis {
      *
      * Non usable positions wii be discarded.
      */
-    def sortUsablePositions(positions: NonEmptyList[AgsPosition]): List[AgsAnalysis] = {
+    def sortUsablePositions: List[AgsAnalysis] = {
       val usablePerTarget: List[AgsAnalysis] =
         results
           .groupBy(_.target.id)

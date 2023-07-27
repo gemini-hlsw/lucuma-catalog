@@ -14,11 +14,13 @@ import eu.timepit.refined.collection.NonEmpty
 import eu.timepit.refined.types.string.NonEmptyString
 import lucuma.catalog.BandsList
 import lucuma.core.enums.Band
+import lucuma.core.enums.CatalogName
 import lucuma.core.math.BrightnessUnits.*
 import lucuma.core.math.BrightnessValue
 import lucuma.core.math.Epoch
 import lucuma.core.math.dimensional.*
 import lucuma.core.math.units.*
+import lucuma.core.model.CatalogInfo
 import lucuma.core.model.SiderealTracking
 import lucuma.core.model.SourceProfile
 import lucuma.core.model.SpectralDefinition
@@ -107,7 +109,7 @@ object GuideStarCandidate {
               )
             )
           ),
-          none
+          CatalogInfo(CatalogName.Gaia, g.id.toString)
         )
     )
 }
