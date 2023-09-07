@@ -27,8 +27,8 @@ Global / onChangedBuildSource := ReloadOnSourceChanges
 ThisBuild / tlBaseVersion       := "0.43"
 ThisBuild / tlCiReleaseBranches := Seq("master", "scala3")
 
-ThisBuild / scalaVersion       := "3.3.0"
-ThisBuild / crossScalaVersions := Seq("3.3.0")
+ThisBuild / scalaVersion       := "3.3.1"
+ThisBuild / crossScalaVersions := Seq("3.3.1")
 ThisBuild / scalacOptions ++= Seq(
   "-language:implicitConversions"
 )
