@@ -1,4 +1,4 @@
-lazy val fs2Version                 = "3.9.1"
+lazy val fs2Version                 = "3.9.2"
 lazy val fs2DataVersion             = "1.8.0"
 lazy val catsVersion                = "2.10.0"
 lazy val catsEffectVersion          = "3.5.1"
