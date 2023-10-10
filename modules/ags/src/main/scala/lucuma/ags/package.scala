@@ -24,6 +24,7 @@ import lucuma.core.model.ObjectTracking
 import lucuma.core.model.PosAngleConstraint
 import lucuma.core.util.Enumerated
 
+import java.time.Duration
 import java.time.Instant
 
 val baseFwhm = Wavelength.fromIntNanometers(500).get
@@ -140,11 +141,14 @@ extension (posAngleConstraint: PosAngleConstraint)
   def anglesToTestAt(
     site:     Site,
     tracking: ObjectTracking,
-    vizTime:  Instant
+    vizTime:  Instant,
+    duration: Duration
   ): Option[NonEmptyList[Angle]] = posAngleConstraint match
     case PosAngleConstraint.Fixed(a)               => NonEmptyList.of(a).some
     case PosAngleConstraint.AllowFlip(a)           => NonEmptyList.of(a, a.flip).some
     case PosAngleConstraint.ParallacticOverride(a) => NonEmptyList.of(a).some
     case PosAngleConstraint.AverageParallactic     =>
-      averageParallacticAngle(site, tracking, vizTime).map(a => NonEmptyList.of(a, a.flip))
+      averageParallacticAngle(site, tracking, vizTime, duration).map(a =>
+        NonEmptyList.of(a, a.flip)
+      )
     case PosAngleConstraint.Unbounded              => UnconstrainedAngles
