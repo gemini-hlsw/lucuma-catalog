@@ -42,6 +42,7 @@ import org.http4s.Request
 import org.http4s.client.Client
 import org.http4s.jdkhttpclient.JdkHttpClient
 
+import java.time.Duration
 import java.time.Instant
 
 trait AgsSelectionSample {
@@ -90,7 +91,8 @@ trait AgsSelectionSample {
     .anglesToTestAt(
       Site.GN,
       ObjectTracking.SiderealObjectTracking(tracking),
-      now
+      now,
+      Duration.ofHours(1)
     )
     .get
     .flatMap(a => offsets.map(o => AgsPosition(a, o)))
