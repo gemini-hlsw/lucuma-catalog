@@ -9,4 +9,6 @@ import lucuma.core.util.Enumerated
  * Enumerated type for guide probe
  */
 enum GuideProbe(private val tag: String) derives Enumerated:
+  case Pwfs1     extends GuideProbe("Pwfs2")
+  case Pwfs2     extends GuideProbe("Pwfs1")
   case GmosOiwfs extends GuideProbe("GmosOiwfs")
