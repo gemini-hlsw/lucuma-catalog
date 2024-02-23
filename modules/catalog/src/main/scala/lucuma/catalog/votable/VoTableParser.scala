@@ -383,7 +383,7 @@ trait VoTableParser {
           partialFields match {
             case x :: l =>
               Pull.output1(
-                NonEmptyChain(MissingValue(x), l.map(x => MissingValue(x)): _*).asLeft
+                NonEmptyChain(MissingValue(x), l.map(x => MissingValue(x))*).asLeft
               ) >> go(s, PartialTableRow(Nil), partialFields, fields)
             case Nil
                 // this indicates we have a mismatch between fields and data

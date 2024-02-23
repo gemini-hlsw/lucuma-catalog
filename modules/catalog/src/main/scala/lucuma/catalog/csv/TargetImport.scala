@@ -96,14 +96,14 @@ private case class TargetCsvRow(
       SourceProfile.Uniform(
         SpectralDefinition.BandNormalized(
           UnnormalizedSED.StellarLibrary(StellarLibrarySpectrum.O5V).some,
-          SortedMap(surfaceBrightness: _*)
+          SortedMap(surfaceBrightness*)
         )
       )
     else
       SourceProfile.Point(
         SpectralDefinition.BandNormalized(
           None,
-          SortedMap(integratedBrightness: _*)
+          SortedMap(integratedBrightness*)
         )
       )
 }
