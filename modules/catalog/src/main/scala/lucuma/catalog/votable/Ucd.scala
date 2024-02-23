@@ -28,7 +28,7 @@ object Ucd:
       case h :: tail =>
         (refineV[NonEmpty](h), tail.traverse(refineV[NonEmpty](_))) match {
           case (Right(h), Right(t)) =>
-            Ucd(NonEmptyList.of(h, t: _*)).rightNec
+            Ucd(NonEmptyList.of(h, t*)).rightNec
           case _                    => InvalidUcd(v).leftNec
         }
       case _         => InvalidUcd(v).leftNec
