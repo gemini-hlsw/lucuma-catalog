@@ -10,6 +10,7 @@ import cats.data.NonEmptyMap
 import cats.derived.*
 import lucuma.core.enums.GmosNorthFpu
 import lucuma.core.enums.GmosSouthFpu
+import lucuma.core.enums.GuideProbe
 import lucuma.core.enums.PortDisposition
 import lucuma.core.geom.Area
 import lucuma.core.geom.ShapeExpression
@@ -51,7 +52,7 @@ object AgsParams:
     port: PortDisposition
   ) extends AgsParams
       derives Eq:
-    val probe = GuideProbe.GmosOiwfs
+    val probe = GuideProbe.GmosOIWFS
 
     def posCalculations(
       positions: NonEmptyList[AgsPosition]

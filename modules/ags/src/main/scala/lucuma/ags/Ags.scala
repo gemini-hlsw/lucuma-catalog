@@ -12,6 +12,7 @@ import lucuma.ags.AgsAnalysis.*
 import lucuma.ags.AgsGuideQuality.*
 import lucuma.catalog.BrightnessConstraints
 import lucuma.core.enums.Band
+import lucuma.core.enums.GuideProbe
 import lucuma.core.enums.GuideSpeed
 import lucuma.core.enums.ImageQuality
 import lucuma.core.geom.Area

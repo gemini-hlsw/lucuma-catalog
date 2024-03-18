@@ -7,11 +7,11 @@ import lucuma.catalog.AngularSize
 import lucuma.core.math.Angle
 import lucuma.core.math.arb.ArbAngle
 import org.scalacheck.Arbitrary.arbitrary
-import org.scalacheck.Cogen._
-import org.scalacheck._
+import org.scalacheck.Cogen.*
+import org.scalacheck.*
 
 trait ArbAngularSize {
-  import ArbAngle._
+  import ArbAngle.given
 
   given Arbitrary[AngularSize] =
     Arbitrary {
