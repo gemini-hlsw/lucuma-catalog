@@ -29,7 +29,7 @@ class AgsSuite extends munit.FunSuite {
   )
   test("usable comparisons") {
     val u1 = Usable(
-      GuideProbe.GmosOiwfs,
+      GuideProbe.GmosOIWFS,
       gs1,
       GuideSpeed.Fast,
       AgsGuideQuality.DeliversRequestedIq,
@@ -38,7 +38,7 @@ class AgsSuite extends munit.FunSuite {
       )
     )
     val u2 = Usable(
-      GuideProbe.GmosOiwfs,
+      GuideProbe.GmosOIWFS,
       gs1,
       GuideSpeed.Fast,
       AgsGuideQuality.DeliversRequestedIq,
@@ -47,7 +47,7 @@ class AgsSuite extends munit.FunSuite {
       )
     )
     val u3 = Usable(
-      GuideProbe.GmosOiwfs,
+      GuideProbe.GmosOIWFS,
       gs2,
       GuideSpeed.Fast,
       AgsGuideQuality.DeliversRequestedIq,
@@ -56,7 +56,7 @@ class AgsSuite extends munit.FunSuite {
       )
     )
     val u4 = Usable(
-      GuideProbe.GmosOiwfs,
+      GuideProbe.GmosOIWFS,
       gs2,
       GuideSpeed.Fast,
       AgsGuideQuality.DeliversRequestedIq,
@@ -66,7 +66,7 @@ class AgsSuite extends munit.FunSuite {
     )
 
     val u12 = Usable(
-      GuideProbe.GmosOiwfs,
+      GuideProbe.GmosOIWFS,
       gs1,
       GuideSpeed.Fast,
       AgsGuideQuality.DeliversRequestedIq,
@@ -77,7 +77,7 @@ class AgsSuite extends munit.FunSuite {
     )
 
     val u22 = Usable(
-      GuideProbe.GmosOiwfs,
+      GuideProbe.GmosOIWFS,
       gs2,
       GuideSpeed.Fast,
       AgsGuideQuality.DeliversRequestedIq,
@@ -99,7 +99,7 @@ class AgsSuite extends munit.FunSuite {
 
   test("sort by brightness") {
     val u1 = Usable(
-      GuideProbe.GmosOiwfs,
+      GuideProbe.GmosOIWFS,
       gs1,
       GuideSpeed.Fast,
       AgsGuideQuality.DeliversRequestedIq,
@@ -108,7 +108,7 @@ class AgsSuite extends munit.FunSuite {
       )
     )
     val u2 = Usable(
-      GuideProbe.GmosOiwfs,
+      GuideProbe.GmosOIWFS,
       gs2,
       GuideSpeed.Fast,
       AgsGuideQuality.DeliversRequestedIq,
@@ -121,7 +121,7 @@ class AgsSuite extends munit.FunSuite {
 
   test("sort positions") {
     val u1 = Usable(
-      GuideProbe.GmosOiwfs,
+      GuideProbe.GmosOIWFS,
       gs1,
       GuideSpeed.Fast,
       AgsGuideQuality.DeliversRequestedIq,
@@ -130,7 +130,7 @@ class AgsSuite extends munit.FunSuite {
       )
     )
     val u2 = Usable(
-      GuideProbe.GmosOiwfs,
+      GuideProbe.GmosOIWFS,
       gs1,
       GuideSpeed.Fast,
       AgsGuideQuality.DeliversRequestedIq,
@@ -143,7 +143,7 @@ class AgsSuite extends munit.FunSuite {
 
   test("sort unusable positions") {
     val u1 = Usable(
-      GuideProbe.GmosOiwfs,
+      GuideProbe.GmosOIWFS,
       gs1,
       GuideSpeed.Fast,
       AgsGuideQuality.DeliversRequestedIq,
@@ -152,7 +152,7 @@ class AgsSuite extends munit.FunSuite {
       )
     )
     val u2 = NoMagnitudeForBand(
-      GuideProbe.GmosOiwfs,
+      GuideProbe.GmosOIWFS,
       gs1
     )
     assertEquals(1, List(u1, u2).sortUsablePositions.length)
