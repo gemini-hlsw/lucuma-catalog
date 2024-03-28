@@ -4,11 +4,11 @@
 package lucuma.catalog.votable
 
 import cats.MonadThrow
-import cats.effect._
-import cats.syntax.all._
-import fs2._
-import fs2.data.xml._
-import lucuma.catalog._
+import cats.effect.*
+import cats.syntax.all.*
+import fs2.*
+import fs2.data.xml.*
+import lucuma.catalog.*
 import munit.CatsEffectSuite
 
 import scala.xml.Node

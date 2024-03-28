@@ -3,7 +3,7 @@
 
 package lucuma.catalog.votable
 
-import cats.syntax.all._
+import cats.syntax.all.*
 import lucuma.core.geom.ShapeInterpreter
 import lucuma.core.math.Coordinates
 import lucuma.core.math.Epoch

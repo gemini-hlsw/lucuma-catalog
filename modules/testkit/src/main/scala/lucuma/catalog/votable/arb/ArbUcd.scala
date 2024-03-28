@@ -4,12 +4,12 @@
 package lucuma.catalog.votable.arb
 
 import cats.data.NonEmptyList
-import eu.timepit.refined.scalacheck.string._
+import eu.timepit.refined.scalacheck.string.*
 import eu.timepit.refined.types.string.NonEmptyString
 import lucuma.catalog.votable.*
+import org.scalacheck.*
 import org.scalacheck.Cogen
 import org.scalacheck.Gen
-import org.scalacheck._
 
 trait ArbUcd {
   val genNonEmptyString = summon[Arbitrary[NonEmptyString]].arbitrary

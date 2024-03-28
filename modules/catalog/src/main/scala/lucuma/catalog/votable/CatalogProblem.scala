@@ -3,7 +3,7 @@
 
 package lucuma.catalog.votable
 
-import cats.syntax.all._
+import cats.syntax.all.*
 import lucuma.core.enums.CatalogName
 
 /** Indicates an issue parsing the targets, e.g. missing values, bad format, etc. */

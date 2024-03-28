@@ -3,15 +3,15 @@
 
 package lucuma.catalog.votable
 
-import cats._
-import cats.data._
+import cats.*
+import cats.data.*
 import cats.derived.*
-import cats.implicits._
-import eu.timepit.refined._
-import eu.timepit.refined.cats._
+import cats.implicits.*
+import eu.timepit.refined.*
+import eu.timepit.refined.cats.*
 import eu.timepit.refined.collection.NonEmpty
-import eu.timepit.refined.types.string._
-import lucuma.catalog.votable.CatalogProblem._
+import eu.timepit.refined.types.string.*
+import lucuma.catalog.votable.CatalogProblem.*
 
 import scala.util.matching.Regex
 

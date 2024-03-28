@@ -3,7 +3,7 @@
 
 package lucuma.catalog.votable
 
-import cats.syntax.all._
+import cats.syntax.all.*
 import lucuma.core.enums.Band
 import munit.FunSuite
 

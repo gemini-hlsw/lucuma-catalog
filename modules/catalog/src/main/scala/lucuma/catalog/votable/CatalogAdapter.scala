@@ -7,8 +7,8 @@ import cats.data.*
 import cats.syntax.all.*
 import coulomb.policy.spire.standard.given
 import coulomb.syntax.*
-import lucuma.catalog.votable.CatalogProblem.*
 import lucuma.catalog.votable.*
+import lucuma.catalog.votable.CatalogProblem.*
 import lucuma.core.enums.Band
 import lucuma.core.enums.CatalogName
 import lucuma.core.math.BrightnessUnits.*

@@ -7,9 +7,9 @@ import lucuma.catalog.AngularSize
 import lucuma.catalog.CatalogTargetResult
 import lucuma.core.model.Target
 import lucuma.core.model.arb.ArbTarget
+import org.scalacheck.*
 import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.Cogen.*
-import org.scalacheck.*
 
 trait ArbCatalogTargetResult {
   import ArbTarget.given

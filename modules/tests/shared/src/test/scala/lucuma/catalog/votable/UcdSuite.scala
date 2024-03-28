@@ -3,13 +3,13 @@
 
 package lucuma.catalog.votable
 
-import cats.data._
+import cats.data.*
 import cats.kernel.laws.discipline.EqTests
-import cats.syntax.all._
-import eu.timepit.refined._
-import eu.timepit.refined.collection._
+import cats.syntax.all.*
+import eu.timepit.refined.*
+import eu.timepit.refined.collection.*
 import eu.timepit.refined.types.string.NonEmptyString
-import lucuma.catalog._
+import lucuma.catalog.*
 import lucuma.catalog.arb.all.given
 import lucuma.refined.*
 import munit.DisciplineSuite

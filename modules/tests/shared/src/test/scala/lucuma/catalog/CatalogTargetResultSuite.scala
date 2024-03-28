@@ -3,9 +3,9 @@
 
 package lucuma.catalog
 
-import cats.kernel.laws.discipline._
+import cats.kernel.laws.discipline.*
 import lucuma.catalog.arb.all.given
-import munit._
+import munit.*
 
 class CatalogTargetResultSuite extends DisciplineSuite {
 

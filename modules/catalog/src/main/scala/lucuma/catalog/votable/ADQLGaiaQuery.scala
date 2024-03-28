@@ -3,7 +3,7 @@
 
 package lucuma.catalog.votable
 
-import cats.syntax.all._
+import cats.syntax.all.*
 
 sealed trait ADQLGaiaQuery {
   val gaia = CatalogAdapter.Gaia

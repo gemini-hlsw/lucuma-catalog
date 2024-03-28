@@ -11,11 +11,11 @@ import eu.timepit.refined.*
 import eu.timepit.refined.collection.NonEmpty
 import eu.timepit.refined.types.string.NonEmptyString
 import fs2.*
-import fs2.data.xml.XmlEvent.*
 import fs2.data.xml.*
+import fs2.data.xml.XmlEvent.*
 import lucuma.catalog.*
-import lucuma.catalog.votable.CatalogProblem.*
 import lucuma.catalog.votable.*
+import lucuma.catalog.votable.CatalogProblem.*
 import lucuma.core.math.*
 import lucuma.core.math.units.*
 import lucuma.core.model.CatalogInfo
