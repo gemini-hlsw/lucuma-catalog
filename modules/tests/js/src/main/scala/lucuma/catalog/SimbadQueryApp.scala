@@ -3,10 +3,10 @@
 
 package lucuma.catalog.votable
 
-import cats.effect._
+import cats.effect.*
 import org.http4s.dom.FetchClientBuilder
 
-import scala.scalajs.js.annotation._
+import scala.scalajs.js.annotation.*
 
 @JSExportTopLevel("main")
 object SimbadQueryApp extends IOApp.Simple with SimbadQuerySample {

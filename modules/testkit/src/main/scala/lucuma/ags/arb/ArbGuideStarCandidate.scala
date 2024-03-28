@@ -8,9 +8,9 @@ import lucuma.core.math.BrightnessValue
 import lucuma.core.math.arb.ArbBrightnessValue
 import lucuma.core.model.SiderealTracking
 import lucuma.core.model.arb.ArbSiderealTracking
+import org.scalacheck.*
 import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.Cogen.*
-import org.scalacheck.*
 
 trait ArbGuideStarCandidate {
   import ArbSiderealTracking.given

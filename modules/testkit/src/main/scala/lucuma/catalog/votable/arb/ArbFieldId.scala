@@ -3,12 +3,12 @@
 
 package lucuma.catalog.votable.arb
 
-import eu.timepit.refined.scalacheck.string._
+import eu.timepit.refined.scalacheck.string.*
 import eu.timepit.refined.types.string.NonEmptyString
 import lucuma.catalog.votable.*
+import org.scalacheck.*
 import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.Cogen
-import org.scalacheck._
 
 trait ArbFieldId {
   import ArbUcd.given

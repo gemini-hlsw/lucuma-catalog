@@ -4,7 +4,7 @@
 package lucuma.ags
 
 import cats.data.NonEmptyList
-import cats.syntax.all._
+import cats.syntax.all.*
 import coulomb.*
 import lucuma.catalog.BandsList
 import lucuma.catalog.BrightnessConstraints

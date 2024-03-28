@@ -9,8 +9,8 @@ import lucuma.catalog.FaintnessConstraint
 import lucuma.catalog.SaturationConstraint
 import lucuma.core.math.BrightnessValue
 import lucuma.core.math.arb.ArbBrightnessValue.given
+import org.scalacheck.*
 import org.scalacheck.Arbitrary.arbitrary
-import org.scalacheck._
 
 trait ArbBrightnessConstraints {
 

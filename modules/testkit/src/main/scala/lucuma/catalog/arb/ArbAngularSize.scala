@@ -6,9 +6,9 @@ package lucuma.catalog.arb
 import lucuma.catalog.AngularSize
 import lucuma.core.math.Angle
 import lucuma.core.math.arb.ArbAngle
+import org.scalacheck.*
 import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.Cogen.*
-import org.scalacheck.*
 
 trait ArbAngularSize {
   import ArbAngle.given
