@@ -97,14 +97,12 @@ trait AgsSelectionSample {
     .get
     .flatMap(a => offsets.map(o => AgsPosition(a, o)))
 
-  println(positions.length)
   def gaiaQuery[F[_]: Sync](client: Client[F]): Stream[F, Target.Sidereal] = {
     val query   =
       CatalogSearch.gaiaSearchUri(
         QueryByADQL(tracking.at(now).get, candidatesArea, widestConstraints.some)
       )
     val request = Request[F](GET, query)
-    println(query)
     client
       .stream(request)
       .flatMap(
