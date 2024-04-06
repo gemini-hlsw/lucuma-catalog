@@ -406,12 +406,13 @@ object CatalogAdapter {
 
   object Gaia3Lite extends Gaia {
     override val idField: FieldId = FieldId.unsafeFrom("source_id", VoTableParser.UCD_TYPEDID)
+    val alternateIdField: FieldId = FieldId.unsafeFrom("SOURCE_ID", VoTableParser.UCD_TYPEDID)
     override val gaiaDB: String   = "gaiadr3.gaia_source_lite"
 
     override def defaultEpoch: Epoch = Epoch.Julian.fromEpochYears(2016.0).get
 
     override def parseName(entries: Map[FieldId, String]): Option[String] =
-      super.parseName(entries).map(n => s"Gaia DR3 $n")
+      entries.get(idField).orElse(entries.get(alternateIdField)).map(n => s"Gaia DR3 $n")
 
     override def parseEpoch(entries: Map[FieldId, String]): Epoch =
       defaultEpoch
