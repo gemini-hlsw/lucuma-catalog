@@ -19,14 +19,16 @@ import lucuma.core.model.ElevationRange
 import lucuma.core.model.SiderealTracking
 
 class AgsSuite extends munit.FunSuite {
-  val gs1 = GuideStarCandidate(0L,
-                               SiderealTracking.const(Coordinates.Zero),
-                               BrightnessValue.unsafeFrom(16.05).some
+  val gs1 = GuideStarCandidate.unsafeApply(0L,
+                                           SiderealTracking.const(Coordinates.Zero),
+                                           (Band.Gaia, BrightnessValue.unsafeFrom(16.05)).some
   )
-  val gs2 = GuideStarCandidate(1L,
-                               SiderealTracking.const(Coordinates.Zero),
-                               BrightnessValue.unsafeFrom(11.23).some
+
+  val gs2 = GuideStarCandidate.unsafeApply(1L,
+                                           SiderealTracking.const(Coordinates.Zero),
+                                           (Band.Gaia, BrightnessValue.unsafeFrom(11.23)).some
   )
+
   test("usable comparisons") {
     val u1 = Usable(
       GuideProbe.GmosOIWFS,
@@ -184,14 +186,14 @@ class AgsSuite extends munit.FunSuite {
     )
 
     val gsOffset =
-      GuideStarCandidate(
+      GuideStarCandidate.unsafeApply(
         0L,
         SiderealTracking.const(
           Coordinates.Zero
             .offsetBy(Angle.Angle0, Offset.signedDecimalArcseconds.reverseGet(0.0, 23.0))
             .get
         ),
-        BrightnessValue.unsafeFrom(15).some
+        (Band.Gaia, BrightnessValue.unsafeFrom(15)).some
       )
 
     assert(

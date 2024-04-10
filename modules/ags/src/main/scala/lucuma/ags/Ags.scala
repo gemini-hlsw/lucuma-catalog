@@ -49,7 +49,7 @@ object Ags {
     val geoms = calcs.lookup(pos)
     if (!geoms.exists(_.isReachable(gsOffset)))
       // Do we have a g magnitude
-      val guideSpeed = gsc.gBrightness.flatMap(guideSpeedFor(speeds, _))
+      val guideSpeed = gsc.gBrightness.flatMap { case (_, g) => guideSpeedFor(speeds, g) }
       AgsAnalysis.NotReachableAtPosition(pos, params.probe, guideSpeed, gsc)
     else if (geoms.exists(g => scienceOffsets.exists(g.overlapsScience(_))))
       AgsAnalysis.VignettesScience(gsc, pos)
@@ -110,11 +110,11 @@ object Ags {
 
     // Do we have a g magnitude
     guideStar.gBrightness match {
-      case Some(g) =>
+      case Some((_, g)) =>
         guideSpeedFor(speeds, g)
           .map(usable)
           .getOrElse(NoGuideStarForProbe(guideProbe, guideStar))
-      case _       => NoMagnitudeForBand(guideProbe, guideStar)
+      case _            => NoMagnitudeForBand(guideProbe, guideStar)
     }
 
   }
@@ -156,7 +156,7 @@ object Ags {
     val bc          = constraintsFor(guideSpeeds)
 
     in =>
-      (in.filter(c => c.gBrightness.exists(g => bc.exists(_.contains(Band.Gaia, g)))),
+      (in.filter(c => c.gBrightness.exists { case (_, g) => bc.exists(_.contains(Band.Gaia, g)) }),
        Stream.emits[F, AgsPosition](positions.toList).repeat
       )
         .mapN { case (gsc, position) =>
@@ -195,7 +195,7 @@ object Ags {
     val bc          = constraintsFor(guideSpeeds)
 
     in =>
-      (in.filter(c => c.gBrightness.exists(g => bc.exists(_.contains(Band.Gaia, g)))),
+      (in.filter(c => c.gBrightness.exists { case (_, g) => bc.exists(_.contains(Band.Gaia, g)) }),
        Stream.emits[F, AgsPosition](positions.toList)
       )
         .mapN { (gsc, position) =>
@@ -239,7 +239,7 @@ object Ags {
     val bc          = constraintsFor(guideSpeeds)
 
     candidates
-      .filter(c => c.gBrightness.exists(g => bc.exists(_.contains(Band.Gaia, g))))
+      .filter(c => c.gBrightness.exists { case (_, g) => bc.exists(_.contains(Band.Gaia, g)) })
       .zip(positions.toList)
       .map { (gsc, position) =>
         val offset         = offsetAt(baseAt, instant, gsc)
@@ -281,7 +281,7 @@ object Ags {
     val bc    = constraintsFor(guideSpeeds)
 
     candidates
-      .filter(c => c.gBrightness.exists(g => bc.exists(_.contains(Band.Gaia, g))))
+      .filter(c => c.gBrightness.exists { case (_, g) => bc.exists(_.contains(Band.Gaia, g)) })
       .flatMap(gsc =>
         positions.toList.map { position =>
           val offset         = baseCoordinates.diff(gsc.tracking.baseCoordinates).offset
