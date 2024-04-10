@@ -1,5 +1,5 @@
 lazy val fs2Version                 = "3.10.2"
-lazy val fs2DataVersion             = "1.10.0"
+lazy val fs2DataVersion             = "1.11.0"
 lazy val catsVersion                = "2.10.0"
 lazy val catsEffectVersion          = "3.5.4"
 lazy val kindProjectorVersion       = "0.13.2"
@@ -24,7 +24,7 @@ lazy val kittensVersion             = "3.3.0"
 
 Global / onChangedBuildSource := ReloadOnSourceChanges
 
-ThisBuild / tlBaseVersion       := "0.45"
+ThisBuild / tlBaseVersion       := "0.46"
 ThisBuild / tlCiReleaseBranches := Seq("master", "scala3")
 
 ThisBuild / scalaVersion       := "3.4.1"

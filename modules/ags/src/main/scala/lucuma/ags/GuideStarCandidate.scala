@@ -37,11 +37,12 @@ import scala.collection.immutable.SortedMap
 /**
  * Poors' man Target.Sidereal with a single G brightness and no extra metadata
  */
-case class GuideStarCandidate(
+case class GuideStarCandidate private (
   id:          Long,
   tracking:    SiderealTracking,
-  gBrightness: Option[BrightnessValue]
+  gBrightness: Option[(Band, BrightnessValue)]
 ) derives Eq {
+
   def name: NonEmptyString =
     refineV[NonEmpty](s"Gaia DR3 $id").getOrElse(sys.error("Cannot happen"))
 
@@ -60,6 +61,21 @@ case class GuideStarCandidate(
 }
 
 object GuideStarCandidate {
+  def apply(
+    id:          Long,
+    tracking:    SiderealTracking,
+    gBrightness: Option[(Band, BrightnessValue)]
+  ): Option[GuideStarCandidate] =
+    if (gBrightness.forall { case (b, _) => BandsList.GaiaBandsList.bands.exists(_ === b) })
+      new GuideStarCandidate(id, tracking, gBrightness).some
+    else none
+
+  def unsafeApply(
+    id:          Long,
+    tracking:    SiderealTracking,
+    gBrightness: Option[(Band, BrightnessValue)]
+  ): GuideStarCandidate =
+    apply(id, tracking, gBrightness).get
 
   val UTC = ZoneId.of("UTC")
 
@@ -71,7 +87,7 @@ object GuideStarCandidate {
   val tracking: Lens[GuideStarCandidate, SiderealTracking] =
     Focus[GuideStarCandidate](_.tracking)
 
-  val gBrightness: Lens[GuideStarCandidate, Option[BrightnessValue]] =
+  val gBrightness: Lens[GuideStarCandidate, Option[(Band, BrightnessValue)]] =
     Focus[GuideStarCandidate](_.gBrightness)
 
   // There is some loss of info converting one to the other but further
@@ -81,12 +97,12 @@ object GuideStarCandidate {
       st => {
         val gBrightness = BandsList.GaiaBandsList.bands
           .flatMap { band =>
-            SourceProfile.integratedBrightnessIn(band).headOption(st.sourceProfile)
+            SourceProfile.integratedBrightnessIn(band).headOption(st.sourceProfile).tupleLeft(band)
           }
           .headOption
-          .map(_.value)
+          .map { case (b, v) => (b, v.value) }
 
-        GuideStarCandidate(
+        new GuideStarCandidate(
           st.name.value match {
             case GaiaNameRegex(d) => d.toLong
             case _                => -1
@@ -103,9 +119,9 @@ object GuideStarCandidate {
             SpectralDefinition.BandNormalized(
               None,
               SortedMap.from(
-                g.gBrightness
-                  .foldMap(g => List(Band.Gaia -> g.withUnit[VegaMagnitude].toMeasureTagged))
-                  .toSeq
+                g.gBrightness.foldMap { case (b, v) =>
+                  List(b -> v.withUnit[VegaMagnitude].toMeasureTagged)
+                }.toSeq
               )
             )
           ),
