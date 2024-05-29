@@ -9,7 +9,7 @@ lazy val lucumaRefinedVersion       = "0.1.3"
 lazy val monocleVersion             = "3.2.0"
 lazy val munitVersion               = "0.7.29"
 lazy val munitDisciplineVersion     = "1.0.9"
-lazy val munitCatsEffectVersion     = "1.0.7"
+lazy val munitCatsEffectVersion     = "2.0.0"
 lazy val betterMonadicForVersion    = "0.3.1"
 lazy val refinedVersion             = "0.11.1"
 lazy val catsScalacheckVersion      = "0.3.2"
@@ -98,14 +98,14 @@ lazy val tests = crossProject(JVMPlatform, JSPlatform)
   .settings(
     name := "lucuma-catalog-tests",
     libraryDependencies ++= Seq(
-      "org.typelevel"          %%% "cats-effect"         % catsEffectVersion      % Test,
-      "org.scalameta"          %%% "munit"               % munitVersion           % Test,
-      "org.typelevel"          %%% "discipline-munit"    % munitDisciplineVersion % Test,
-      "org.typelevel"          %%% "munit-cats-effect-3" % munitCatsEffectVersion % Test,
-      "org.scala-lang.modules" %%% "scala-xml"           % scalaXmlVersion        % Test,
-      "org.http4s"             %%% "http4s-core"         % http4sVersion,
-      "com.lihaoyi"            %%% "pprint"              % pprintVersion,
-      "org.typelevel"          %%% "cats-time"           % catsTimeVersion
+      "org.typelevel"          %%% "cats-effect"       % catsEffectVersion      % Test,
+      "org.scalameta"          %%% "munit"             % munitVersion           % Test,
+      "org.typelevel"          %%% "discipline-munit"  % munitDisciplineVersion % Test,
+      "org.typelevel"          %%% "munit-cats-effect" % munitCatsEffectVersion % Test,
+      "org.scala-lang.modules" %%% "scala-xml"         % scalaXmlVersion        % Test,
+      "org.http4s"             %%% "http4s-core"       % http4sVersion,
+      "com.lihaoyi"            %%% "pprint"            % pprintVersion,
+      "org.typelevel"          %%% "cats-time"         % catsTimeVersion
     )
   )
   .jsSettings(
