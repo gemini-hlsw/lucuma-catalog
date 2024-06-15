@@ -355,7 +355,7 @@ object TargetImport extends ImportEpochParsers:
                                                                    "radialvelocity",
                                                                    "radialVelocity"
                              )
-        z                 <- row.withAlternativesM[Redshift](None, "z")
+        z                 <- row.withAlternativesM[Redshift](None, "redshift")
         rowBrightnesses    = brightnesses(row)
         rowIntegratedUnits = integratedUnits(row)
         rowSurfaceUnits    = surfaceUnits(row)
