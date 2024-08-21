@@ -79,7 +79,7 @@ object GuideStarCandidate {
 
   val UTC = ZoneId.of("UTC")
 
-  val GaiaNameRegex = """Gaia DR3 (-?\d*)""".r
+  val GaiaNameRegex = """Gaia DR3 (-?\d+)""".r
 
   val id: Lens[GuideStarCandidate, Long] =
     Focus[GuideStarCandidate](_.id)
