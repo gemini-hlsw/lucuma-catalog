@@ -10,7 +10,6 @@ import coulomb.*
 import coulomb.syntax.*
 import eu.timepit.refined.*
 import eu.timepit.refined.cats.*
-import eu.timepit.refined.collection.NonEmpty
 import eu.timepit.refined.types.string.NonEmptyString
 import lucuma.catalog.BandsList
 import lucuma.core.enums.Band
@@ -43,8 +42,7 @@ case class GuideStarCandidate private (
   gBrightness: Option[(Band, BrightnessValue)]
 ) derives Eq {
 
-  def name: NonEmptyString =
-    refineV[NonEmpty](s"Gaia DR3 $id").getOrElse(sys.error("Cannot happen"))
+  def name: NonEmptyString = GuideStarName.gaiaSourceId.reverseGet(id).toNonEmptyString
 
   // Reset the candidate to a given instant
   // This can be used to calculate and cache the location base on proper motion
@@ -79,8 +77,6 @@ object GuideStarCandidate {
 
   val UTC = ZoneId.of("UTC")
 
-  val GaiaNameRegex = """Gaia DR3 (-?\d+)""".r
-
   val id: Lens[GuideStarCandidate, Long] =
     Focus[GuideStarCandidate](_.id)
 
@@ -103,10 +99,7 @@ object GuideStarCandidate {
           .map { case (b, v) => (b, v.value) }
 
         new GuideStarCandidate(
-          st.name.value match {
-            case GaiaNameRegex(d) => d.toLong
-            case _                => -1
-          },
+          GuideStarName.from(st.name.value).toOption.flatMap(_.toGaiaSourceId).getOrElse(-1),
           st.tracking,
           gBrightness
         )
