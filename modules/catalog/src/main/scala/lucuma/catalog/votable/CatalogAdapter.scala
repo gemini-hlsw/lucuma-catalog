@@ -238,6 +238,7 @@ object CatalogAdapter {
     private val magSystemID                   = "FLUX_SYSTEM_(.).*".r
     val idField                               = FieldId.unsafeFrom("MAIN_ID", VoTableParser.UCD_OBJID)
     val nameField: FieldId                    = FieldId.unsafeFrom("TYPED_ID", VoTableParser.UCD_TYPEDID)
+    val altNameField                          = FieldId.unsafeFrom("MATCHING_ID", VoTableParser.UCD_TYPEDID)
     val raField                               = FieldId.unsafeFrom("RA_d", VoTableParser.UCD_RA)
     val decField                              = FieldId.unsafeFrom("DEC_d", VoTableParser.UCD_DEC)
     override val pmRaField                    = FieldId.unsafeFrom("PMRA", VoTableParser.UCD_PMRA)
@@ -250,8 +251,11 @@ object CatalogAdapter {
     override val angSizeMinAxisField: FieldId =
       FieldId.unsafeFrom("GALDIM_MINAXIS", VoTableParser.UCD_ANGSIZE_MIN)
 
+    // At the time of this writing, the formats returned from the main Simbad url at u-strasbg
+    // and that of the harvard mirror were different. This handles either.
+    // See:https://app.shortcut.com/lucuma/story/3696/target-catalog-search-not-working-seems-to-be-a-change-in-simbad
     override def parseName(entries: Map[FieldId, String]): Option[String] =
-      super.parseName(entries).map(_.stripPrefix("NAME "))
+      super.parseName(entries).orElse(entries.get(altNameField)).map(_.stripPrefix("NAME "))
 
     override def ignoreBrightnessValueField(v: FieldId): Boolean =
       !v.id.value.toLowerCase.startsWith("flux") ||
