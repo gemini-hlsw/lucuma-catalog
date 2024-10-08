@@ -472,9 +472,116 @@ class ParseSimbadFileSuite extends CatsEffectSuite with VoTableParser {
     }
   }
 
+  // https://app.shortcut.com/lucuma/story/3696/target-catalog-search-not-working-seems-to-be-a-change-in-simbad
+  // Simbad changed the way they were returning results from the strasbg url, but, at the time at least, the harvard
+  // mirror returned results in the old format. A change was made to handle either result.
+  // This test tests the old strasbg results (same as harvard).
+  // The next test tests the new results.
   test("parse simbad wildcard queries with name") {
     // From https://simbad.u-strasbg.fr/simbad/sim-id?Ident=name+vega*&NbIdent=wild&output.format=VOTable
     val xmlFile = "/simbad-vega-name.xml"
+    // The sample has only one row
+    val file    = getClass().getResource(xmlFile)
+    Resource.unit[IO].use { _ =>
+      Files[IO]
+        .readAll(Path(file.getPath()))
+        .through(text.utf8.decode)
+        .through(CatalogSearch.siderealTargets(CatalogAdapter.Simbad))
+        .compile
+        .lastOrError
+        .map {
+          case Right(CatalogTargetResult(t, _)) =>
+            // id and search name
+            assertEquals(t.name, "Vega".refined[NonEmpty])
+            assertEquals(
+              t.catalogInfo,
+              CatalogInfo(CatalogName.Simbad, "* alf Lyr", "PulsV*delSct, A0Va")
+            )
+            // base coordinates
+            assertEquals(
+              Target.baseRA.getOption(t),
+              RightAscension.fromDoubleDegrees(279.23473479).some
+            )
+            assertEquals(
+              Target.baseDec.getOption(t),
+              Declination.fromDoubleDegrees(38.78368896)
+            )
+            // proper motions
+            assertEquals(
+              Target.properMotionRA.getOption(t),
+              ProperMotion.μasyRA(200940).some
+            )
+            assertEquals(
+              Target.properMotionDec.getOption(t),
+              ProperMotion.μasyDec(286230).some
+            )
+            // band brightnesses
+            assertEquals(
+              Target.integratedBrightnessIn(Band.U).headOption(t),
+              BrightnessValue.unsafeFrom(0.03).withUnit[VegaMagnitude].toMeasureTagged.some
+            )
+            assertEquals(
+              Target.integratedBrightnessIn(Band.B).headOption(t),
+              BrightnessValue.unsafeFrom(0.03).withUnit[VegaMagnitude].toMeasureTagged.some
+            )
+            assertEquals(
+              Target.integratedBrightnessIn(Band.V).headOption(t),
+              BrightnessValue.unsafeFrom(0.03).withUnit[VegaMagnitude].toMeasureTagged.some
+            )
+            assertEquals(
+              Target.integratedBrightnessIn(Band.R).headOption(t),
+              BrightnessValue.unsafeFrom(0.07).withUnit[VegaMagnitude].toMeasureTagged.some
+            )
+            assertEquals(
+              Target.integratedBrightnessIn(Band.I).headOption(t),
+              BrightnessValue.unsafeFrom(0.10).withUnit[VegaMagnitude].toMeasureTagged.some
+            )
+            assertEquals(
+              Target.integratedBrightnessIn(Band.J).headOption(t),
+              BrightnessValue
+                .unsafeFrom(-0.177)
+                .withUnit[VegaMagnitude]
+                .toMeasureTagged
+                .withError(BrightnessValue.unsafeFrom(0.206))
+                .some
+            )
+            assertEquals(
+              Target.integratedBrightnessIn(Band.H).headOption(t),
+              BrightnessValue
+                .unsafeFrom(-0.029)
+                .withUnit[VegaMagnitude]
+                .toMeasureTagged
+                .withError(BrightnessValue.unsafeFrom(0.146))
+                .some
+            )
+            assertEquals(
+              Target.integratedBrightnessIn(Band.K).headOption(t),
+              BrightnessValue
+                .unsafeFrom(0.129)
+                .withUnit[VegaMagnitude]
+                .toMeasureTagged
+                .withError(BrightnessValue.unsafeFrom(0.186))
+                .some
+            )
+            // parallax
+            assertEquals(
+              Target.parallax.getOption(t).flatten,
+              Parallax.milliarcseconds.reverseGet(130.23).some
+            )
+            // radial velocity
+            assertEquals(
+              Target.radialVelocity.getOption(t).flatten,
+              RadialVelocity(-20.60.withUnit[KilometersPerSecond])
+            )
+          case Left(_)                          => fail(s"VOTable xml $xmlFile cannot be parsed")
+        }
+    }
+  }
+
+  // See comment for previous test
+  test("sc-3696 parse simbad wildcard queries with name 2") {
+    // From the old format https://simbad.u-strasbg.fr/simbad/sim-id?Ident=name+vega*&NbIdent=wild&output.format=VOTable
+    val xmlFile = "/simbad-vega-name2.xml"
     // The sample has only one row
     val file    = getClass().getResource(xmlFile)
     Resource.unit[IO].use { _ =>
