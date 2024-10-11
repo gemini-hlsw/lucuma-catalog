@@ -40,8 +40,7 @@ object AgsAnalysis {
   case class NoGuideStarForProbe(
     guideProbe: GuideProbe,
     target:     GuideStarCandidate
-  ) extends AgsAnalysis
-      derives Eq {
+  ) extends AgsAnalysis derives Eq {
     override def message(withProbe: Boolean): String = {
       val p = if (withProbe) s"$guideProbe " else ""
       s"No ${p}guide star selected."
@@ -52,8 +51,7 @@ object AgsAnalysis {
     guideProbe:     GuideProbe,
     target:         GuideStarCandidate,
     showGuideSpeed: Boolean
-  ) extends AgsAnalysis
-      derives Eq {
+  ) extends AgsAnalysis derives Eq {
     override def message(withProbe: Boolean): String = {
       val p  = if (withProbe) s"use $guideProbe" else "guide"
       val gs = if (showGuideSpeed) ", even using the slowest guide speed" else ""
@@ -64,8 +62,7 @@ object AgsAnalysis {
   case class MagnitudeTooBright(
     guideProbe: GuideProbe,
     target:     GuideStarCandidate
-  ) extends AgsAnalysis
-      derives Eq {
+  ) extends AgsAnalysis derives Eq {
     override def message(withProbe: Boolean): String = {
       val p = if (withProbe) s"$guideProbe g" else "G"
       s"${p}uide star is too bright to guide."
@@ -77,8 +74,7 @@ object AgsAnalysis {
     guideProbe: GuideProbe,
     guideSpeed: Option[GuideSpeed],
     target:     GuideStarCandidate
-  ) extends AgsAnalysis
-      derives Eq {
+  ) extends AgsAnalysis derives Eq {
     override def message(withProbe: Boolean): String = {
       val p = if (withProbe) s"with ${guideProbe} " else ""
       s"The star is not reachable ${p}at $position."
@@ -88,8 +84,7 @@ object AgsAnalysis {
   case class NoMagnitudeForBand(
     guideProbe: GuideProbe,
     target:     GuideStarCandidate
-  ) extends AgsAnalysis
-      derives Eq {
+  ) extends AgsAnalysis derives Eq {
     private val probeBands: List[Band]               = BandsList.GaiaBandsList.bands
     override def message(withProbe: Boolean): String = {
       val p = if (withProbe) s"${guideProbe} g" else "G"
@@ -107,8 +102,7 @@ object AgsAnalysis {
     guideSpeed:           GuideSpeed,
     override val quality: AgsGuideQuality,
     vignetting:           NonEmptyList[(Angle, Area)]
-  ) extends AgsAnalysis
-      derives Eq {
+  ) extends AgsAnalysis derives Eq {
     override def message(withProbe: Boolean): String = {
       val qualityMessage = quality match {
         case AgsGuideQuality.DeliversRequestedIq => ""

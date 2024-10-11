@@ -50,8 +50,7 @@ object AgsParams:
   case class GmosAgsParams(
     fpu:  Option[Either[GmosNorthFpu, GmosSouthFpu]],
     port: PortDisposition
-  ) extends AgsParams
-      derives Eq:
+  ) extends AgsParams derives Eq:
     val probe = GuideProbe.GmosOIWFS
 
     def posCalculations(

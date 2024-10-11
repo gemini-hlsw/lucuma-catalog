@@ -54,11 +54,11 @@ object ADQLInterpreter {
     count: Int
   )(using gaia: CatalogAdapter.Gaia, si: ShapeInterpreter): ADQLInterpreter =
     new ADQLInterpreter {
-      val MaxCount                 = count
-      val shapeInterpreter         = si
-      def allFields: List[FieldId] = gaia.allFields
-      override def orderBy         = Some("phot_g_mean_mag")
-      override def extraFields(c: Coordinates) = Nil
+      val MaxCount                                = count
+      val shapeInterpreter                        = si
+      def allFields: List[FieldId]                = gaia.allFields
+      override def orderBy                        = Some("phot_g_mean_mag")
+      override def extraFields(c: Coordinates)    = Nil
       override val extraConstraints: List[String] = List("ruwe < 1.4")
     }
 
