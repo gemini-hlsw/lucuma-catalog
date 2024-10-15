@@ -32,7 +32,6 @@ import lucuma.core.math.Redshift
 import lucuma.core.math.RightAscension
 import lucuma.core.math.dimensional.*
 import lucuma.core.model.SiderealTracking
-import lucuma.core.model.SiderealTracking.apply
 import lucuma.core.model.SourceProfile
 import lucuma.core.model.SpectralDefinition
 import lucuma.core.model.Target

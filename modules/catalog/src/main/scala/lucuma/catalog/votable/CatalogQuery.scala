@@ -20,7 +20,6 @@ import org.http4s.Uri
 import spire.math.Bounded
 
 import java.time.Instant
-import scala.math.*
 
 /**
  * Represents a query on a catalog
