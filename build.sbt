@@ -4,7 +4,7 @@ lazy val catsVersion                = "2.12.0"
 lazy val catsEffectVersion          = "3.5.4"
 lazy val kindProjectorVersion       = "0.13.2"
 lazy val pprintVersion              = "0.9.0"
-lazy val lucumaCoreVersion          = "0.105.0"
+lazy val lucumaCoreVersion          = "0.106.1"
 lazy val lucumaRefinedVersion       = "0.1.3"
 lazy val monocleVersion             = "3.3.0"
 lazy val munitVersion               = "1.0.2"
@@ -27,8 +27,8 @@ Global / onChangedBuildSource := ReloadOnSourceChanges
 ThisBuild / tlBaseVersion       := "0.48"
 ThisBuild / tlCiReleaseBranches := Seq("master", "scala3")
 
-ThisBuild / scalaVersion       := "3.4.3"
-ThisBuild / crossScalaVersions := Seq("3.4.3")
+ThisBuild / scalaVersion       := "3.5.1"
+ThisBuild / crossScalaVersions := Seq("3.5.2")
 ThisBuild / scalacOptions ++= Seq(
   "-language:implicitConversions"
 )

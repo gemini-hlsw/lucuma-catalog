@@ -8,7 +8,6 @@ import cats.syntax.all.*
 import coulomb.*
 import coulomb.policy.spire.standard.given
 import coulomb.syntax.*
-import coulomb.units.si.*
 import eu.timepit.refined.*
 import eu.timepit.refined.collection.NonEmpty
 import eu.timepit.refined.types.string.NonEmptyString
