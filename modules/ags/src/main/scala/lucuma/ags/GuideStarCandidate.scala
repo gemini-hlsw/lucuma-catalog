@@ -17,7 +17,7 @@ import lucuma.core.enums.CatalogName
 import lucuma.core.math.BrightnessUnits.*
 import lucuma.core.math.BrightnessValue
 import lucuma.core.math.Epoch
-import lucuma.core.math.dimensional.*
+import lucuma.core.math.dimensional.syntax.*
 import lucuma.core.math.units.*
 import lucuma.core.model.CatalogInfo
 import lucuma.core.model.SiderealTracking
