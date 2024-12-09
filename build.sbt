@@ -60,6 +60,7 @@ lazy val catalog = crossProject(JVMPlatform, JSPlatform)
     ),
     scalacOptions ~= (_.filterNot(Set("-Vtype-diffs")))
   )
+  .jsConfigure(_.enablePlugins(BundleMonPlugin))
 
 lazy val ags = crossProject(JVMPlatform, JSPlatform)
   .crossType(CrossType.Pure)
@@ -73,6 +74,7 @@ lazy val ags = crossProject(JVMPlatform, JSPlatform)
     ),
     scalacOptions ~= (_.filterNot(Set("-Vtype-diffs")))
   )
+  .jsConfigure(_.enablePlugins(BundleMonPlugin))
   .dependsOn(catalog)
 
 lazy val testkit = crossProject(JVMPlatform, JSPlatform)
@@ -119,7 +121,6 @@ lazy val tests = crossProject(JVMPlatform, JSPlatform)
       new NodeJSEnv(NodeJSEnv.Config().withArgs(List("--experimental-fetch")))
     }
   )
-  .jsConfigure(_.enablePlugins(BundleMonPlugin))
   .jvmSettings(
     libraryDependencies ++= Seq(
       "co.fs2"     %% "fs2-io"                 % fs2Version,
