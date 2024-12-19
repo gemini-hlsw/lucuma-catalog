@@ -147,6 +147,7 @@ extension (posAngleConstraint: PosAngleConstraint)
   ): Option[NonEmptyList[Angle]] =
     TimeSpan
       .fromDuration(duration)
+      .filter(_ > TimeSpan.Zero)
       .flatMap: ts =>
         posAngleConstraint match
           case PosAngleConstraint.Fixed(a)               => NonEmptyList.of(a).some
