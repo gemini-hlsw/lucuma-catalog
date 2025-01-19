@@ -1,7 +1,7 @@
 // Copyright (c) 2016-2023 Association of Universities for Research in Astronomy, Inc. (AURA)
 // For license information see LICENSE or https://opensource.org/licenses/BSD-3-Clause
 
-package lucuma.catalog.votable
+package lucuma.ags
 
 import cats.data.NonEmptyList
 import cats.effect.IO
@@ -11,7 +11,10 @@ import cats.syntax.all.*
 import fs2.*
 import fs2.text
 import lucuma.ags.*
+import lucuma.catalog.votable.*
 import lucuma.core.enums.CloudExtinction
+import lucuma.core.enums.F2Fpu
+import lucuma.core.enums.F2LyotWheel
 import lucuma.core.enums.GmosNorthFpu
 import lucuma.core.enums.ImageQuality
 import lucuma.core.enums.PortDisposition
@@ -37,6 +40,7 @@ import lucuma.core.model.ObjectTracking
 import lucuma.core.model.PosAngleConstraint
 import lucuma.core.model.SiderealTracking
 import lucuma.core.model.Target
+import lucuma.core.model.sequence.f2.F2FpuMask
 import org.http4s.Method.*
 import org.http4s.Request
 import org.http4s.client.Client
@@ -72,8 +76,14 @@ trait AgsSelectionSample {
   val offsets =
     NonEmptyList.of(Offset.Zero, Offset.Zero.copy(q = Offset.Q(Angle.fromDoubleArcseconds(15))))
 
-  val params = AgsParams.GmosAgsParams(
+  val gmosParams = AgsParams.GmosAgsParams(
     GmosNorthFpu.LongSlit_0_25.asLeft.some,
+    PortDisposition.Bottom
+  )
+
+  val f2Params = AgsParams.F2AgsParams(
+    F2LyotWheel.F16,
+    F2FpuMask.Builtin(F2Fpu.LongSlit3),
     PortDisposition.Bottom
   )
 
@@ -135,13 +145,10 @@ object AgsSelectionSampleApp extends IOApp.Simple with AgsSelectionSample {
                 coords,
                 List(coords),
                 positions,
-                AgsParams.GmosAgsParams(
-                  GmosNorthFpu.LongSlit_0_25.asLeft.some,
-                  PortDisposition.Bottom
-                ),
+                f2Params,
                 candidates
               )
-            println(s"Results ${r.sortUsablePositions}")
+            pprint.pprintln(r.sortUsablePositions)
             r.sortUsablePositions
           }
       )
