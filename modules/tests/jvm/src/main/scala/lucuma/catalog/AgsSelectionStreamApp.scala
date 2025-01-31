@@ -12,11 +12,10 @@ import lucuma.ags.*
 import lucuma.core.enums.GmosNorthFpu
 import lucuma.core.enums.PortDisposition
 import lucuma.core.math.Angle
-import lucuma.core.math.Coordinates
 import lucuma.core.math.Offset
 import org.http4s.jdkhttpclient.JdkHttpClient
 
-object AgsSelectionSampleStreamApp extends IOApp.Simple with AgsSelectionSample {
+object AgsSelectionSampleStreamApp extends IOApp.Simple with AgsSelectionSample:
 
   def run =
     JdkHttpClient
@@ -47,4 +46,3 @@ object AgsSelectionSampleStreamApp extends IOApp.Simple with AgsSelectionSample 
       // .flatMap(x => IO.println(x.head))
       .flatMap(x => x.filter(_.isUsable).traverse(u => IO(pprint.pprintln(u))))
       .void
-}

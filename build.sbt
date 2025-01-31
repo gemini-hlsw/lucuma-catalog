@@ -7,7 +7,7 @@ lazy val pprintVersion              = "0.9.0"
 lazy val lucumaCoreVersion          = "0.115.0"
 lazy val lucumaRefinedVersion       = "0.1.3"
 lazy val monocleVersion             = "3.3.0"
-lazy val munitVersion               = "1.0.4"
+lazy val munitVersion               = "1.1.0"
 lazy val munitDisciplineVersion     = "2.0.0"
 lazy val munitCatsEffectVersion     = "1.0.7"
 lazy val betterMonadicForVersion    = "0.3.1"
@@ -27,8 +27,8 @@ Global / onChangedBuildSource := ReloadOnSourceChanges
 ThisBuild / tlBaseVersion       := "0.49"
 ThisBuild / tlCiReleaseBranches := Seq("master", "scala3")
 
-ThisBuild / scalaVersion       := "3.5.2"
-ThisBuild / crossScalaVersions := Seq("3.5.2")
+ThisBuild / scalaVersion       := "3.6.3"
+ThisBuild / crossScalaVersions := Seq("3.6.3")
 ThisBuild / scalacOptions ++= Seq(
   "-language:implicitConversions"
 )
