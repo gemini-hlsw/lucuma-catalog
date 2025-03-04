@@ -20,7 +20,7 @@ lazy val http4sDomVersion           = "0.2.11"
 lazy val refinedAlgebraVersion      = "0.1.1"
 lazy val catsTimeVersion            = "0.5.1"
 lazy val catsParseVersion           = "1.1.0"
-lazy val kittensVersion             = "3.4.0"
+lazy val kittensVersion             = "3.5.0"
 
 Global / onChangedBuildSource := ReloadOnSourceChanges
 
