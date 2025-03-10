@@ -7,6 +7,7 @@ import cats.data.NonEmptyList
 import cats.syntax.all.*
 import lucuma.ags.AgsAnalysis.NoMagnitudeForBand
 import lucuma.ags.AgsAnalysis.Usable
+import lucuma.ags.AgsAnalysis.VignettesScience
 import lucuma.core.enums.*
 import lucuma.core.geom.Area
 import lucuma.core.math.Angle
@@ -29,135 +30,72 @@ class AgsSuite extends munit.FunSuite {
                                            (Band.Gaia, BrightnessValue.unsafeFrom(11.23)).some
   )
 
+  extension (l: Long) def toArea: Area = Area.fromMicroarcsecondsSquared.getOption(l).get
+
+  extension (usable: Usable)
+    def slow: Usable                = usable.copy(guideSpeed = GuideSpeed.Slow)
+    def possibleDegradation: Usable = usable.copy(quality = AgsGuideQuality.PossibleIqDegradation)
+    def vignetting(v: Long): Usable = usable.copy(vignetting = v.toArea)
+
+  def usable(
+    gs:         GuideStarCandidate,
+    posAngle:   Angle,
+    vignetting: Long = 0,
+    speed:      GuideSpeed = GuideSpeed.Fast,
+    quality:    AgsGuideQuality = AgsGuideQuality.DeliversRequestedIq
+  ): Usable = Usable(GuideProbe.GmosOIWFS, gs, speed, quality, posAngle, vignetting.toArea)
+
+  val u1a = usable(gs1, Angle.Angle0)
+  val u1b = usable(gs1, Angle.Angle180)
+  val u2a = usable(gs2, Angle.Angle0)
+  val u2b = usable(gs2, Angle.Angle180)
+
   test("usable comparisons") {
-    val u1 = Usable(
-      GuideProbe.GmosOIWFS,
-      gs1,
-      GuideSpeed.Fast,
-      AgsGuideQuality.DeliversRequestedIq,
-      NonEmptyList.of(
-        Angle.Angle0 -> Area.fromMicroarcsecondsSquared.getOption(0).get
-      )
-    )
-    val u2 = Usable(
-      GuideProbe.GmosOIWFS,
-      gs1,
-      GuideSpeed.Fast,
-      AgsGuideQuality.DeliversRequestedIq,
-      NonEmptyList.of(
-        Angle.Angle0 -> Area.fromMicroarcsecondsSquared.getOption(1).get
-      )
-    )
-    val u3 = Usable(
-      GuideProbe.GmosOIWFS,
-      gs2,
-      GuideSpeed.Fast,
-      AgsGuideQuality.DeliversRequestedIq,
-      NonEmptyList.of(
-        Angle.Angle0 -> Area.fromMicroarcsecondsSquared.getOption(0).get
-      )
-    )
-    val u4 = Usable(
-      GuideProbe.GmosOIWFS,
-      gs2,
-      GuideSpeed.Fast,
-      AgsGuideQuality.DeliversRequestedIq,
-      NonEmptyList.of(
-        Angle.Angle0 -> Area.fromMicroarcsecondsSquared.getOption(2).get
-      )
-    )
-
-    val u12 = Usable(
-      GuideProbe.GmosOIWFS,
-      gs1,
-      GuideSpeed.Fast,
-      AgsGuideQuality.DeliversRequestedIq,
-      NonEmptyList.of(
-        Angle.Angle0   -> Area.fromMicroarcsecondsSquared.getOption(0).get,
-        Angle.Angle180 -> Area.fromMicroarcsecondsSquared.getOption(10).get
-      )
-    )
-
-    val u22 = Usable(
-      GuideProbe.GmosOIWFS,
-      gs2,
-      GuideSpeed.Fast,
-      AgsGuideQuality.DeliversRequestedIq,
-      NonEmptyList.of(
-        Angle.Angle0   -> Area.fromMicroarcsecondsSquared.getOption(9).get,
-        Angle.Angle180 -> Area.fromMicroarcsecondsSquared.getOption(20).get
-      )
-    )
-
     // less vignetting wins
-    assert(AgsAnalysis.rankingOrder.compare(u1, u2) < 0)
+    assert(Usable.rankOrdering.compare(u1a.vignetting(1), u1a) > 0)
     // same vignetting but brighter wins
-    assert(AgsAnalysis.rankingOrder.compare(u3, u1) < 0)
-    // vignetting trumps brighteness
-    assert(AgsAnalysis.rankingOrder.compare(u1, u4) < 0)
-    // we should check the whole list of vignettes
-    assert(AgsAnalysis.rankingOrder.compare(u12, u22) < 0)
+    assert(Usable.rankOrdering.compare(u1a, u2a) > 0)
+    // vignetting beats brighteness
+    assert(Usable.rankOrdering.compare(u1a, u2a.vignetting(1)) < 0)
+    // guide speed beats vignetting
+    assert(Usable.rankOrdering.compare(u1a.slow, u1a.vignetting(1)) > 0)
+    // quality beats vignetting
+    assert(Usable.rankOrdering.compare(u1a.possibleDegradation, u1a.vignetting(1)) > 0)
   }
 
-  test("sort by brightness") {
-    val u1 = Usable(
-      GuideProbe.GmosOIWFS,
-      gs1,
-      GuideSpeed.Fast,
-      AgsGuideQuality.DeliversRequestedIq,
-      NonEmptyList.of(
-        Angle.Angle180 -> Area.fromMicroarcsecondsSquared.getOption(0).get
-      )
-    )
-    val u2 = Usable(
-      GuideProbe.GmosOIWFS,
-      gs2,
-      GuideSpeed.Fast,
-      AgsGuideQuality.DeliversRequestedIq,
-      NonEmptyList.of(
-        Angle.Angle0 -> Area.fromMicroarcsecondsSquared.getOption(0).get
-      )
-    )
-    assert(AgsAnalysis.rankingOrder.compare(u1, u2) > 0)
+  test("sortUsablePositions - bad angles thrown out") {
+    val noMag            = NoMagnitudeForBand(GuideProbe.GmosOIWFS, gs1, Angle.Angle0)
+    val vignettesScience = VignettesScience(gs2, AgsPosition(Angle.Angle180, Offset.Zero))
+    val analyses         = List(noMag, u1a, u1b.vignetting(9), u2a.vignetting(5), u2b, vignettesScience)
+    val sorted           = analyses.sortUsablePositions
+    assertEquals(sorted, List(u2a.vignetting(5), u1b.vignetting(9)))
   }
 
-  test("sort positions") {
-    val u1 = Usable(
-      GuideProbe.GmosOIWFS,
-      gs1,
-      GuideSpeed.Fast,
-      AgsGuideQuality.DeliversRequestedIq,
-      NonEmptyList.of(
-        Angle.Angle0 -> Area.fromMicroarcsecondsSquared.getOption(0).get
-      )
-    )
-    val u2 = Usable(
-      GuideProbe.GmosOIWFS,
-      gs1,
-      GuideSpeed.Fast,
-      AgsGuideQuality.DeliversRequestedIq,
-      NonEmptyList.of(
-        Angle.Angle180 -> Area.fromMicroarcsecondsSquared.getOption(1).get
-      )
-    )
-    assertEquals(1, List(u1, u2).sortUsablePositions.length)
+  test("sortUsablePositions - more complex") {
+    // in real life, the Usable instances should be the same except for vignetting and posAngle,
+    // but this test ensures that the sorting works correctly in case the algorithm changes
+
+    // worst for angle is chosen
+    val vignette7 = u1a.vignetting(7)
+    val vignette9 = u1a.vignetting(9)
+    // but vignetting beats slow
+    val slow      = u1b.slow
+    // vignetting also beats quality
+    val degraded  = u2a.possibleDegradation
+    // least bad vignetting wins
+    val vignetteB = u2b.vignetting(8)
+
+    val analyses = List(vignette7, vignette9, slow, degraded, vignetteB)
+    val sorted   = analyses.sortUsablePositions
+    assertEquals(sorted, List(vignetteB, vignette9))
   }
 
-  test("sort unusable positions") {
-    val u1 = Usable(
-      GuideProbe.GmosOIWFS,
-      gs1,
-      GuideSpeed.Fast,
-      AgsGuideQuality.DeliversRequestedIq,
-      NonEmptyList.of(
-        Angle.Angle0 -> Area.fromMicroarcsecondsSquared.getOption(0).get
-      )
-    )
-    val u2 = NoMagnitudeForBand(
-      GuideProbe.GmosOIWFS,
-      gs1
-    )
-    assertEquals(1, List(u1, u2).sortUsablePositions.length)
+  test("sortUsablePositions - all else being equal, brightness breaks the tie") {
+    val a        = u1a.vignetting(7).slow.possibleDegradation
+    val b        = u2a.vignetting(7).slow.possibleDegradation
+    val analyses = List(a, b)
+    val sorted   = analyses.sortUsablePositions
+    assertEquals(sorted, List(b, a))
   }
 
   test("discard science target") {

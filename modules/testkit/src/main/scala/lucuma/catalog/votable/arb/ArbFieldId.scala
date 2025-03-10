@@ -8,7 +8,6 @@ import eu.timepit.refined.types.string.NonEmptyString
 import lucuma.catalog.votable.*
 import org.scalacheck.*
 import org.scalacheck.Arbitrary.arbitrary
-import org.scalacheck.Cogen
 
 trait ArbFieldId {
   import ArbUcd.given

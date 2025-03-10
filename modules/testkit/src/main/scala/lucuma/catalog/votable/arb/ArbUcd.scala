@@ -8,8 +8,6 @@ import eu.timepit.refined.scalacheck.string.*
 import eu.timepit.refined.types.string.NonEmptyString
 import lucuma.catalog.votable.*
 import org.scalacheck.*
-import org.scalacheck.Cogen
-import org.scalacheck.Gen
 
 trait ArbUcd {
   val genNonEmptyString = summon[Arbitrary[NonEmptyString]].arbitrary

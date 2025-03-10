@@ -104,7 +104,8 @@ object Ags {
              guideStar,
              guideSpeed,
              quality,
-             NonEmptyList.one((position.posAngle, vignettingArea(gsOffset)))
+             position.posAngle,
+             vignettingArea(gsOffset)
       )
     }
 
@@ -113,8 +114,8 @@ object Ags {
       case Some((_, g)) =>
         guideSpeedFor(speeds, g)
           .map(usable)
-          .getOrElse(NoGuideStarForProbe(guideProbe, guideStar))
-      case _            => NoMagnitudeForBand(guideProbe, guideStar)
+          .getOrElse(NoGuideStarForProbe(guideProbe, guideStar, position.posAngle))
+      case _            => NoMagnitudeForBand(guideProbe, guideStar, position.posAngle)
     }
 
   }
@@ -169,7 +170,7 @@ object Ags {
                                                                                       calcs
               )
             }
-            .getOrElse(ProperMotionNotAvailable(gsc))
+            .getOrElse(ProperMotionNotAvailable(gsc, position.posAngle))
         }
   }
 
@@ -240,19 +241,18 @@ object Ags {
 
     candidates
       .filter(c => c.gBrightness.exists { case (_, g) => bc.exists(_.contains(Band.Gaia, g)) })
-      .zip(positions.toList)
-      .map { (gsc, position) =>
-        val offset         = offsetAt(baseAt, instant, gsc)
+      .flatMap: gsc =>
         val scienceOffsets = scienceOffsetsAt(scienceAt, instant, gsc)
 
-        offset
-          .map { offset =>
-            runAnalysis(constraints, offset, scienceOffsets, position, params, gsc)(guideSpeeds,
-                                                                                    calcs
-            )
-          }
-          .getOrElse(ProperMotionNotAvailable(gsc))
-      }
+        positions.toList.map: position =>
+          val oOffset = offsetAt(baseAt, instant, gsc)
+          oOffset
+            .map: offset =>
+              runAnalysis(constraints, offset, scienceOffsets, position, params, gsc)(
+                guideSpeeds,
+                calcs
+              )
+            .getOrElse(ProperMotionNotAvailable(gsc, position.posAngle))
   }
 
   /**
@@ -283,9 +283,10 @@ object Ags {
     candidates
       .filter(c => c.gBrightness.exists { case (_, g) => bc.exists(_.contains(Band.Gaia, g)) })
       .flatMap(gsc =>
+        val offset         = baseCoordinates.diff(gsc.tracking.baseCoordinates).offset
+        val scienceOffsets = scienceCoordinates.map(_.diff(gsc.tracking.baseCoordinates).offset)
+
         positions.toList.map { position =>
-          val offset         = baseCoordinates.diff(gsc.tracking.baseCoordinates).offset
-          val scienceOffsets = scienceCoordinates.map(_.diff(gsc.tracking.baseCoordinates).offset)
           runAnalysis(constraints, offset, scienceOffsets, position, params, gsc)(guideSpeeds,
                                                                                   calcs
           )

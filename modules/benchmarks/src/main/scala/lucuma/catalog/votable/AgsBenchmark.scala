@@ -47,7 +47,7 @@ class AgsBenchmark extends AgsSelectionSample {
       coords,
       List(coords),
       positions,
-      params,
+      gmosParams,
       items
     )
     ()
@@ -61,7 +61,7 @@ class AgsBenchmark extends AgsSelectionSample {
       _ => coords.some,
       List(_ => coords.some),
       positions,
-      params,
+      gmosParams,
       Instant.now(),
       items
     )
@@ -70,11 +70,11 @@ class AgsBenchmark extends AgsSelectionSample {
 
   @Benchmark
   def magnitudeAnalysis: Unit = {
-    val geoms  = params.posCalculations(NonEmptyList.one(positions.head))
+    val geoms  = gmosParams.posCalculations(NonEmptyList.one(positions.head))
     val limits = Ags.guideSpeedLimits(constraints, wavelength)
     Ags.magnitudeAnalysis(
       constraints,
-      params.probe,
+      gmosParams.probe,
       Offset.Zero,
       items.head,
       geoms.get(0).get.vignettingArea(_),
