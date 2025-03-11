@@ -12,7 +12,6 @@ import eu.timepit.refined.collection.NonEmpty
 import eu.timepit.refined.types.string.NonEmptyString
 import fs2.*
 import fs2.data.csv.*
-import fs2.text
 import lucuma.catalog.*
 import lucuma.catalog.votable.CatalogAdapter
 import lucuma.catalog.votable.CatalogSearch

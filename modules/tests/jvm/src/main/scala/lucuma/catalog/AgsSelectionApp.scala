@@ -9,7 +9,6 @@ import cats.effect.IOApp
 import cats.effect.Sync
 import cats.syntax.all.*
 import fs2.*
-import fs2.text
 import lucuma.ags.*
 import lucuma.catalog.votable.*
 import lucuma.core.enums.CloudExtinction
